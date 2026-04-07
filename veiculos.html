@@ -319,9 +319,9 @@ Buscando dados...
 Relatório Geral
 </a>
 
-<a href="index.html" class="btn-footer">
+<a href="index.html" class="btn-footer" id="btnVoltarInicio">
 <i class="fa-solid fa-chevron-left"></i>
-Voltar ao Início
+Voltar ao Menu Principal
 </a>
 
 </div>
@@ -446,8 +446,18 @@ carregando=false;
 window.onload=async function(){
 AUTH = await validarSessaoOuRedirecionar();
 if(!AUTH) return;
+
 const el = document.getElementById('sessaoSeguranca');
 if(el) el.textContent = AUTH.seguranca || '---';
+
+const btnVoltar = document.getElementById('btnVoltarInicio');
+if(btnVoltar){
+  btnVoltar.addEventListener('click', function(e){
+    e.preventDefault();
+    location.href = 'index.html';
+  });
+}
+
 carregarDados();
 };
 </script>
