@@ -6,142 +6,39 @@
   <title>Saída Visitante — Delta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root{ 
-      --bg1:#061427; --bg2:#0b1b33; 
-      --card:rgba(255,255,255,0.06); 
-      --border:rgba(255,255,255,0.12); 
-      --text-main:#e6edf7; --text-soft:#9fb4d3; --text-muted:#7b8ca7; 
-      --red:#ef4444; --green:#22c55e; --blue:#3b82f6;
-      --radius:20px;
-    }
-    *{ box-sizing: border-box; }
-    body{ 
-      margin:0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-      background:linear-gradient(180deg,var(--bg1),var(--bg2)); 
-      color:var(--text-main); min-height:100vh; padding:0; 
-      display:flex; flex-direction: column; align-items:center;
-    }
-
-    /* Cabeçalho Melhorado */
-    .header-top {
-      width: 100%;
-      padding: 40px 20px 20px;
-      text-align: center;
-      background: linear-gradient(to bottom, rgba(59, 130, 246, 0.1), transparent);
-    }
-    .header-top i {
-      font-size: 32px;
-      color: var(--blue);
-      margin-bottom: 15px;
-      filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
-    }
-    .header-top h2 { 
-      margin: 0; 
-      font-size: 26px; 
-      font-weight: 800; 
-      letter-spacing: -0.5px;
-    }
-    .header-top p { 
-      color: var(--text-soft); 
-      font-size: 13px; 
-      margin: 5px 0 0; 
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      font-weight: 600;
-    }
-
-    .container{ width:100%; max-width:450px; padding: 20px; flex: 1; }
-    
-    #lista_ativos{ display:grid; gap:14px; margin-top: 10px; }
-    
-    /* Card de Visitante */
-    .visitante-item{ 
-      background:var(--card); 
-      border:1px solid var(--border); 
-      padding:20px; 
-      border-radius:var(--radius); 
-      display:flex; 
-      align-items:center; 
-      justify-content:space-between; 
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-      cursor:pointer;
-      backdrop-filter: blur(5px);
-    }
-    .visitante-item:hover{ 
-      border-color: var(--red); 
-      background: rgba(239, 68, 68, 0.08);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-    
-    .info b{ display:block; font-size:16px; text-transform:uppercase; margin-bottom:4px; color: #fff; }
-    .info span{ 
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px; 
-      color: var(--text-muted); 
-      font-weight: 700; 
-    }
-    
-    .btn-out-circle {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(239, 68, 68, 0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--red);
-      transition: 0.3s;
-    }
-    .visitante-item:hover .btn-out-circle {
-      background: var(--red);
-      color: white;
-      transform: rotate(90deg);
-    }
-
-    /* Feedback de Saída */
-    .leaving { opacity: 0; transform: translateX(30px); pointer-events: none; }
-    
-    #msg_status{ text-align:center; font-size:13px; margin-top:20px; font-weight:600; min-height:1.5em; }
-
-    /* Botão de Rodapé Estilizado */
-    .footer-action {
-      padding: 30px 20px;
-      width: 100%;
-      max-width: 450px;
-    }
-    .btn-back {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      color: var(--text-soft);
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      transition: 0.3s;
-    }
-    .btn-back:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #fff;
-      border-color: var(--blue);
-    }
+    :root{--bg1:#061427;--bg2:#0b1b33;--card:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.12);--text-main:#e6edf7;--text-soft:#9fb4d3;--text-muted:#7b8ca7;--red:#ef4444;--green:#22c55e;--blue:#3b82f6;--radius:20px;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text-main);min-height:100vh;padding:0;display:flex;flex-direction:column;align-items:center;}
+    .header-top{width:100%;padding:40px 20px 20px;text-align:center;background:linear-gradient(to bottom, rgba(59,130,246,.1), transparent);}
+    .header-top i{font-size:32px;color:var(--blue);margin-bottom:15px;filter:drop-shadow(0 0 10px rgba(59,130,246,.5));}
+    .header-top h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.5px}
+    .header-top p{color:var(--text-soft);font-size:13px;margin:5px 0 0;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
+    .sessao{width:100%;max-width:450px;padding:0 20px;margin:0 0 8px 0}
+    .sessao-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:12px 14px;text-align:center;font-size:13px;color:#9fb4d3}
+    .container{width:100%;max-width:450px;padding:20px;flex:1}
+    #lista_ativos{display:grid;gap:14px;margin-top:10px}
+    .visitante-item{background:var(--card);border:1px solid var(--border);padding:20px;border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;transition:all .3s cubic-bezier(.4,0,.2,1);cursor:pointer;backdrop-filter:blur(5px)}
+    .visitante-item:hover{border-color:var(--red);background:rgba(239,68,68,.08);transform:translateY(-2px);box-shadow:0 10px 20px rgba(0,0,0,.2)}
+    .info b{display:block;font-size:16px;text-transform:uppercase;margin-bottom:4px;color:#fff}
+    .info span{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);font-weight:700}
+    .btn-out-circle{width:40px;height:40px;border-radius:50%;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;color:var(--red);transition:.3s}
+    .visitante-item:hover .btn-out-circle{background:var(--red);color:white;transform:rotate(90deg)}
+    .leaving{opacity:0;transform:translateX(30px);pointer-events:none}
+    #msg_status{text-align:center;font-size:13px;margin-top:20px;font-weight:600;min-height:1.5em}
+    .footer-action{padding:30px 20px;width:100%;max-width:450px}
+    .btn-back{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:16px;color:var(--text-soft);text-decoration:none;font-size:13px;font-weight:700;text-transform:uppercase;transition:.3s}
+    .btn-back:hover{background:rgba(255,255,255,.1);color:#fff;border-color:var(--blue)}
   </style>
 </head>
 <body>
-
   <div class="header-top">
     <i class="fa-solid fa-person-walking-arrow-right"></i>
     <h2>Saída de Visitantes</h2>
     <p>DELTA BIOCOMBUSTIVEIS</p>
+  </div>
+
+  <div class="sessao">
+    <div class="sessao-box">Segurança logado: <strong id="sessaoSegurancaTopo" style="color:#e6edf7;">...</strong></div>
   </div>
 
   <div class="container">
@@ -155,7 +52,7 @@
   </div>
 
   <div class="footer-action">
-    <a href="visitantes.html" class="btn-back">
+    <a href="visitantes.html" class="btn-back" id="btnVoltarMenu">
       <i class="fa-solid fa-chevron-left"></i>
       Voltar ao Menu Principal
     </a>
@@ -163,16 +60,53 @@
 
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbyrhIsHgV1sQj2yMaFcb1SOl1FydAC0oay23djmAUnERwVjph6pTi3GQif9JNjf_tRCpw/exec';
+    const STORAGE_KEY = 'delta_auth_v1';
     let cacheVisitantes = [];
+    let AUTH = null;
+
+    function getAuth() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+      catch(_) { return null; }
+    }
+    function clearAuth() { localStorage.removeItem(STORAGE_KEY); }
 
     function jsonp(url) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const cb = 'cb_' + Math.round(100000 * Math.random());
         const script = document.createElement('script');
-        script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cb;
-        window[cb] = (data) => { delete window[cb]; document.body.removeChild(script); resolve(data); };
+        script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+        window[cb] = (data) => {
+          try { resolve(data); }
+          finally {
+            delete window[cb];
+            if (script.parentNode) document.body.removeChild(script);
+          }
+        };
+        script.onerror = () => {
+          try { delete window[cb]; } catch(_) {}
+          if (script.parentNode) document.body.removeChild(script);
+          reject(new Error('Erro de conexão'));
+        };
         document.body.appendChild(script);
       });
+    }
+
+    async function validarSessaoOuRedirecionar() {
+      const auth = getAuth();
+      if(!auth || !auth.token) {
+        location.href='index.html';
+        return null;
+      }
+      try {
+        const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
+        if(res && res.ok && res.autenticado){
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm }));
+          return { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm };
+        }
+      } catch(_) {}
+      clearAuth();
+      location.href='index.html';
+      return null;
     }
 
     async function carregarAtivos() {
@@ -196,21 +130,20 @@
         return;
       }
       container.innerHTML = cacheVisitantes.map(v => `
-        <div class="visitante-item" id="item-${v.linha}" onclick="darBaixa(${v.linha}, '${v.nome}')">
+        <div class="visitante-item" id="item-${v.linha}" onclick="darBaixa(${v.linha}, '${String(v.nome).replace(/'/g, "\'")}')">
           <div class="info">
             <b>${v.nome}</b>
             <span><i class="fa-solid fa-id-card"></i> CPF: ${v.cpf}</span>
           </div>
-          <div class="btn-out-circle">
-            <i class="fa-solid fa-door-open"></i>
-          </div>
+          <div class="btn-out-circle"><i class="fa-solid fa-door-open"></i></div>
         </div>
       `).join('');
     }
 
     async function darBaixa(linha, nome) {
+      if(!AUTH || !AUTH.token) return;
       if(!confirm(`Registrar saída definitiva de ${nome}?`)) return;
-      
+
       const item = document.getElementById(`item-${linha}`);
       const msg = document.getElementById('msg_status');
 
@@ -219,17 +152,19 @@
       msg.innerText = `Registrando baixa no sistema...`;
 
       try {
-        const dados = { linha: linha, tipo: 'SAIDA' };
+        const dados = { linha: linha, tipo: 'SAIDA', token: AUTH.token, seguranca: AUTH.seguranca };
         const res = await jsonp(API_URL + '?route=salvarVisitante&data=' + encodeURIComponent(JSON.stringify(dados)));
-        
+
         if(res.ok) {
           msg.innerText = `Saída confirmada com sucesso!`;
           cacheVisitantes = cacheVisitantes.filter(v => v.linha !== linha);
           setTimeout(() => {
-            item.remove();
+            if(item) item.remove();
             if(cacheVisitantes.length === 0) renderizarLista();
             msg.innerText = "";
           }, 450);
+        } else {
+          throw new Error(res.message || 'Erro ao registrar saída');
         }
       } catch(e) {
         item.classList.remove('leaving');
@@ -238,8 +173,21 @@
       }
     }
 
-    window.onload = carregarAtivos;
+    window.onload = async function() {
+      AUTH = await validarSessaoOuRedirecionar();
+      if (!AUTH) return;
+      document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || '---';
+
+      const btn = document.getElementById('btnVoltarMenu');
+      if (btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          location.href = 'visitantes.html';
+        });
+      }
+
+      carregarAtivos();
+    };
   </script>
 </body>
 </html>
-
