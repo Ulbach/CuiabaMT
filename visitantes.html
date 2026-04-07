@@ -129,6 +129,16 @@
     </div>
   </div>
 
+
+  <div style="width:90%;max-width:400px;margin:-18px 0 18px 0;">
+    <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div style="font-size:13px;color:#9fb4d3;">
+        Logado como: <strong id="sessaoSeguranca" style="color:#e6edf7;">...</strong>
+      </div>
+      <button onclick="logoutSistema()" style="background:#0b1a30;border:1px solid rgba(255,255,255,0.12);color:#e6edf7;padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer;">Sair</button>
+    </div>
+  </div>
+
   <div class="card">
     <div class="menu-grid">
       <a href="Entrada_visitante.html" class="btn-nav btn-entrada">
@@ -139,10 +149,89 @@
       </a>
     </div>
     
-    <a href="index.html" class="btn-back">
+    <a href="index.html" class="btn-back" id="btnMenuPrincipal">
       <i class="fa-solid fa-house"></i> Menu Principal
     </a>
   </div>
+
+
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbyrhIsHgV1sQj2yMaFcb1SOl1FydAC0oay23djmAUnERwVjph6pTi3GQif9JNjf_tRCpw/exec';
+const STORAGE_KEY='delta_auth_v1';
+
+function getAuth() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+  catch(_) { return null; }
+}
+
+function clearAuth() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+function jsonp(url){
+  return new Promise((resolve,reject)=>{
+    const cb='cb_'+Math.random().toString(36).slice(2);
+    const script=document.createElement('script');
+    script.src=url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+    window[cb]=(data)=>{
+      try{ resolve(data); }
+      finally {
+        try { delete window[cb]; } catch(_) { window[cb]=undefined; }
+        if(script.parentNode) script.parentNode.removeChild(script);
+      }
+    };
+    script.onerror=()=>{
+      try { delete window[cb]; } catch(_) { window[cb]=undefined; }
+      if(script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('Erro de conexão'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+async function validarSessaoOuRedirecionar(){
+  const auth = getAuth();
+  if(!auth || !auth.token){
+    location.href='index.html';
+    return null;
+  }
+  try {
+    const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
+    if(res && res.ok && res.autenticado){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm }));
+      return { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm };
+    }
+  } catch(_) {}
+  clearAuth();
+  location.href='index.html';
+  return null;
+}
+
+async function logoutSistema(){
+  const auth = getAuth();
+  try {
+    if(auth && auth.token) await jsonp(API_URL + '?route=logoutSeguranca&token=' + encodeURIComponent(auth.token));
+  } catch(_) {}
+  clearAuth();
+  location.href='index.html';
+}
+
+window.onload = async function(){
+  const auth = await validarSessaoOuRedirecionar();
+  if(!auth) return;
+
+  const el = document.getElementById('sessaoSeguranca');
+  if(el) el.textContent = auth.seguranca || '---';
+
+  const btn = document.getElementById('btnMenuPrincipal');
+  if(btn){
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      location.href = 'index.html';
+    });
+  }
+};
+</script>
 
 </body>
 </html>
