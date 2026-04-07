@@ -104,7 +104,6 @@
 
 
 <script>
-
 const API_URL='https://script.google.com/macros/s/AKfycbyrhIsHgV1sQj2yMaFcb1SOl1FydAC0oay23djmAUnERwVjph6pTi3GQif9JNjf_tRCpw/exec';
 const STORAGE_KEY='delta_auth_v1';
 
@@ -156,15 +155,6 @@ async function validarSessaoOuRedirecionar(){
   return null;
 }
 
-async function logoutSistema(){
-  const auth = getAuth();
-  try {
-    if(auth && auth.token) await jsonp(API_URL + '?route=logoutSeguranca&token=' + encodeURIComponent(auth.token));
-  } catch(_) {}
-  clearAuth();
-  location.href='index.html';
-}
-
 let KM_ANTERIOR = 0;
 let inFlight = false;
 let VEICULOS_NA_RUA = [];
@@ -186,25 +176,71 @@ function setMsg(text, colorVar) {
   msg.innerText = text || '';
 }
 
+function setLoadingState(loading, text) {
+  const veiculo = document.getElementById('veiculo');
+  const motorista = document.getElementById('motorista');
+  const btn = document.getElementById('btnSalvar');
+
+  veiculo.disabled = loading;
+  motorista.disabled = loading;
+  btn.disabled = true;
+  setMsg(text || '', '--text-soft');
+}
+
+function normalizarListaVeiculosNaRua(payload) {
+  if (Array.isArray(payload?.veiculosNaRua)) return payload.veiculosNaRua;
+  if (Array.isArray(payload?.emTransito)) return payload.emTransito;
+  return [];
+}
+
+async function carregarBaseEntrada() {
+  try {
+    return await apiGet('listsAvail');
+  } catch (_) {
+    return await apiGet('home');
+  }
+}
+
 async function init() {
   AUTH = await validarSessaoOuRedirecionar();
   if(!AUTH) return;
+
   document.getElementById('seguranca').value = AUTH.seguranca || '';
   const topo = document.getElementById('sessaoSegurancaTopo');
   if(topo) topo.textContent = AUTH.seguranca || '---';
 
+  setLoadingState(true, 'Buscando veículos em trânsito...');
+
   try {
-    const L = await apiGet('listsAvail');
+    const L = await carregarBaseEntrada();
     const selV = document.getElementById('veiculo');
-    VEICULOS_NA_RUA = Array.isArray(L.veiculosNaRua) ? L.veiculosNaRua : [];
+
+    VEICULOS_NA_RUA = normalizarListaVeiculosNaRua(L);
+    preencher(document.getElementById('motorista'), (L && L.motoristas) || [], 'Selecione...');
+
+    if (!VEICULOS_NA_RUA.length) {
+      selV.innerHTML = '<option value="">Nenhum veículo em trânsito</option>';
+      document.getElementById('hintKm').innerText = 'Não há veículos aguardando entrada.';
+      setMsg('Nenhum veículo em trânsito encontrado.', '--text-soft');
+      return;
+    }
 
     selV.innerHTML = '<option value="">Selecione o veículo...</option>' +
       VEICULOS_NA_RUA.map(item => `<option value="${String(item.veiculo).replace(/"/g, '&quot;')}">${item.veiculo}</option>`).join('');
 
-    preencher(document.getElementById('motorista'), L.motoristas, 'Selecione...');
-    setMsg('');
+    if (VEICULOS_NA_RUA.length === 1) {
+      selV.value = VEICULOS_NA_RUA[0].veiculo;
+      await onChangeVeiculo();
+    } else {
+      setMsg('');
+    }
   } catch (e) {
-    setMsg('Erro ao carregar dados.', '--red');
+    setMsg('Erro ao carregar veículos em trânsito.', '--red');
+    document.getElementById('veiculo').innerHTML = '<option value="">Erro ao carregar</option>';
+  } finally {
+    document.getElementById('veiculo').disabled = false;
+    document.getElementById('motorista').disabled = false;
+    validateForm();
   }
 }
 
@@ -227,6 +263,7 @@ async function onChangeVeiculo() {
     if (registro.kmSaida !== undefined && registro.kmSaida !== null && String(registro.kmSaida) !== '') {
       KM_ANTERIOR = Number(String(registro.kmSaida).toString().replace(',', '.')) || 0;
       hint.innerHTML = `KM de saída: <b>${KM_ANTERIOR}</b>`;
+      setMsg('');
       validateForm();
       return;
     }
