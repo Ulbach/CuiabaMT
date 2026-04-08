@@ -79,7 +79,7 @@
 <body>
   <div class="wrap">
     <div class="head">
-      <div class="chip" id="chipStatus">STATUS...</div>
+      <div class="chip" id="chipStatus">MODO RÁPIDO</div>
       <h1 class="logo">GESTÃO<span>INTELIGENTE</span></h1>
       <div class="tagline"># DELTA CUIABA #</div>
     </div>
@@ -106,7 +106,7 @@
       <div class="menu-user" id="menuUser">Olá!</div>
 
       <div class="menu-grid">
-        <a href="veiculos.html" class="menu-btn">
+        <a href="src/veiculos.html" class="menu-btn">
           <div style="display:flex;align-items:center;gap:14px;">
             <div class="menu-icon">🚗</div>
             <div>
@@ -117,7 +117,7 @@
           <div class="menu-arrow">›</div>
         </a>
 
-        <a href="visitantes.html" class="menu-btn">
+        <a href="src/visitantes.html" class="menu-btn">
           <div style="display:flex;align-items:center;gap:14px;">
             <div class="menu-icon">🛂</div>
             <div>
@@ -138,6 +138,7 @@
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbyrhIsHgV1sQj2yMaFcb1SOl1FydAC0oay23djmAUnERwVjph6pTi3GQif9JNjf_tRCpw/exec';
 const STORAGE_KEY = 'delta_auth_v1';
+const SESSION_RECHECK_MS = 5 * 60 * 1000;
 
 function setChip(text, color){
   const el = document.getElementById('chipStatus');
@@ -194,48 +195,70 @@ function jsonp(url){
   return new Promise((resolve, reject) => {
     const cb = 'cb_' + Math.random().toString(36).slice(2);
     const script = document.createElement('script');
-    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
-    window[cb] = (data) => {
-      try { resolve(data); }
-      finally {
-        try { delete window[cb]; } catch(_) { window[cb] = undefined; }
-        if (script.parentNode) script.parentNode.removeChild(script);
-      }
-    };
-    script.onerror = () => {
+    let done = false;
+
+    function cleanup() {
+      if (done) return;
+      done = true;
       try { delete window[cb]; } catch(_) { window[cb] = undefined; }
       if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+    window[cb] = (data) => {
+      cleanup();
+      resolve(data);
+    };
+    script.onerror = () => {
+      cleanup();
       reject(new Error('Erro de conexão'));
     };
     document.head.appendChild(script);
+
+    setTimeout(() => {
+      if (!done) {
+        cleanup();
+        reject(new Error('Tempo esgotado'));
+      }
+    }, 12000);
   });
 }
 
-async function checkStatus(){
-  try {
-    const res = await fetch(API_URL + '?route=home');
-    if (res.ok) {
-      setChip('● ONLINE', '#86efac');
-      return;
-    }
-    setChip('● OFFLINE');
-  } catch(e) {
-    setChip('● OFFLINE');
-  }
+function sessaoValidaLocal(auth){
+  return !!(auth && auth.token && auth.expiraEm && Number(auth.expiraEm) > Date.now());
 }
 
 async function validarSessaoExistente(){
   const auth = getAuth();
-  if (!auth || !auth.token) return false;
+  if (!sessaoValidaLocal(auth)) {
+    clearAuth();
+    return false;
+  }
+
+  const ultimoCheck = Number(auth.ultimoCheck || 0);
+  const precisaRevalidar = !ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS);
+
+  if (!precisaRevalidar) {
+    openMenu(auth.seguranca);
+    return true;
+  }
 
   try {
     const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
     if (res && res.ok && res.autenticado) {
-      setAuth({ token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm });
+      setAuth({
+        token: auth.token,
+        seguranca: res.seguranca,
+        expiraEm: res.expiraEm,
+        ultimoCheck: Date.now()
+      });
       openMenu(res.seguranca);
       return true;
     }
-  } catch(_) {}
+  } catch(_) {
+    openMenu(auth.seguranca);
+    return true;
+  }
 
   clearAuth();
   return false;
@@ -263,7 +286,8 @@ async function fazerLogin(){
     setAuth({
       token: res.token,
       seguranca: res.seguranca,
-      expiraEm: res.expiraEm
+      expiraEm: res.expiraEm,
+      ultimoCheck: Date.now()
     });
 
     showWelcome(res.message || ('Olá, ' + res.seguranca + '!'));
@@ -271,7 +295,7 @@ async function fazerLogin(){
     setTimeout(() => {
       setLoading(false);
       openMenu(res.seguranca);
-    }, 700);
+    }, 350);
   } catch(e) {
     setMsg('Erro de conexão. Tente novamente.');
     setLoading(false);
@@ -297,7 +321,7 @@ document.getElementById('btnTrocar').addEventListener('click', trocarUsuario);
 
 window.addEventListener('load', async () => {
   document.getElementById('codigo').focus();
-  await checkStatus();
+  setChip('● MODO RÁPIDO', '#86efac');
   const logado = await validarSessaoExistente();
   if (!logado) setMsg('Digite seu código para entrar.');
 });
