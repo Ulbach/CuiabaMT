@@ -1,0 +1,45 @@
+name: Deploy Apps Script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Criar .clasprc.json
+        run: |
+          cat > ~/.clasprc.json <<'EOF'
+          {
+            "token": {
+              "access_token": "${{ secrets.CLASP_ACCESS_TOKEN }}",
+              "refresh_token": "${{ secrets.CLASP_REFRESH_TOKEN }}",
+              "scope": "https://www.googleapis.com/auth/script.projects https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/service.management https://www.googleapis.com/auth/logging.read https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/cloud-platform",
+              "token_type": "Bearer",
+              "expiry_date": 0
+            }
+          }
+          EOF
+
+      - name: Copiar arquivos da pasta src para raiz temporária
+        run: |
+          mkdir build
+          cp appsscript.json build/
+          cp .clasp.json build/
+          cp src/* build/
+
+      - name: Publicar no Apps Script
+        working-directory: build
+        run: npx clasp push -f
