@@ -310,7 +310,7 @@ Buscando dados...
 Relatório Geral
 </a>
 
-<a href="index.html" class="btn-footer" id="btnVoltarInicio">
+<a href="../index.html" class="btn-footer" id="btnVoltarInicio">
 <i class="fa-solid fa-chevron-left"></i>
 Voltar ao Menu Principal
 </a>
@@ -376,7 +376,7 @@ async function validarSessaoOuRedirecionar(forceRemote){
   const auth = getAuth();
   if(!sessaoValidaLocal(auth)){
     clearAuth();
-    location.href='index.html';
+    location.href='../index.html';
     return null;
   }
 
@@ -404,7 +404,7 @@ async function validarSessaoOuRedirecionar(forceRemote){
   }
 
   clearAuth();
-  location.href='index.html';
+  location.href='../index.html';
   return null;
 }
 
@@ -416,7 +416,7 @@ async function logoutSistema(){
     }
   } catch(_) {}
   clearAuth();
-  location.href='index.html';
+  location.href='../index.html';
 }
 
 let carregando=false;
@@ -483,7 +483,7 @@ const btnVoltar = document.getElementById('btnVoltarInicio');
 if(btnVoltar){
   btnVoltar.addEventListener('click', function(e){
     e.preventDefault();
-    location.href = 'index.html';
+    location.href = '../index.html';
   });
 }
 
