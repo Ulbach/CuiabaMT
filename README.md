@@ -1,74 +1,35 @@
-# FrotaPro — Pacote de Correção (sem CORS)
-
-Este pacote foi preparado para corrigir o funcionamento do sistema usando **Google Apps Script + GitHub Pages**, evitando problemas de **CORS**.
-
-## Conteúdo do pacote
-
-### `Code.gs`
-Backend do Apps Script em modo público, com:
-
-- suporte a **JSONP** nas rotas `GET`
-- rotas temporárias de escrita:
-  - `saidaGet`
-  - `entradaGet`
-
-### `index.html`
-Portal principal consumindo a rota `home` via **JSONP**.
-
-### `veiculos.html`
-Tela de veículos com:
-
-- leitura via **JSONP** nas rotas `GET`
-- gravação usando:
-  - `saidaGet`
-  - `entradaGet`
-
----
+# Estrutura de listas fixas + deploy manual
 
 ## Objetivo
+Tirar da planilha a consulta constante de:
+- veículos
+- motoristas
+- seguranças
 
-Permitir que o sistema funcione corretamente no **GitHub Pages**, sem bloqueios de **CORS** ao acessar o backend do **Apps Script**.
+e passar essas listas para arquivos do projeto.
 
----
+## Arquivos principais
+- `src/listas_veiculos.gs`
+- `src/listas_motoristas.gs`
+- `src/listas_segurancas.gs`
+- `src/listas_service.gs`
 
-## Passo a passo
+## Como atualizar
+1. Edite os arquivos de listas.
+2. Faça commit/push no GitHub.
+3. Vá em **Actions**.
+4. Rode o workflow **Deploy Apps Script**.
+5. O projeto será enviado ao Apps Script via `clasp push`.
 
-### 1. Atualizar o Apps Script
-Cole o conteúdo do arquivo `Code.gs` no seu projeto do **Google Apps Script**.
+## Segredos necessários no GitHub
+Crie em **Settings > Secrets and variables > Actions**:
+- `CLASP_ACCESS_TOKEN`
+- `CLASP_REFRESH_TOKEN`
 
-Depois:
-- clique em **Salvar**
+## Onde integrar no seu projeto
+Use o conteúdo de `src/como_integrar_no_codigo_gs.gs.txt`
+para trocar a leitura da aba de listas no seu `Código.gs`.
 
-### 2. Fazer nova implantação
-No Apps Script:
-
-- vá em **Implantar**
-- escolha **Aplicativo da Web**
-- clique em **Nova implantação**
-
-Use estas configurações:
-
-- **Executar como:** Você (Fabricio)
-- **Quem pode acessar:** Qualquer pessoa
-
-### 3. Atualizar os arquivos do site
-Substitua no repositório do **GitHub Pages** os arquivos:
-
-- `index.html`
-- `veiculos.html`
-
-### 4. Publicar no GitHub
-Após substituir os arquivos:
-
-- faça **commit**
-- faça **push**
-
----
-
-## Testes
-
-### Teste 1 — resposta anônima do backend
-Abra no navegador:
-
-```text
-SUA_URL/exec?route=home&callback=cb
+## Observação
+Este pacote não substitui seu projeto inteiro.
+Ele adiciona a camada de listas fixas e o deploy manual.
