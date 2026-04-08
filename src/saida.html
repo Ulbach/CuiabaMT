@@ -1,1 +1,302 @@
-dsdf
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Frota Pro — Registrar Saída</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root{--bg1:#061427; --bg2:#0b1b33; --card:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.12); --shadow:0 16px 40px rgba(0,0,0,.45); --radius:20px; --text-main:#e6edf7; --text-soft:#9fb4d3; --text-muted:#7b8ca7; --green:#22c55e; --red:#ef4444;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text-main);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:30px;backdrop-filter:blur(10px);box-shadow:var(--shadow);position:relative;overflow:hidden;}
+    .header{text-align:center;margin-bottom:25px}
+    .header h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-0.5px;color:var(--red)}
+    .header p{margin:5px 0 0;font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:2px;font-weight:600}
+    .field{margin-bottom:18px}
+    label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+    .input-group{position:relative}
+    .input-group i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--red);font-size:14px;pointer-events:none}
+    select,input{width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border);padding:13px 13px 13px 40px;border-radius:12px;color:#fff;font-size:15px;outline:none;transition:0.2s}
+    select:focus,input:focus{border-color:var(--red);background:rgba(255,255,255,0.05)}
+    .btn-save{width:100%;padding:16px;background:var(--green);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:10px;transition:0.3s}
+    .btn-save:disabled{opacity:0.15;cursor:not-allowed;filter:grayscale(1)}
+    .btn-back{display:block;text-align:center;margin-top:20px;color:var(--text-soft);text-decoration:none;font-size:13px;font-weight:500;transition:0.2s}
+    #msg{text-align:center;margin-top:15px;font-size:13px;font-weight:600;min-height:1.5em}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div style="margin:-6px 0 18px 0;padding:12px 14px;border-radius:14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.18);text-align:center;font-size:13px;color:#9fb4d3;">
+    Segurança logado: <strong id="sessaoSegurancaTopo" style="color:#e6edf7;">...</strong>
+  </div>
+  <div class="header">
+    <h2>Saída de Veículo</h2>
+    <p># DELTA CUIABA #</p>
+  </div>
+
+  <div class="field">
+    <label>Veículo</label>
+    <div class="input-group">
+      <i class="fa-solid fa-car-side"></i>
+      <select id="veiculo" onchange="onChangeVeiculo()"><option value="">Carregando...</option></select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Motorista</label>
+    <div class="input-group">
+      <i class="fa-solid fa-user-tie"></i>
+      <select id="motorista" onchange="validateForm()"><option value="">Carregando...</option></select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Segurança Logado</label>
+    <div class="input-group">
+      <i class="fa-solid fa-shield-halved"></i>
+      <input type="text" id="seguranca" placeholder="Aguardando login..." readonly>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>KM de Saída</label>
+    <div class="input-group">
+      <i class="fa-solid fa-gauge-high"></i>
+      <input type="number" id="kmSaida" placeholder="Digite o KM atual" oninput="validateForm()">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Destino</label>
+    <div class="input-group">
+      <i class="fa-solid fa-location-dot"></i>
+      <input type="text" id="destino" placeholder="Destino" oninput="validateForm()">
+    </div>
+  </div>
+
+  <button class="btn-save" id="btnSalvar" disabled onclick="doEnviar()">GRAVAR SAÍDA</button>
+  <a href="veiculos.html" id="btnVoltarMenu" class="btn-back">← VOLTAR AO MENU</a>
+  <div id="msg"></div>
+</div>
+
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbyrhIsHgV1sQj2yMaFcb1SOl1FydAC0oay23djmAUnERwVjph6pTi3GQif9JNjf_tRCpw/exec';
+const STORAGE_KEY='delta_auth_v1';
+const SESSION_RECHECK_MS = 5 * 60 * 1000;
+
+function getAuth(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(_) { return null; } }
+function setAuth(auth){ localStorage.setItem(STORAGE_KEY, JSON.stringify(auth)); }
+function clearAuth(){ localStorage.removeItem(STORAGE_KEY); }
+
+function jsonp(url){
+  return new Promise((resolve,reject)=>{
+    const cb='cb_'+Math.random().toString(36).slice(2);
+    const script=document.createElement('script');
+    let done=false;
+    function cleanup(){
+      if(done) return;
+      done=true;
+      try { delete window[cb]; } catch(_) { window[cb]=undefined; }
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+    script.src=url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+    window[cb]=(data)=>{ cleanup(); resolve(data); };
+    script.onerror=()=>{ cleanup(); reject(new Error('Erro de conexão')); };
+    document.head.appendChild(script);
+    setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('Tempo esgotado')); } }, 12000);
+  });
+}
+
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function sessaoValidaLocal(auth){
+  return !!(auth && auth.token && auth.expiraEm && Number(auth.expiraEm) > Date.now());
+}
+
+async function validarSessaoOuRedirecionar(forceRemote){
+  const auth = getAuth();
+  if(!sessaoValidaLocal(auth)){
+    clearAuth();
+    location.href='index.html';
+    return null;
+  }
+  const ultimoCheck = Number(auth.ultimoCheck || 0);
+  const precisaRevalidar = !!forceRemote || !ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS);
+  if(!precisaRevalidar) return auth;
+
+  try {
+    const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
+    if(res && res.ok && res.autenticado){
+      const novoAuth = { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm, ultimoCheck: Date.now() };
+      setAuth(novoAuth);
+      return novoAuth;
+    }
+  } catch(_) {
+    return auth;
+  }
+
+  clearAuth();
+  location.href='index.html';
+  return null;
+}
+
+async function logoutSistema(){
+  const auth = getAuth();
+  try {
+    if(auth && auth.token) await jsonp(API_URL + '?route=logoutSeguranca&token=' + encodeURIComponent(auth.token));
+  } catch(_) {}
+  clearAuth();
+  location.href='index.html';
+}
+
+let inFlight=false;
+let KM_ANTERIOR=0;
+let AUTH=null;
+const KM_CACHE = Object.create(null);
+let bootstrap = null;
+
+function preencher(el, lista, placeholder){
+  el.innerHTML = `<option value="">${placeholder}</option>` + (lista || []).map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join('');
+}
+
+async function init(){
+  AUTH = await validarSessaoOuRedirecionar(false);
+  if(!AUTH) return;
+
+  const topo = document.getElementById('sessaoSegurancaTopo');
+  if(topo) topo.textContent = AUTH.seguranca || '---';
+
+  const msg = document.getElementById('msg');
+  const segurancaEl = document.getElementById('seguranca');
+  const veiculoEl = document.getElementById('veiculo');
+  const motoristaEl = document.getElementById('motorista');
+  segurancaEl.value = AUTH.seguranca || '';
+
+  try {
+    jsonp(`${API_URL}?route=bootstrapSaida&_warm=${Date.now()}`).catch(()=>{});
+    bootstrap = await jsonp(`${API_URL}?route=bootstrapSaida&t=${Date.now()}`);
+    if(!bootstrap || bootstrap.ok === false) throw new Error(bootstrap && bootstrap.message ? bootstrap.message : 'Falha ao carregar dados');
+    preencher(veiculoEl, bootstrap.veiculos || [], 'Selecione...');
+    preencher(motoristaEl, bootstrap.motoristas || [], 'Selecione...');
+    Object.assign(KM_CACHE, bootstrap.kmMap || {});
+    msg.innerText = '';
+  } catch(e){
+    msg.style.color = 'var(--red)';
+    msg.innerText = (e && e.message) ? e.message : 'Erro ao carregar dados.';
+  }
+}
+
+async function onChangeVeiculo(){
+  const v = document.getElementById('veiculo').value;
+  const kmInput = document.getElementById('kmSaida');
+  const msg = document.getElementById('msg');
+
+  if(!v){
+    KM_ANTERIOR = 0;
+    kmInput.value = '';
+    validateForm();
+    return;
+  }
+
+  if(KM_CACHE[v] !== undefined){
+    KM_ANTERIOR = Number(KM_CACHE[v] || 0);
+    kmInput.value = KM_ANTERIOR > 0 ? KM_ANTERIOR : '';
+    msg.innerText = '';
+    validateForm();
+    return;
+  }
+
+  kmInput.value = '';
+  msg.style.color = 'var(--text-soft)';
+  msg.innerText = 'Buscando KM...';
+
+  try {
+    const st = await jsonp(`${API_URL}?route=kmAtual&veiculo=${encodeURIComponent(v)}&t=${Date.now()}`);
+    KM_ANTERIOR = Number((st && (st.km || st.kmAtual)) || 0);
+    KM_CACHE[v] = KM_ANTERIOR;
+    kmInput.value = KM_ANTERIOR > 0 ? KM_ANTERIOR : '';
+    msg.innerText = '';
+  } catch(_) {
+    KM_ANTERIOR = 0;
+    kmInput.value = '';
+    msg.style.color = 'var(--red)';
+    msg.innerText = 'Não foi possível buscar o KM.';
+  }
+
+  validateForm();
+}
+
+function validateForm(){
+  const v = document.getElementById('veiculo').value;
+  const m = document.getElementById('motorista').value;
+  const s = document.getElementById('seguranca').value;
+  const k = document.getElementById('kmSaida').value;
+  const d = document.getElementById('destino').value.trim();
+  const btn = document.getElementById('btnSalvar');
+  const msg = document.getElementById('msg');
+
+  const ok = !!(v && m && s && String(k).trim() !== '' && d);
+  const kmOk = Number(k || 0) >= KM_ANTERIOR;
+
+  if(ok && !kmOk){
+    msg.style.color = 'var(--red)';
+    msg.innerText = `KM inferior ao último registrado (${KM_ANTERIOR}).`;
+    btn.disabled = true;
+  } else {
+    if(msg.innerText.startsWith('KM inferior')) msg.innerText = '';
+    btn.disabled = !ok || !kmOk || inFlight;
+  }
+}
+
+async function doEnviar(){
+  if(inFlight || !AUTH || !AUTH.token) return;
+  inFlight = true;
+  const btn = document.getElementById('btnSalvar');
+  const msg = document.getElementById('msg');
+  btn.disabled = true;
+  msg.style.color = 'var(--text-soft)';
+  msg.innerText = 'Gravando saída...';
+
+  const qs = new URLSearchParams({
+    route: 'saida',
+    token: AUTH.token,
+    veiculo: document.getElementById('veiculo').value,
+    motorista: document.getElementById('motorista').value,
+    seguranca: document.getElementById('seguranca').value,
+    KmSaida: document.getElementById('kmSaida').value,
+    destino: document.getElementById('destino').value.trim(),
+    t: Date.now()
+  }).toString();
+
+  try {
+    const res = await jsonp(`${API_URL}?${qs}`);
+    if(!res || res.ok === false) throw new Error(res && res.message ? res.message : 'Erro ao salvar');
+    msg.style.color = 'var(--green)';
+    msg.innerText = '✅ Gravado com sucesso!';
+    setTimeout(() => location.href = 'veiculos.html', 1200);
+  } catch(e){
+    msg.style.color = 'var(--red)';
+    msg.innerText = (e && e.message) ? e.message : 'Erro ao salvar.';
+    inFlight = false;
+    validateForm();
+  }
+}
+
+window.onload = function(){
+  const btnVoltar = document.getElementById('btnVoltarMenu');
+  if(btnVoltar){
+    btnVoltar.addEventListener('click', function(e){
+      e.preventDefault();
+      location.href = 'veiculos.html';
+    });
+  }
+  init();
+};
+</script>
+</body>
+</html>
