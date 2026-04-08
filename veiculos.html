@@ -201,9 +201,6 @@ background:rgba(239,68,68,0.1);
 color:var(--alert);
 }
 
-
-
-
 .btn-report{
 width:100%;
 background:rgba(255,255,255,0.06);
@@ -244,7 +241,6 @@ align-items:center;
 justify-content:center;
 gap:10px;
 }
-
 
 </style>
 </head>
@@ -296,11 +292,9 @@ gap:10px;
 
 </div>
 
-
 <div class="section-title">
 Últimas 5 Movimentações
 </div>
-
 
 <div id="listaRecentes" class="list-wrap">
 
@@ -310,9 +304,6 @@ Buscando dados...
 </div>
 
 </div>
-
-
-
 
 <a href="rel_geral.html" class="btn-footer btn-report">
 <i class="fa-solid fa-chart-line"></i>
@@ -326,16 +317,19 @@ Voltar ao Menu Principal
 
 </div>
 
-
-
 <script>
 
 const API_URL='https://script.google.com/macros/s/AKfycbyrhIsHgV1sQj2yMaFcb1SOl1FydAC0oay23djmAUnERwVjph6pTi3GQif9JNjf_tRCpw/exec';
 const STORAGE_KEY='delta_auth_v1';
+const SESSION_RECHECK_MS = 5 * 60 * 1000;
 
 function getAuth() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
   catch(_) { return null; }
+}
+
+function setAuth(auth) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
 }
 
 function clearAuth() {
@@ -346,36 +340,69 @@ function jsonp(url){
   return new Promise((resolve,reject)=>{
     const cb='cb_'+Math.random().toString(36).slice(2);
     const script=document.createElement('script');
+    let done = false;
+
+    function cleanup(){
+      if(done) return;
+      done = true;
+      try { delete window[cb]; } catch(_) { window[cb] = undefined; }
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+
     script.src=url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
     window[cb]=(data)=>{
-      try{ resolve(data); }
-      finally {
-        try { delete window[cb]; } catch(_) { window[cb]=undefined; }
-        if(script.parentNode) script.parentNode.removeChild(script);
-      }
+      cleanup();
+      resolve(data);
     };
     script.onerror=()=>{
-      try { delete window[cb]; } catch(_) { window[cb]=undefined; }
-      if(script.parentNode) script.parentNode.removeChild(script);
+      cleanup();
       reject(new Error('Erro de conexão'));
     };
     document.head.appendChild(script);
+
+    setTimeout(()=>{
+      if(done) return;
+      cleanup();
+      reject(new Error('Tempo esgotado'));
+    }, 15000);
   });
 }
 
-async function validarSessaoOuRedirecionar(){
+function sessaoValidaLocal(auth){
+  return !!(auth && auth.token && auth.expiraEm && Number(auth.expiraEm) > Date.now());
+}
+
+async function validarSessaoOuRedirecionar(forceRemote){
   const auth = getAuth();
-  if(!auth || !auth.token){
+  if(!sessaoValidaLocal(auth)){
+    clearAuth();
     location.href='index.html';
     return null;
   }
+
+  const ultimoCheck = Number(auth.ultimoCheck || 0);
+  const precisaRevalidar = !!forceRemote || !ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS);
+
+  if(!precisaRevalidar){
+    return auth;
+  }
+
   try {
     const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
     if(res && res.ok && res.autenticado){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm }));
-      return { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm };
+      const novoAuth = {
+        token: auth.token,
+        seguranca: res.seguranca,
+        expiraEm: res.expiraEm,
+        ultimoCheck: Date.now()
+      };
+      setAuth(novoAuth);
+      return novoAuth;
     }
-  } catch(_) {}
+  } catch(_) {
+    return auth;
+  }
+
   clearAuth();
   location.href='index.html';
   return null;
@@ -384,12 +411,13 @@ async function validarSessaoOuRedirecionar(){
 async function logoutSistema(){
   const auth = getAuth();
   try {
-    if(auth && auth.token) await jsonp(API_URL + '?route=logoutSeguranca&token=' + encodeURIComponent(auth.token));
+    if(auth && auth.token) {
+      await jsonp(API_URL + '?route=logoutSeguranca&token=' + encodeURIComponent(auth.token));
+    }
   } catch(_) {}
   clearAuth();
   location.href='index.html';
 }
-
 
 let carregando=false;
 let AUTH=null;
@@ -411,8 +439,9 @@ wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-soft
 return;
 }
 const html=ultimos5.map(it=>{
-const status=String(it.status||'').toUpperCase();
-const isOk=status.includes('PÁTIO')||status.includes('ENTRADA')||status.includes('CONCLUÍDO');
+const statusOriginal = String(it.status||'');
+const status=statusOriginal.toUpperCase();
+const isOk=status.includes('PÁTIO')||status.includes('PATIO')||status.includes('ENTRADA')||status.includes('CONCLUÍDO')||status.includes('CONCLUIDO');
 return`
 <div class="item">
 <div class="veh-ico"><i class="fa-solid fa-truck-front"></i></div>
@@ -420,7 +449,7 @@ return`
 <div class="item-title">${esc((it.veiculo||'N/A').toUpperCase())}</div>
 <div class="item-sub">${esc(it.motorista||'---')} | ${esc(it.dataHora||'---')}</div>
 </div>
-<div class="status-tag ${isOk?'tag-ok':'tag-warn'}">${esc(status||'---')}</div>
+<div class="status-tag ${isOk?'tag-ok':'tag-warn'}">${esc(statusOriginal||'---')}</div>
 </div>`;
 }).join('');
 wrap.innerHTML=html;
@@ -444,7 +473,7 @@ carregando=false;
 }
 
 window.onload=async function(){
-AUTH = await validarSessaoOuRedirecionar();
+AUTH = await validarSessaoOuRedirecionar(false);
 if(!AUTH) return;
 
 const el = document.getElementById('sessaoSeguranca');
@@ -461,7 +490,6 @@ if(btnVoltar){
 carregarDados();
 };
 </script>
-
 
 </body>
 </html>
