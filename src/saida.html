@@ -6,23 +6,37 @@
   <title>Frota Pro — Registrar Saída</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root{--bg1:#061427; --bg2:#0b1b33; --card:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.12); --shadow:0 16px 40px rgba(0,0,0,.45); --radius:20px; --text-main:#e6edf7; --text-soft:#9fb4d3; --text-muted:#7b8ca7; --green:#22c55e; --red:#ef4444;}
+    :root{
+      --bg1:#061427; --bg2:#0b1b33;
+      --card:rgba(255,255,255,0.06);
+      --border:rgba(255,255,255,0.12);
+      --shadow:0 16px 40px rgba(0,0,0,.45);
+      --radius:20px;
+      --text-main:#e6edf7; --text-soft:#9fb4d3; --text-muted:#7b8ca7;
+      --green:#22c55e; --red:#ef4444;
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text-main);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-    .card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:30px;backdrop-filter:blur(10px);box-shadow:var(--shadow);position:relative;overflow:hidden;}
-    .header{text-align:center;margin-bottom:25px}
-    .header h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-0.5px;color:var(--red)}
-    .header p{margin:5px 0 0;font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:2px;font-weight:600}
-    .field{margin-bottom:18px}
-    label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
-    .input-group{position:relative}
-    .input-group i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--red);font-size:14px;pointer-events:none}
-    select,input{width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border);padding:13px 13px 13px 40px;border-radius:12px;color:#fff;font-size:15px;outline:none;transition:0.2s}
-    select:focus,input:focus{border-color:var(--red);background:rgba(255,255,255,0.05)}
-    .btn-save{width:100%;padding:16px;background:var(--green);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:10px;transition:0.3s}
-    .btn-save:disabled{opacity:0.15;cursor:not-allowed;filter:grayscale(1)}
-    .btn-back{display:block;text-align:center;margin-top:20px;color:var(--text-soft);text-decoration:none;font-size:13px;font-weight:500;transition:0.2s}
-    #msg{text-align:center;margin-top:15px;font-size:13px;font-weight:600;min-height:1.5em}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      color:var(--text-main); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+    }
+    .card{ width:100%; max-width:440px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:30px; backdrop-filter:blur(10px); box-shadow:var(--shadow); position:relative; overflow:hidden; }
+    .header{ text-align:center; margin-bottom:25px }
+    .header h2{ margin:0; font-size:24px; font-weight:800; letter-spacing:-0.5px; color:var(--red) }
+    .header p{ margin:5px 0 0; font-size:11px; color:var(--text-soft); text-transform:uppercase; letter-spacing:2px; font-weight:600 }
+    .field{ margin-bottom:18px }
+    label{ display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px }
+    .input-group{ position:relative }
+    .input-group i{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--red); font-size:14px; pointer-events:none }
+    select, input{
+      width:100%; background:rgba(0,0,0,0.2); border:1px solid var(--border); padding:13px 13px 13px 40px; border-radius:12px; color:#fff; font-size:15px; outline:none; transition:0.2s;
+    }
+    select:focus, input:focus{ border-color:var(--red); background:rgba(255,255,255,0.05) }
+    .btn-save{ width:100%; padding:16px; background:var(--green); color:#fff; border:none; border-radius:14px; font-size:15px; font-weight:700; cursor:pointer; margin-top:10px; transition:0.3s; }
+    .btn-save:disabled{ opacity:0.15; cursor:not-allowed; filter:grayscale(1) }
+    .btn-back{ display:block; text-align:center; margin-top:20px; color:var(--text-soft); text-decoration:none; font-size:13px; font-weight:500; transition:0.2s }
+    #msg{ text-align:center; margin-top:15px; font-size:13px; font-weight:600; min-height:1.5em }
   </style>
 </head>
 <body>
@@ -39,7 +53,9 @@
     <label>Veículo</label>
     <div class="input-group">
       <i class="fa-solid fa-car-side"></i>
-      <select id="veiculo" onchange="onChangeVeiculo()"><option value="">Carregando...</option></select>
+      <select id="veiculo" onchange="onChangeVeiculo()">
+        <option value="">Carregando...</option>
+      </select>
     </div>
   </div>
 
@@ -47,7 +63,9 @@
     <label>Motorista</label>
     <div class="input-group">
       <i class="fa-solid fa-user-tie"></i>
-      <select id="motorista" onchange="validateForm()"><option value="">Carregando...</option></select>
+      <select id="motorista" onchange="validateForm()">
+        <option value="">Carregando...</option>
+      </select>
     </div>
   </div>
 
@@ -85,33 +103,50 @@ const API_URL='https://script.google.com/macros/s/AKfycbyrhIsHgV1sQj2yMaFcb1SOl1
 const STORAGE_KEY='delta_auth_v1';
 const SESSION_RECHECK_MS = 5 * 60 * 1000;
 
-function getAuth(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(_) { return null; } }
-function setAuth(auth){ localStorage.setItem(STORAGE_KEY, JSON.stringify(auth)); }
-function clearAuth(){ localStorage.removeItem(STORAGE_KEY); }
+function getAuth() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+  catch(_) { return null; }
+}
+
+function setAuth(auth) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
+}
+
+function clearAuth() {
+  localStorage.removeItem(STORAGE_KEY);
+}
 
 function jsonp(url){
   return new Promise((resolve,reject)=>{
     const cb='cb_'+Math.random().toString(36).slice(2);
     const script=document.createElement('script');
-    let done=false;
+    let done = false;
+
     function cleanup(){
       if(done) return;
-      done=true;
+      done = true;
       try { delete window[cb]; } catch(_) { window[cb]=undefined; }
       if(script.parentNode) script.parentNode.removeChild(script);
     }
-    script.src=url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
-    window[cb]=(data)=>{ cleanup(); resolve(data); };
-    script.onerror=()=>{ cleanup(); reject(new Error('Erro de conexão')); };
-    document.head.appendChild(script);
-    setTimeout(()=>{ if(!done){ cleanup(); reject(new Error('Tempo esgotado')); } }, 12000);
-  });
-}
 
-function esc(v){
-  return String(v == null ? '' : v)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    script.src=url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+    window[cb]=(data)=>{
+      cleanup();
+      resolve(data);
+    };
+    script.onerror=()=>{
+      cleanup();
+      reject(new Error('Erro de conexão'));
+    };
+
+    document.head.appendChild(script);
+
+    setTimeout(()=>{
+      if(done) return;
+      cleanup();
+      reject(new Error('Tempo esgotado'));
+    }, 15000);
+  });
 }
 
 function sessaoValidaLocal(auth){
@@ -125,14 +160,23 @@ async function validarSessaoOuRedirecionar(forceRemote){
     location.href='index.html';
     return null;
   }
+
   const ultimoCheck = Number(auth.ultimoCheck || 0);
   const precisaRevalidar = !!forceRemote || !ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS);
-  if(!precisaRevalidar) return auth;
+
+  if(!precisaRevalidar){
+    return auth;
+  }
 
   try {
     const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
     if(res && res.ok && res.autenticado){
-      const novoAuth = { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm, ultimoCheck: Date.now() };
+      const novoAuth = {
+        token: auth.token,
+        seguranca: res.seguranca,
+        expiraEm: res.expiraEm,
+        ultimoCheck: Date.now()
+      };
       setAuth(novoAuth);
       return novoAuth;
     }
@@ -154,17 +198,26 @@ async function logoutSistema(){
   location.href='index.html';
 }
 
-let inFlight=false;
-let KM_ANTERIOR=0;
-let AUTH=null;
+let inFlight = false;
+let KM_ANTERIOR = 0;
+let AUTH = null;
 const KM_CACHE = Object.create(null);
-let bootstrap = null;
 
-function preencher(el, lista, placeholder){
-  el.innerHTML = `<option value="">${placeholder}</option>` + (lista || []).map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join('');
+function esc(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-async function init(){
+function preencher(el, lista, placeholder) {
+  el.innerHTML = `<option value="">${placeholder}</option>` +
+    (lista || []).map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join('');
+}
+
+async function init() {
   AUTH = await validarSessaoOuRedirecionar(false);
   if(!AUTH) return;
 
@@ -172,38 +225,42 @@ async function init(){
   if(topo) topo.textContent = AUTH.seguranca || '---';
 
   const msg = document.getElementById('msg');
-  const segurancaEl = document.getElementById('seguranca');
   const veiculoEl = document.getElementById('veiculo');
   const motoristaEl = document.getElementById('motorista');
+  const segurancaEl = document.getElementById('seguranca');
   segurancaEl.value = AUTH.seguranca || '';
 
   try {
-    jsonp(`${API_URL}?route=bootstrapSaida&_warm=${Date.now()}`).catch(()=>{});
-    bootstrap = await jsonp(`${API_URL}?route=bootstrapSaida&t=${Date.now()}`);
-    if(!bootstrap || bootstrap.ok === false) throw new Error(bootstrap && bootstrap.message ? bootstrap.message : 'Falha ao carregar dados');
-    preencher(veiculoEl, bootstrap.veiculos || [], 'Selecione...');
-    preencher(motoristaEl, bootstrap.motoristas || [], 'Selecione...');
-    Object.assign(KM_CACHE, bootstrap.kmMap || {});
+    const [v, a] = await Promise.all([
+      jsonp(`${API_URL}?route=veiculosAvail&t=${Date.now()}`),
+      jsonp(`${API_URL}?route=apoioSaida&t=${Date.now()}`)
+    ]);
+
+    if (!v || v.ok === false) throw new Error(v && v.message ? v.message : 'Falha ao carregar veículos');
+    if (!a || a.ok === false) throw new Error(a && a.message ? a.message : 'Falha ao carregar apoio');
+
+    preencher(veiculoEl, v.veiculos, 'Selecione...');
+    preencher(motoristaEl, a.motoristas, 'Selecione...');
     msg.innerText = '';
-  } catch(e){
+  } catch (e) {
     msg.style.color = 'var(--red)';
     msg.innerText = (e && e.message) ? e.message : 'Erro ao carregar dados.';
   }
 }
 
-async function onChangeVeiculo(){
+async function onChangeVeiculo() {
   const v = document.getElementById('veiculo').value;
   const kmInput = document.getElementById('kmSaida');
   const msg = document.getElementById('msg');
 
-  if(!v){
+  if (!v) {
     KM_ANTERIOR = 0;
     kmInput.value = '';
     validateForm();
     return;
   }
 
-  if(KM_CACHE[v] !== undefined){
+  if (KM_CACHE[v] !== undefined) {
     KM_ANTERIOR = Number(KM_CACHE[v] || 0);
     kmInput.value = KM_ANTERIOR > 0 ? KM_ANTERIOR : '';
     msg.innerText = '';
@@ -221,7 +278,7 @@ async function onChangeVeiculo(){
     KM_CACHE[v] = KM_ANTERIOR;
     kmInput.value = KM_ANTERIOR > 0 ? KM_ANTERIOR : '';
     msg.innerText = '';
-  } catch(_) {
+  } catch (e) {
     KM_ANTERIOR = 0;
     kmInput.value = '';
     msg.style.color = 'var(--red)';
@@ -231,7 +288,7 @@ async function onChangeVeiculo(){
   validateForm();
 }
 
-function validateForm(){
+function validateForm() {
   const v = document.getElementById('veiculo').value;
   const m = document.getElementById('motorista').value;
   const s = document.getElementById('seguranca').value;
@@ -243,18 +300,18 @@ function validateForm(){
   const ok = !!(v && m && s && String(k).trim() !== '' && d);
   const kmOk = Number(k || 0) >= KM_ANTERIOR;
 
-  if(ok && !kmOk){
+  if (ok && !kmOk) {
     msg.style.color = 'var(--red)';
     msg.innerText = `KM inferior ao último registrado (${KM_ANTERIOR}).`;
     btn.disabled = true;
   } else {
-    if(msg.innerText.startsWith('KM inferior')) msg.innerText = '';
+    if (msg.innerText.startsWith('KM inferior')) msg.innerText = '';
     btn.disabled = !ok || !kmOk || inFlight;
   }
 }
 
-async function doEnviar(){
-  if(inFlight || !AUTH || !AUTH.token) return;
+async function doEnviar() {
+  if (inFlight || !AUTH || !AUTH.token) return;
   inFlight = true;
   const btn = document.getElementById('btnSalvar');
   const msg = document.getElementById('msg');
@@ -275,11 +332,11 @@ async function doEnviar(){
 
   try {
     const res = await jsonp(`${API_URL}?${qs}`);
-    if(!res || res.ok === false) throw new Error(res && res.message ? res.message : 'Erro ao salvar');
+    if (!res || res.ok === false) throw new Error(res && res.message ? res.message : 'Erro ao salvar');
     msg.style.color = 'var(--green)';
     msg.innerText = '✅ Gravado com sucesso!';
     setTimeout(() => location.href = 'veiculos.html', 1200);
-  } catch(e){
+  } catch (e) {
     msg.style.color = 'var(--red)';
     msg.innerText = (e && e.message) ? e.message : 'Erro ao salvar.';
     inFlight = false;
@@ -298,5 +355,6 @@ window.onload = function(){
   init();
 };
 </script>
+
 </body>
 </html>
