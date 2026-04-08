@@ -10,7 +10,7 @@
       --bg1:#061427; --bg2:#0b1b33;
       --card:rgba(255,255,255,0.06);
       --border:rgba(255,255,255,0.12);
-      --shadow:0 16px 40px rgba(0,0,0,45);
+      --shadow:0 16px 40px rgba(0,0,0,.45);
       --radius:20px;
       --text-main:#e6edf7; --text-soft:#9fb4d3; --text-muted:#7b8ca7;
       --green:#22c55e; --red:#ef4444;
@@ -98,15 +98,18 @@
   <div id="msg"></div>
 </div>
 
-
 <script>
-
 const API_URL='https://script.google.com/macros/s/AKfycbyrhIsHgV1sQj2yMaFcb1SOl1FydAC0oay23djmAUnERwVjph6pTi3GQif9JNjf_tRCpw/exec';
 const STORAGE_KEY='delta_auth_v1';
+const SESSION_RECHECK_MS = 5 * 60 * 1000;
 
 function getAuth() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
   catch(_) { return null; }
+}
+
+function setAuth(auth) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
 }
 
 function clearAuth() {
@@ -117,36 +120,70 @@ function jsonp(url){
   return new Promise((resolve,reject)=>{
     const cb='cb_'+Math.random().toString(36).slice(2);
     const script=document.createElement('script');
-    script.src=url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
-    window[cb]=(data)=>{
-      try{ resolve(data); }
-      finally {
-        try { delete window[cb]; } catch(_) { window[cb]=undefined; }
-        if(script.parentNode) script.parentNode.removeChild(script);
-      }
-    };
-    script.onerror=()=>{
+    let done = false;
+
+    function cleanup(){
+      if(done) return;
+      done = true;
       try { delete window[cb]; } catch(_) { window[cb]=undefined; }
       if(script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    script.src=url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+    window[cb]=(data)=>{
+      cleanup();
+      resolve(data);
+    };
+    script.onerror=()=>{
+      cleanup();
       reject(new Error('Erro de conexão'));
     };
+
     document.head.appendChild(script);
+
+    setTimeout(()=>{
+      if(done) return;
+      cleanup();
+      reject(new Error('Tempo esgotado'));
+    }, 15000);
   });
 }
 
-async function validarSessaoOuRedirecionar(){
+function sessaoValidaLocal(auth){
+  return !!(auth && auth.token && auth.expiraEm && Number(auth.expiraEm) > Date.now());
+}
+
+async function validarSessaoOuRedirecionar(forceRemote){
   const auth = getAuth();
-  if(!auth || !auth.token){
+  if(!sessaoValidaLocal(auth)){
+    clearAuth();
     location.href='index.html';
     return null;
   }
+
+  const ultimoCheck = Number(auth.ultimoCheck || 0);
+  const precisaRevalidar = !!forceRemote || !ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS);
+
+  if(!precisaRevalidar){
+    return auth;
+  }
+
   try {
     const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
     if(res && res.ok && res.autenticado){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm }));
-      return { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm };
+      const novoAuth = {
+        token: auth.token,
+        seguranca: res.seguranca,
+        expiraEm: res.expiraEm,
+        ultimoCheck: Date.now()
+      };
+      setAuth(novoAuth);
+      return novoAuth;
     }
-  } catch(_) {}
+  } catch(_) {
+    return auth;
+  }
+
   clearAuth();
   location.href='index.html';
   return null;
@@ -164,6 +201,7 @@ async function logoutSistema(){
 let inFlight = false;
 let KM_ANTERIOR = 0;
 let AUTH = null;
+const KM_CACHE = Object.create(null);
 
 function esc(v) {
   return String(v == null ? '' : v)
@@ -180,8 +218,9 @@ function preencher(el, lista, placeholder) {
 }
 
 async function init() {
-  AUTH = await validarSessaoOuRedirecionar();
+  AUTH = await validarSessaoOuRedirecionar(false);
   if(!AUTH) return;
+
   const topo = document.getElementById('sessaoSegurancaTopo');
   if(topo) topo.textContent = AUTH.seguranca || '---';
 
@@ -192,28 +231,27 @@ async function init() {
   segurancaEl.value = AUTH.seguranca || '';
 
   try {
-    const v = await jsonp(`${API_URL}?route=veiculosAvail&t=${Date.now()}`);
-    if (!v || v.ok === false) throw new Error(v && v.message ? v.message : 'Falha ao carregar veículos');
-    preencher(veiculoEl, v.veiculos, 'Selecione...');
-    msg.innerText = '';
+    const [v, a] = await Promise.all([
+      jsonp(`${API_URL}?route=veiculosAvail&t=${Date.now()}`),
+      jsonp(`${API_URL}?route=apoioSaida&t=${Date.now()}`)
+    ]);
 
-    jsonp(`${API_URL}?route=apoioSaida&t=${Date.now()}`)
-      .then(a => {
-        if (!a || a.ok === false) throw new Error(a && a.message ? a.message : 'Falha ao carregar apoio');
-        preencher(motoristaEl, a.motoristas, 'Selecione...');
-      })
-      .catch(() => {
-        preencher(motoristaEl, [], 'Erro ao carregar');
-      });
+    if (!v || v.ok === false) throw new Error(v && v.message ? v.message : 'Falha ao carregar veículos');
+    if (!a || a.ok === false) throw new Error(a && a.message ? a.message : 'Falha ao carregar apoio');
+
+    preencher(veiculoEl, v.veiculos, 'Selecione...');
+    preencher(motoristaEl, a.motoristas, 'Selecione...');
+    msg.innerText = '';
   } catch (e) {
     msg.style.color = 'var(--red)';
-    msg.innerText = 'Erro ao carregar dados.';
+    msg.innerText = (e && e.message) ? e.message : 'Erro ao carregar dados.';
   }
 }
 
 async function onChangeVeiculo() {
   const v = document.getElementById('veiculo').value;
   const kmInput = document.getElementById('kmSaida');
+  const msg = document.getElementById('msg');
 
   if (!v) {
     KM_ANTERIOR = 0;
@@ -222,20 +260,29 @@ async function onChangeVeiculo() {
     return;
   }
 
+  if (KM_CACHE[v] !== undefined) {
+    KM_ANTERIOR = Number(KM_CACHE[v] || 0);
+    kmInput.value = KM_ANTERIOR > 0 ? KM_ANTERIOR : '';
+    msg.innerText = '';
+    validateForm();
+    return;
+  }
+
   kmInput.value = '';
-  document.getElementById('msg').style.color = 'var(--text-soft)';
-  document.getElementById('msg').innerText = 'Buscando KM...';
+  msg.style.color = 'var(--text-soft)';
+  msg.innerText = 'Buscando KM...';
 
   try {
     const st = await jsonp(`${API_URL}?route=kmAtual&veiculo=${encodeURIComponent(v)}&t=${Date.now()}`);
     KM_ANTERIOR = Number((st && (st.km || st.kmAtual)) || 0);
+    KM_CACHE[v] = KM_ANTERIOR;
     kmInput.value = KM_ANTERIOR > 0 ? KM_ANTERIOR : '';
-    document.getElementById('msg').innerText = '';
+    msg.innerText = '';
   } catch (e) {
     KM_ANTERIOR = 0;
     kmInput.value = '';
-    document.getElementById('msg').style.color = 'var(--red)';
-    document.getElementById('msg').innerText = 'Não foi possível buscar o KM.';
+    msg.style.color = 'var(--red)';
+    msg.innerText = 'Não foi possível buscar o KM.';
   }
 
   validateForm();
@@ -250,8 +297,8 @@ function validateForm() {
   const btn = document.getElementById('btnSalvar');
   const msg = document.getElementById('msg');
 
-  const ok = v && m && s && String(k).trim() !== '' && d;
-  const kmOk = Number(k) >= KM_ANTERIOR;
+  const ok = !!(v && m && s && String(k).trim() !== '' && d);
+  const kmOk = Number(k || 0) >= KM_ANTERIOR;
 
   if (ok && !kmOk) {
     msg.style.color = 'var(--red)';
