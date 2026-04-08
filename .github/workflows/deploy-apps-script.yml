@@ -33,12 +33,13 @@ jobs:
           }
           EOF
 
-      - name: Copiar arquivos da pasta src para raiz temporária
+      - name: Preparar pasta de build
         run: |
-          mkdir build
+          rm -rf build
+          mkdir -p build
           cp appsscript.json build/
           cp .clasp.json build/
-          cp src/* build/
+          cp -R src/* build/
 
       - name: Publicar no Apps Script
         working-directory: build
