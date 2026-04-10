@@ -5,5 +5,6 @@
 const LISTA_VEICULOS = [
   "Amarok - QCH7131",
   "Gol Prata - QCH7171",
-  "Gol Prata - QCI3271"
+  "Gol Prata - QCI3271",
+  "Caminhão - FBZ8609"
 ];
