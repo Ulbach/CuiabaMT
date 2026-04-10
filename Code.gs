@@ -19,6 +19,7 @@ const NOME_TABELA_LIST = 'List';   // Named range (opcional)
 const TIMEZONE = 'America/Campo_Grande';
 const DATE_FMT = 'dd/MM/yyyy HH:mm:ss';
 const nowStr_ = (d = new Date()) => Utilities.formatDate(d, TIMEZONE, DATE_FMT);
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 horas
 
 /************** RESPONSORES (JSON / JSONP) **************/
 function jsonOut_(obj, cb) {{
@@ -35,6 +36,9 @@ function doGet(e) {{
   try {{
     const r = String(e && e.parameter && e.parameter.route || 'home');
     if (r === 'ping')          return ok_(e, {{ service:'online', when: nowStr_() }});
+    if (r === 'loginSeguranca') return ok_(e, loginSeguranca_(String(e.parameter.codigo || '').trim()));
+    if (r === 'validarSessao')  return ok_(e, validarSessao_(String(e.parameter.token || '').trim()));
+    if (r === 'logoutSeguranca') return ok_(e, logoutSeguranca_(String(e.parameter.token || '').trim()));
     if (r === 'home')          return ok_(e, getHomeData_());
     if (r === 'homeFast')      return ok_(e, getHomeData_());
     if (r === 'lists')         return ok_(e, getLists_());
@@ -125,6 +129,81 @@ const CACHE_TTL_SEC = 45;
 function cache_(){{ return CacheService.getScriptCache(); }}
 function getCacheJson_(key){{ try{{ const raw = cache_().get(key); return raw ? JSON.parse(raw) : null; }}catch(_ ){{ return null; }} }}
 function putCacheJson_(key, obj, ttl){{ try{{ cache_().put(key, JSON.stringify(obj), Math.max(5, Math.min(21600, ttl||CACHE_TTL_SEC))); }}catch(_ ){{}} }}
+function authKey_(token){{ return 'auth:' + String(token || ''); }}
+function putAuthSession_(token, data){{
+  const ttlSec = Math.floor(SESSION_TTL_MS / 1000);
+  putCacheJson_(authKey_(token), data, ttlSec);
+}}
+function getAuthSession_(token){{
+  if (!token) return null;
+  return getCacheJson_(authKey_(token));
+}}
+function removeAuthSession_(token){{
+  try {{ cache_().remove(authKey_(token)); }} catch(_ ) {{}}
+}}
+
+function parseSegurancaComCodigo_(item){{
+  const raw = String(item || '').trim();
+  if (!raw) return null;
+  const idx = raw.lastIndexOf('-');
+  if (idx < 0) return null;
+  const nome = raw.slice(0, idx).trim();
+  const codigo = raw.slice(idx + 1).trim();
+  if (!nome || !codigo) return null;
+  return {{ nome:nome, codigo:codigo }};
+}}
+
+function getSegurancasComCodigo_(){{
+  const lista = (typeof LISTA_SEGURANCAS !== 'undefined' && Array.isArray(LISTA_SEGURANCAS)) ? LISTA_SEGURANCAS : [];
+  const out = [];
+  for (var i = 0; i < lista.length; i++) {{
+    const parsed = parseSegurancaComCodigo_(lista[i]);
+    if (parsed) out.push(parsed);
+  }}
+  return out;
+}}
+
+function loginSeguranca_(codigo){{
+  if (!codigo) throw new Error('Código obrigatório.');
+  const base = getSegurancasComCodigo_();
+  if (!base.length) throw new Error('Nenhum segurança com código foi configurado em LISTA_SEGURANCAS.');
+
+  const hit = base.find(function(x) {{ return String(x.codigo) === String(codigo); }});
+  if (!hit) throw new Error('Código inválido.');
+
+  const token = Utilities.getUuid().replace(/-/g, '') + String(Date.now());
+  const expiraEm = Date.now() + SESSION_TTL_MS;
+  putAuthSession_(token, {{ seguranca: hit.nome, expiraEm: expiraEm }});
+
+  return {{
+    autenticado: true,
+    token: token,
+    seguranca: hit.nome,
+    expiraEm: expiraEm,
+    message: 'Acesso liberado.'
+  }};
+}}
+
+function validarSessao_(token){{
+  if (!token) return {{ autenticado:false }};
+  const sess = getAuthSession_(token);
+  if (!sess) return {{ autenticado:false }};
+  const exp = Number(sess.expiraEm || 0);
+  if (!exp || exp <= Date.now()) {{
+    removeAuthSession_(token);
+    return {{ autenticado:false }};
+  }}
+  return {{
+    autenticado:true,
+    seguranca: String(sess.seguranca || ''),
+    expiraEm: exp
+  }};
+}}
+
+function logoutSeguranca_(token){{
+  if (token) removeAuthSession_(token);
+  return {{ logout:true }};
+}}
 
 /*******************************************************
  * DIGEST de App_Controle2 (1 leitura → muitos índices)
