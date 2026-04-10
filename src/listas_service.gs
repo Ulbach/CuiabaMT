@@ -17,12 +17,34 @@ function normalizarListaTexto_(lista) {
   });
 }
 
+function parseDataListaFixa_(texto) {
+  if (!texto) return null;
+  var m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
+
+function hojeNormalizado_() {
+  var d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function cnhListaFixaValida_(texto) {
+  var d = parseDataListaFixa_(texto);
+  if (!d) return false;
+  return d.getTime() >= hojeNormalizado_().getTime();
+}
+
 function getListaVeiculosFixos() {
   return normalizarListaTexto_(LISTA_VEICULOS);
 }
 
 function getListaMotoristasFixos() {
-  return normalizarListaTexto_(LISTA_MOTORISTAS);
+  return normalizarListaTexto_(
+    (LISTA_MOTORISTAS || [])
+      .filter(function(item) { return cnhListaFixaValida_(item && item.validadeCnh); })
+      .map(function(item) { return item && item.nome; })
+  );
 }
 
 function getListaSegurancasFixos() {

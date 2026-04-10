@@ -3,7 +3,7 @@
  * Atualize este arquivo sempre que houver alteração na frota base.
  */
 const LISTA_VEICULOS = [
-  "ABC-1234",
-  "DEF-5678",
-  "GHI-9012"
+  "Amarok - QCH7131",
+  "Gol Prata - QCH7171",
+  "Gol Prata - QCI3271"
 ];

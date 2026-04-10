@@ -1,346 +1,621 @@
-/*******************************************************
- * FROTA PRO — BACKEND (Apps Script) — COMPLETO + JSONP
- * Rotas GET (sem CORS, via JSONP se "callback=" for enviado):
- *   ping, home, lists, listsAvail, kmAtual, statusVeiculo, bootstrap, diag
- *   saidaGet  (grava saída por GET — uso temporário)
- *   entradaGet(grava entrada por GET — uso temporário)
- * Rotas POST (para uso futuro com mesmo domínio/proxy):
- *   saida, entrada
- *******************************************************/
+/**
+ * DELTA PRO CUIABA - SISTEMA UNIFICADO (FROTA & VISITANTES)
+ * VERSAO COM LISTAS FIXAS REAIS
+ */
 
-/************** CONFIG **************/
-const SHEET_ID = '1InNx25rQ6_5bxqcFK95neE0lF2OW-r1HtpyH2QD4vJs';
-const ABA_DADOS = 'App_Controle2';
-const NOME_TABELA_DADOS = 'Dados'; // Named range (opcional)
-const ABA_LISTAGEM = 'Listagem2';
-const NOME_TABELA_LIST = 'List';   // Named range (opcional)
+const PLANILHA_ID = "1h1kgl9w6UL8JlxMvlywJM1AIthU_U1dGzQ84JicrlOU";
+const ABA_DADOS_FROTA = "App_Controle2";
+const ABA_VISITANTES = "Visitantes";
 
-/************** FUSO & FORMATO **************/
-const TIMEZONE = 'America/Campo_Grande';
-const DATE_FMT = 'dd/MM/yyyy HH:mm:ss';
-const nowStr_ = (d = new Date()) => Utilities.formatDate(d, TIMEZONE, DATE_FMT);
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 horas
+const CACHE_KEY_DASHBOARD = "frota_dashboard_lists_v1";
+const CACHE_KEY_HOME_FAST = "frota_home_fast_v2";
+const CACHE_KEY_SAIDA_BOOTSTRAP = "frota_saida_bootstrap_v1";
+const CACHE_KEY_ENTRADA_BOOTSTRAP = "frota_entrada_bootstrap_v1";
+const CACHE_TTL_SEGUNDOS = 20;
 
-/************** RESPONSORES (JSON / JSONP) **************/
-function jsonOut_(obj, cb) {{
-  const txt = cb ? `${{cb}}(${{JSON.stringify(obj)}})` : JSON.stringify(obj);
-  const out = ContentService.createTextOutput(txt);
-  return out.setMimeType(cb ? ContentService.MimeType.JAVASCRIPT
-                            : ContentService.MimeType.JSON);
-}}
-function ok_(e, obj)  {{ return jsonOut_(Object.assign({{ok:true}}, obj||{{}}), e && e.parameter && e.parameter.callback); }}
-function er_(e, err)  {{ return jsonOut_({{ ok:false, error:String(err) }}, e && e.parameter && e.parameter.callback); }}
+const SESSION_PREFIX = "sessao_seguranca_";
+const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 
-/************** ROUTER **************/
-function doGet(e) {{
-  try {{
-    const r = String(e && e.parameter && e.parameter.route || 'home');
-    if (r === 'ping')          return ok_(e, {{ service:'online', when: nowStr_() }});
-    if (r === 'loginSeguranca') return ok_(e, loginSeguranca_(String(e.parameter.codigo || '').trim()));
-    if (r === 'validarSessao')  return ok_(e, validarSessao_(String(e.parameter.token || '').trim()));
-    if (r === 'logoutSeguranca') return ok_(e, logoutSeguranca_(String(e.parameter.token || '').trim()));
-    if (r === 'home')          return ok_(e, getHomeData_());
-    if (r === 'homeFast')      return ok_(e, getHomeData_());
-    if (r === 'lists')         return ok_(e, getLists_());
-    if (r === 'listsAvail')    return ok_(e, getListsAvail_());
-    if (r === 'veiculosAvail') return ok_(e, getVeiculosAvail_());
-    if (r === 'apoioSaida')    return ok_(e, getApoioSaida_());
-    if (r === 'kmAtual')       return ok_(e, getKmAtual_(String(e.parameter.veiculo || '').trim()));
-    if (r === 'statusVeiculo') return ok_(e, statusVeiculo_(String(e.parameter.veiculo || '').trim()));
-    if (r === 'bootstrap')     return ok_(e, bootstrap_());
-    if (r === 'diag')          return ok_(e, diag_());
+const MAX_LINHAS_DASHBOARD = 180;
+const MAX_LINHAS_BUSCA_OPERACIONAL = 400;
+const TOTAL_COLUNAS_FROTA = 10;
 
-    // Escritas via GET (temporário para bypass de CORS no front)
-    if (r === 'saidaGet') {{
-      const p = {{
-        veiculo:   String(e.parameter.veiculo   || '').trim(),
-        motorista: String(e.parameter.motorista || '').trim(),
-        seguranca: String(e.parameter.seguranca || '').trim(),
-        kmSaida:   String(e.parameter.kmSaida   || '').trim(),
-        destino:   String(e.parameter.destino   || '').trim(),
-      }};
-      return ok_(e, submitSaida_(p));
-    }}
-    if (r === 'entradaGet') {{
-      const p = {{
-        veiculo:   String(e.parameter.veiculo   || '').trim(),
-        kmRetorno: String(e.parameter.kmRetorno || '').trim(),
-        motorista: String(e.parameter.motorista || '').trim(),
-        seguranca: String(e.parameter.seguranca || '').trim(),
-      }};
-      return ok_(e, submitEntrada_(p));
-    }}
+/* ================= LISTAS FIXAS ================= */
 
-    return er_(e, 'Rota inválida: ' + r);
-  }} catch (err) {{
-    return er_(e, err);
-  }}
-}}
+const LISTA_VEICULOS = [
+  "Amarok - QCH7131",
+  "Gol Prata - QCH7171",
+  "Gol Prata - QCI3271"
+];
 
-function doPost(e) {{
-  try {{
-    const r = String(e && e.parameter && e.parameter.route || '');
-    const body = e && e.postData && e.postData.contents ? e.postData.contents : '{}';
-    const data = JSON.parse(body || '{}');
+const LISTA_MOTORISTAS = [
+  { nome: "ELIESER DA SILVA SANTOS", validadeCnh: "17/12/2023" },
+  { nome: "EDINEY MOREIRA DOS SANTOS", validadeCnh: "10/11/2034" },
+  { nome: "THACITO MARCELO DE PAULA FERREIRA", validadeCnh: "06/12/2032" },
+  { nome: "GUILHERME AUGUSTO MARTINS DA SILVA", validadeCnh: "19/06/2033" },
+  { nome: "PAULO SERGIO DOS SANTOS", validadeCnh: "22/01/2035" },
+  { nome: "VALDEMIR FERREIRA PINTO", validadeCnh: "10/04/2032" },
+  { nome: "ANTTONIELLY ANGELINA BEZ BATTI ARCANJO", validadeCnh: "31/08/2033" },
+  { nome: "FABRICIO FRANCISCO DE OLIVEIRA", validadeCnh: "03/08/2032" },
+  { nome: "LEONARDO SANTOS FADIGAS DE SOUZA", validadeCnh: "08/07/2031" },
+  { nome: "SIDNEY VICENTE DA SILVA", validadeCnh: "06/01/2035" },
+  { nome: "THOMAZ FRAZATTO CARRARA", validadeCnh: "27/08/2035" },
+  { nome: "VICTOR MATHEUS CARVALHO PLENS", validadeCnh: "09/06/2032" }
+];
 
-    if (r === 'saida')   return jsonOut_(submitSaida_(data));
-    if (r === 'entrada') return jsonOut_(submitEntrada_(data));
+const LISTA_SEGURANCAS = [
+  { nome: "PATRICK HALISSON DE BARROS TORALES", codigo: "1122" },
+  { nome: "RONALDO ESTRAL SANTANA", codigo: "3344" },
+  { nome: "OPERADOR ULBACH", codigo: "5566" }
+];
 
-    return jsonOut_({{ ok:false, error:'Rota inválida: ' + r }});
-  }} catch (err) {{
-    return jsonOut_({{ ok:false, error:String(err) }});
-  }}
-}}
+/* ================= LISTAS FIXAS - SERVICE ================= */
 
-/************** UTIL **************/
-function openSS_(){{ return SpreadsheetApp.openById(SHEET_ID); }}
-function getSheetByName_(ss, name){{ const sh = ss.getSheetByName(name); if(!sh) throw new Error(`Aba "${{name}}" não encontrada.`); return sh; }}
-function getNamedRange_(ss, named){{ return ss.getRangeByName(named) || null; }}
-function norm_(s){{ return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,''); }}
-function findIdx_(headers, candidates){{ const H = headers.map(h=>norm_(h)); for(const c of candidates){{ const i = H.indexOf(norm_(c)); if(i>=0) return i; }} return -1; }}
-function toTextList_(arr){{
-  return Array.from(new Set((arr || [])
-    .map(function(item){{
-      const v = (item && typeof item === 'object') ? (item.nome || item.name || '') : item;
-      return String(v || '').trim();
-    }})
-    .filter(Boolean)
-  )).sort(function(a,b){{ return a.localeCompare(b, 'pt-BR'); }});
-}}
-function getFixedListsSafe_(){{
-  try {{
-    if (typeof getListasFrotaFixas === 'function') {{
-      const data = getListasFrotaFixas();
-      return {{ ok:true, veiculos: toTextList_(data.veiculos), motoristas: toTextList_(data.motoristas), segurancas: toTextList_(data.segurancas) }};
-    }}
-    if (typeof getListasFrota === 'function') {{
-      const data = getListasFrota();
-      return {{ ok:true, veiculos: toTextList_(data.veiculos), motoristas: toTextList_(data.motoristas), segurancas: toTextList_(data.segurancas) }};
-    }}
-  }} catch (err) {{
-    // Em caso de erro na nova fonte local, continua no fluxo legado (planilha)
-    Logger.log('Falha ao usar listas locais: ' + err);
-  }}
-  return null;
-}}
+function normalizarListaTexto_(lista) {
+  return [...new Set(
+    (lista || [])
+      .map(function(item) { return String(item || "").trim(); })
+      .filter(Boolean)
+  )].sort(function(a, b) {
+    return a.localeCompare(b, "pt-BR");
+  });
+}
 
-/************** CACHE **************/
-const CACHE_TTL_SEC = 45;
-function cache_(){{ return CacheService.getScriptCache(); }}
-function getCacheJson_(key){{ try{{ const raw = cache_().get(key); return raw ? JSON.parse(raw) : null; }}catch(_ ){{ return null; }} }}
-function putCacheJson_(key, obj, ttl){{ try{{ cache_().put(key, JSON.stringify(obj), Math.max(5, Math.min(21600, ttl||CACHE_TTL_SEC))); }}catch(_ ){{}} }}
-function authKey_(token){{ return 'auth:' + String(token || ''); }}
-function putAuthSession_(token, data){{
-  const ttlSec = Math.floor(SESSION_TTL_MS / 1000);
-  putCacheJson_(authKey_(token), data, ttlSec);
-}}
-function getAuthSession_(token){{
-  if (!token) return null;
-  return getCacheJson_(authKey_(token));
-}}
-function removeAuthSession_(token){{
-  try {{ cache_().remove(authKey_(token)); }} catch(_ ) {{}}
-}}
+function parseDataListaFixa_(texto) {
+  if (!texto) return null;
+  const m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
 
-function parseSegurancaComCodigo_(item){{
-  const raw = String(item || '').trim();
+function hojeNormalizado_() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function cnhListaFixaValida_(texto) {
+  const d = parseDataListaFixa_(texto);
+  if (!d) return false;
+  return d.getTime() >= hojeNormalizado_().getTime();
+}
+
+function getListaVeiculosFixos() {
+  return normalizarListaTexto_(LISTA_VEICULOS);
+}
+
+function getListaMotoristasFixos() {
+  return normalizarListaTexto_(
+    (LISTA_MOTORISTAS || [])
+      .filter(function(item) { return cnhListaFixaValida_(item.validadeCnh); })
+      .map(function(item) { return item.nome; })
+  );
+}
+
+function getListaSegurancasFixos() {
+  return normalizarListaTexto_(
+    (LISTA_SEGURANCAS || []).map(function(item) { return item.nome; })
+  );
+}
+
+function getMapaCodigosSegurancasFixos() {
+  const mapa = {};
+  (LISTA_SEGURANCAS || []).forEach(function(item) {
+    const codigo = String(item.codigo || "").trim();
+    const nome = String(item.nome || "").trim();
+    if (codigo && nome) mapa[codigo] = nome;
+  });
+  return mapa;
+}
+
+function getListasFrota() {
+  return {
+    veiculos: getListaVeiculosFixos(),
+    motoristas: getListaMotoristasFixos(),
+    segurancas: getListaSegurancasFixos()
+  };
+}
+
+/* ================= CORE ================= */
+
+function doGet(e) {
+  const p = e && e.parameter ? e.parameter : {};
+  const route = p.route || "";
+  const callback = p.callback || "callback";
+  let result;
+
+  try {
+    if (route === "loginSeguranca") result = loginSeguranca(p.codigo);
+    else if (route === "validarSessao") result = validarSessaoSeguranca(p.token);
+    else if (route === "logoutSeguranca") result = logoutSeguranca(p.token);
+
+    else if (route === "bootstrapVeiculos") result = getBootstrapVeiculos();
+    else if (route === "bootstrapSaida") result = getBootstrapSaida();
+    else if (route === "bootstrapEntrada") result = getBootstrapEntrada();
+
+    else if (route === "home" || route === "listsAvail") result = getDashboardAndLists();
+    else if (route === "homeFast") result = getDashboardFast();
+    else if (route === "veiculosAvail") result = getVeiculosAvail();
+    else if (route === "apoioSaida") result = getApoioSaida();
+    else if (route === "kmAtual") result = getKmAtual(p.veiculo);
+    else if (route === "saida") result = registrarSaidaFrota(p);
+    else if (route === "entrada") result = registrarEntradaFrota(p);
+    else if (route === "getVisitantesData") result = getVisitantesData();
+    else if (route === "salvarVisitante") result = salvarVisitante(p.data);
+    else result = { ok: false, message: "Rota desconhecida" };
+  } catch (err) {
+    result = { ok: false, message: err && err.toString ? err.toString() : String(err) };
+  }
+
+  return ContentService
+    .createTextOutput(callback + "(" + JSON.stringify(result) + ")")
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+/* ================= LOGIN / SESSAO ================= */
+
+function normalizarTextoSeguranca(v) {
+  return String(v || "").trim();
+}
+
+function gerarTokenSessao() {
+  return Utilities.getUuid().replace(/-/g, "") + "_" + new Date().getTime();
+}
+
+function getSessaoKey(token) {
+  return SESSION_PREFIX + String(token || "").trim();
+}
+
+function buscarSegurancaPorCodigo(codigo) {
+  const alvo = String(codigo == null ? "" : codigo).trim();
+  if (!alvo) return null;
+
+  const mapa = getMapaCodigosSegurancasFixos();
+  const seguranca = mapa[alvo];
+  if (!seguranca) return null;
+
+  return { seguranca: seguranca, codigo: alvo };
+}
+
+function salvarSessaoSeguranca(token, payload) {
+  PropertiesService.getScriptProperties().setProperty(getSessaoKey(token), JSON.stringify(payload));
+}
+
+function lerSessaoSeguranca(token) {
+  const tk = String(token || "").trim();
+  if (!tk) return null;
+
+  const raw = PropertiesService.getScriptProperties().getProperty(getSessaoKey(tk));
   if (!raw) return null;
-  const idx = raw.lastIndexOf('-');
-  if (idx < 0) return null;
-  const nome = raw.slice(0, idx).trim();
-  const codigo = raw.slice(idx + 1).trim();
-  if (!nome || !codigo) return null;
-  return {{ nome:nome, codigo:codigo }};
-}}
 
-function getSegurancasComCodigo_(){{
-  const lista = (typeof LISTA_SEGURANCAS !== 'undefined' && Array.isArray(LISTA_SEGURANCAS)) ? LISTA_SEGURANCAS : [];
-  const out = [];
-  for (var i = 0; i < lista.length; i++) {{
-    const parsed = parseSegurancaComCodigo_(lista[i]);
-    if (parsed) out.push(parsed);
-  }}
-  return out;
-}}
+  var sessao;
+  try {
+    sessao = JSON.parse(raw);
+  } catch (e) {
+    PropertiesService.getScriptProperties().deleteProperty(getSessaoKey(tk));
+    return null;
+  }
 
-function loginSeguranca_(codigo){{
-  if (!codigo) throw new Error('Código obrigatório.');
-  const base = getSegurancasComCodigo_();
-  if (!base.length) throw new Error('Nenhum segurança com código foi configurado em LISTA_SEGURANCAS.');
+  if (!sessao || !sessao.expiraEm || Number(sessao.expiraEm) < Date.now()) {
+    PropertiesService.getScriptProperties().deleteProperty(getSessaoKey(tk));
+    return null;
+  }
 
-  const hit = base.find(function(x) {{ return String(x.codigo) === String(codigo); }});
-  if (!hit) throw new Error('Código inválido.');
+  return sessao;
+}
 
-  const token = Utilities.getUuid().replace(/-/g, '') + String(Date.now());
-  const expiraEm = Date.now() + SESSION_TTL_MS;
-  putAuthSession_(token, {{ seguranca: hit.nome, expiraEm: expiraEm }});
+function removerSessaoSeguranca(token) {
+  const tk = String(token || "").trim();
+  if (!tk) return;
+  PropertiesService.getScriptProperties().deleteProperty(getSessaoKey(tk));
+}
 
-  return {{
-    autenticado: true,
+function loginSeguranca(codigo) {
+  const codigoInformado = String(codigo == null ? "" : codigo).trim();
+  if (!codigoInformado) return { ok: false, message: "Informe o codigo de acesso." };
+
+  const cadastro = buscarSegurancaPorCodigo(codigoInformado);
+  if (!cadastro) return { ok: false, message: "Codigo invalido." };
+
+  const token = gerarTokenSessao();
+  const agora = Date.now();
+  const payload = {
     token: token,
-    seguranca: hit.nome,
-    expiraEm: expiraEm,
-    message: 'Acesso liberado.'
-  }};
-}}
+    seguranca: cadastro.seguranca,
+    criadoEm: agora,
+    expiraEm: agora + SESSION_TTL_MS
+  };
 
-function validarSessao_(token){{
-  if (!token) return {{ autenticado:false }};
-  const sess = getAuthSession_(token);
-  if (!sess) return {{ autenticado:false }};
-  const exp = Number(sess.expiraEm || 0);
-  if (!exp || exp <= Date.now()) {{
-    removeAuthSession_(token);
-    return {{ autenticado:false }};
-  }}
-  return {{
-    autenticado:true,
-    seguranca: String(sess.seguranca || ''),
-    expiraEm: exp
-  }};
-}}
+  salvarSessaoSeguranca(token, payload);
 
-function logoutSeguranca_(token){{
-  if (token) removeAuthSession_(token);
-  return {{ logout:true }};
-}}
+  return {
+    ok: true,
+    token: token,
+    seguranca: cadastro.seguranca,
+    expiraEm: payload.expiraEm,
+    message: "Ola, " + cadastro.seguranca + "!"
+  };
+}
 
-/*******************************************************
- * DIGEST de App_Controle2 (1 leitura → muitos índices)
- *******************************************************/
-function getDadosDigest_(ss){{
-  const ck = 'dadosDigest';
-  const c = getCacheJson_(ck);
-  if (c) return {{ inCourseSet:new Set(c.inCourseArray||[]), listInCourse:c.listInCourse||[], lastMetaByVehicle:c.lastMetaByVehicle||{{}} }};
+function validarSessaoSeguranca(token) {
+  const sessao = lerSessaoSeguranca(token);
+  if (!sessao) return { ok: false, autenticado: false, message: "Sessao invalida ou expirada." };
 
-  const aba = getSheetByName_(ss, ABA_DADOS);
-  const lr = aba.getLastRow();
-  const res = {{ inCourseSet:new Set(), listInCourse:[], lastMetaByVehicle:{{}} }};
-  if (lr < 2) {{ putCacheJson_(ck, {{ inCourseArray:[], listInCourse:[], lastMetaByVehicle:{{}} }}); return res; }}
+  return {
+    ok: true,
+    autenticado: true,
+    seguranca: sessao.seguranca,
+    expiraEm: sessao.expiraEm
+  };
+}
 
-  const lc = aba.getLastColumn();
-  const head = aba.getRange(1,1,1,lc).getValues()[0].map(h=>String(h).trim());
-  const iV  = findIdx_(head, ['Veiculo','Veículo']);
-  const iSt = findIdx_(head, ['Status']);
-  const iKS = findIdx_(head, ['KmSaida','Km Saida']);
-  const iKR = findIdx_(head, ['KmRetorno','Km Retorno']);
-  const iDS = findIdx_(head, ['DataSaida','Saida','Saída']);
-  const iM  = findIdx_(head, ['Motorista']);
-  const iSg = findIdx_(head, ['Seguranca','Segurança']);
-  if (iV < 0) {{ putCacheJson_(ck, {{ inCourseArray:[], listInCourse:[], lastMetaByVehicle:{{}} }}); return res; }}
+function logoutSeguranca(token) {
+  removerSessaoSeguranca(token);
+  return { ok: true };
+}
 
-  const rows = aba.getRange(2,1,lr-1,lc).getValues();
-  const lastIdx = new Map();
-  rows.forEach((r,i)=>{{ const v=String(r[iV]||'').trim(); if(v) lastIdx.set(v,i); }});
+function exigirSessaoSeguranca(token) {
+  const sessao = lerSessaoSeguranca(token);
+  if (!sessao) throw new Error("Sessao invalida ou expirada.");
+  return sessao;
+}
 
-  const inArr=[], listDisp=[], meta={{}};
-  for (const [disp, idx] of lastIdx.entries()){{
-    const r = rows[idx];
-    const key = norm_(disp);
-    const st = iSt>=0 ? String(r[iSt]||'').toLowerCase() : '';
-    const ret= iKR>=0 ? r[iKR] : '';
-    const temRet = !!ret && String(ret).trim()!=='';
-    const emCurso = !temRet && (iSt>=0 ? !st.includes('conclu') : true);
+/* ================= VISITANTES ================= */
 
-    const kmRet = iKR>=0 ? Number(r[iKR]) : NaN;
-    const kmSai = iKS>=0 ? Number(r[iKS]) : NaN;
-    const kmAtual = Number.isFinite(kmRet) && kmRet>0 ? kmRet : (Number.isFinite(kmSai) ? kmSai : 0);
+function getVisitantesData() {
+  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_VISITANTES);
+  const dados = sh.getDataRange().getValues();
 
-    const ds = iDS>=0 ? r[iDS] : '';
-    const dataSaida = (ds instanceof Date) ? nowStr_(ds) : String(ds||'');
+  const visitantes = dados.slice(1).map((r, i) => ({
+    linha: i + 2,
+    cpf: String(r[1]).replace(/\D/g, ""),
+    nome: String(r[2]),
+    telefone: String(r[3]),
+    status: String(r[4])
+  })).filter(v => v.cpf && v.cpf !== "undefined");
 
-    meta[key] = {{ display:disp, kmAtual, kmSaida:Number.isFinite(kmSai)?kmSai:null, motorista:iM>=0?String(r[iM]||''):'', seguranca:iSg>=0?String(r[iSg]||''):'', dataSaida, emCurso }};
-    if (emCurso) {{ inArr.push(key); listDisp.push(disp); }}
-  }}
+  const responsaveis = [...new Set(dados.slice(1).map(r => r[7]).filter(Boolean))];
+  return { ok: true, visitantes, responsaveis };
+}
 
-  putCacheJson_(ck, {{ inCourseArray:inArr, listInCourse:listDisp, lastMetaByVehicle:meta }});
-  return {{ inCourseSet:new Set(inArr), listInCourse:listDisp, lastMetaByVehicle:meta }};
-}}
+function salvarVisitante(jsonData) {
+  const p = JSON.parse(decodeURIComponent(jsonData));
+  const token = p.token || "";
+  let seguranca = String(p.seguranca || "").trim();
 
-/************** HOME **************/
-function getHomeData_(){{
-  const ck='homeData'; const c=getCacheJson_(ck); if(c) return c;
-  const ss=openSS_();
-  const out={{ ok:true, online:true, totalVeiculos:getTotalVeiculos__(ss), recentes:getMovimentacaoRecente__(ss,5) }};
-  putCacheJson_(ck,out); return out;
-}}
-function getTotalVeiculos__(ss){{
-  const aba=getSheetByName_(ss,ABA_LISTAGEM); let r=getNamedRange_(ss,NOME_TABELA_LIST); if(!r) r=aba.getRange(1,1,aba.getLastRow(),aba.getLastColumn());
-  const vals=r.getValues(); if(vals.length<2) return 0; const head=vals[0].map(h=>String(h).trim()); const iV=findIdx_(head,['Veiculo','Veículo']); if(iV<0) return 0;
-  const set=new Set(); for(let i=1;i<vals.length;i++){{ const v=vals[i][iV]; if(v) set.add(String(v).trim()); }} return set.size;
-}}
-function getMovimentacaoRecente__(ss,limit){{
-  const aba=getSheetByName_(ss,ABA_DADOS); const lr=aba.getLastRow(); if(lr<2) return []; const lc=aba.getLastColumn();
-  const head=aba.getRange(1,1,1,lc).getValues()[0].map(h=>String(h).trim());
-  const iV=findIdx_(head,['Veiculo','Veículo']); const iSt=findIdx_(head,['Status']); const iSa=findIdx_(head,['DataSaida','Saida','Saída']); const iRe=findIdx_(head,['Retorno','DataRetorno']); const iM=findIdx_(head,['Motorista']); const iSg=findIdx_(head,['Seguranca','Segurança']); const iKS=findIdx_(head,['KmSaida','Km Saida']); const iKR=findIdx_(head,['KmRetorno','Km Retorno']);
-  if(iV<0) return [];
-  const rows=aba.getRange(2,1,lr-1,lc).getValues(); const out=[];
-  for(let i=rows.length-1;i>=0 && out.length<limit;i--){{ const r=rows[i]; const st=iSt>=0?String(r[iSt]||'').toLowerCase():''; const ret=iRe>=0?r[iRe]:''; const disp=(st && st.includes('conclu')) || (ret && String(ret).trim()!=='');
-    const saida=(iSa>=0 && r[iSa] instanceof Date)? nowStr_(r[iSa]) : (iSa>=0? String(r[iSa]||'') : '');
-    const retorno=(iRe>=0 && r[iRe] instanceof Date)? nowStr_(r[iRe]) : (iRe>=0? String(r[iRe]||'') : '');
-    out.push({{ veiculo:String(r[iV]||''), motorista:iM>=0?String(r[iM]||''):'', seguranca:iSg>=0?String(r[iSg]||''):'', status:disp?'DISPONÍVEL':'EM CURSO', corStatus:disp?'ok':'warn', saida, retorno, kmSaida:iKS>=0?r[iKS]:null, kmRetorno:iKR>=0?r[iKR]:null }});
-  }} return out;
-}}
+  if (token) {
+    const sessao = lerSessaoSeguranca(token);
+    if (!sessao) return { ok: false, message: "Sessao invalida ou expirada." };
+    seguranca = String(sessao.seguranca || seguranca || "").trim();
+  }
 
-/************** LISTAS & DISP **************/
-function getLists_(){{
-  const fix = getFixedListsSafe_();
-  if (fix) return fix;
-  const ss=openSS_(); const aba=getSheetByName_(ss,ABA_LISTAGEM); let r=getNamedRange_(ss,NOME_TABELA_LIST); if(!r) r=aba.getRange(1,1,aba.getLastRow(),aba.getLastColumn());
-  const vals=r.getValues(); if(vals.length<2) return {{ ok:true, veiculos:[], motoristas:[], segurancas:[] }};
-  const head=vals[0].map(h=>String(h).trim()); const iV=findIdx_(head,['Veiculo','Veículo']); const iM=findIdx_(head,['Motorista']); const iSg=findIdx_(head,['Seguranca','Segurança']); if(iV<0||iM<0||iSg<0) throw new Error('Cabeçalhos ausentes em "Listagem2".');
-  const ve=new Set(), mo=new Set(), sg=new Set(); for(let i=1;i<vals.length;i++){{ if(vals[i][iV]) ve.add(String(vals[i][iV]).trim()); if(vals[i][iM]) mo.add(String(vals[i][iM]).trim()); if(vals[i][iSg]) sg.add(String(vals[i][iSg]).trim()); }}
-  return {{ ok:true, veiculos:[...ve], motoristas:[...mo], segurancas:[...sg] }};
-}}
-function getListsAvail_(){{
-  const ck='listsAvail'; const c=getCacheJson_(ck); if(c) return c; const lists=getLists_(); const ss=openSS_(); const d=getDadosDigest_(ss);
-  const disp=[], ocp=[]; (lists.veiculos||[]).forEach(v=>{{ if(d.inCourseSet.has(norm_(v))) ocp.push(v); else disp.push(v); }});
-  const veiculosNaRua = Array.from(new Set([...ocp, ...d.listInCourse])).map(function(v){{
-    const m = d.lastMetaByVehicle[norm_(v)] || {{}};
-    return {{
-      veiculo: v,
-      motorista: m.motorista || '',
-      kmSaida: Number(m.kmSaida || 0)
-    }};
-  }});
-  const out={{ ok:true, veiculosDisponiveis:disp, veiculosEmCurso:veiculosNaRua.map(function(x){{ return x.veiculo; }}), veiculosNaRua:veiculosNaRua, emTransito:veiculosNaRua, motoristas:lists.motoristas, segurancas:lists.segurancas }};
-  putCacheJson_(ck,out); return out;
-}}
+  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_VISITANTES);
 
-function getVeiculosAvail_(){{
-  const l = getListsAvail_();
-  return {{ ok:true, veiculos:l.veiculosDisponiveis || [] }};
-}}
+  if (p.tipo === "SAIDA") {
+    sh.getRange(p.linha, 5).setValue("CONCLUIDO");
+    sh.getRange(p.linha, 7).setValue(new Date());
+    sh.getRange(p.linha, 9).setValue(seguranca);
+  } else {
+    sh.appendRow([new Date(), p.cpf, p.nome, p.telefone, "EM VISITA", p.responsavel, "", "", seguranca]);
+  }
 
-function getApoioSaida_(){{
-  const l = getLists_();
-  return {{ ok:true, motoristas:l.motoristas || [], segurancas:l.segurancas || [] }};
-}}
+  return { ok: true, seguranca: seguranca };
+}
 
-/************** KM + STATUS **************/
-function getKmAtual_(veiculo){{ if(!veiculo) return {{ ok:true, kmAtual:0, km:0 }}; const ss=openSS_(); const d=getDadosDigest_(ss); const m=d.lastMetaByVehicle[norm_(veiculo)]; const valor = m?Number(m.kmAtual||0):0; return {{ ok:true, kmAtual: valor, km: valor }}; }}
-function statusVeiculo_(veiculo){{ const ss=openSS_(); const d=getDadosDigest_(ss); const key=norm_(veiculo); const m=d.lastMetaByVehicle[key]; const em=d.inCourseSet.has(key); const out={{ ok:true, emCurso:em, kmAtual: m?m.kmAtual:0 }}; if(m && em){{ out.motorista=m.motorista; out.seguranca=m.seguranca; out.kmSaida=m.kmSaida; out.dataSaida=m.dataSaida; }} return out; }}
+/* ================= FROTA - HELPERS ================= */
 
-/************** SAÍDA / ENTRADA **************/
-function submitSaida_(p){{ ['veiculo','motorista','seguranca','kmSaida','destino'].forEach(k=>{{ if(!p[k]||String(p[k]).trim()==='') throw new Error(`Campo obrigatório: ${{k}}`); }});
-  const ss=openSS_(); if(getDadosDigest_(ss).inCourseSet.has(norm_(p.veiculo))) throw new Error('Veículo NÃO disponível: saída em curso.');
-  const aba=getSheetByName_(ss,ABA_DADOS); const lc=aba.getLastColumn(); const headers=aba.getRange(1,1,1,lc).getValues()[0].map(h=>String(h).trim());
-  const col={{ Veiculo:findIdx_(headers,['Veiculo','Veículo']), Motorista:findIdx_(headers,['Motorista']), Seguranca:findIdx_(headers,['Seguranca','Segurança']), KmSaida:findIdx_(headers,['KmSaida','Km Saida']), Destino:findIdx_(headers,['Destino']), DataSaida:findIdx_(headers,['DataSaida','Saida','Saída']), Status:findIdx_(headers,['Status']), KmRetorno:findIdx_(headers,['KmRetorno','Km Retorno']), KmRodado:findIdx_(headers,['KmRodado','Km Rodado']), Retorno:findIdx_(headers,['Retorno','DataRetorno']) }};
-  const miss=Object.keys(col).filter(k=>col[k]<0); if(miss.length) throw new Error('Colunas não encontradas: '+miss.join(', '));
-  const kmA=getKmAtual_(String(p.veiculo).trim()).kmAtual; const kmS=Number(p.kmSaida); if(!Number.isFinite(kmS)) throw new Error('KmSaida inválido.'); if(kmS<kmA) throw new Error(`Km Saída (${{kmS}}) menor que Km atual (${{kmA}}).`);
-  const now=new Date(); const row=new Array(headers.length).fill(''); row[col.Veiculo]=String(p.veiculo).trim(); row[col.Motorista]=String(p.motorista).trim(); row[col.Seguranca]=String(p.seguranca).trim(); row[col.KmSaida]=kmS; row[col.Destino]=String(p.destino).trim(); row[col.DataSaida]=nowStr_(now); row[col.Status]='Em Curso'; row[col.KmRetorno]=''; row[col.KmRodado]=''; row[col.Retorno]='';
-  aba.appendRow(row); cache_().removeAll(['dadosDigest','listsAvail','homeData','bootstrap']); return {{ ok:true, message:'Saída registrada com sucesso.', timestamp: nowStr_(now) }};
-}}
-function submitEntrada_(p){{ ['veiculo','kmRetorno'].forEach(k=>{{ if(!p[k]||String(p[k]).trim()==='') throw new Error(`Campo obrigatório: ${{k}}`); }});
-  const ss=openSS_(); const aba=getSheetByName_(ss,ABA_DADOS); const lr=aba.getLastRow(); if(lr<2) throw new Error('Não há registros.'); const lc=aba.getLastColumn();
-  const head=aba.getRange(1,1,1,lc).getValues()[0].map(h=>String(h).trim()); const iV=findIdx_(head,['Veiculo','Veículo']); const iKS=findIdx_(head,['KmSaida','Km Saida']); const iSt=findIdx_(head,['Status']); const iKR=findIdx_(head,['KmRetorno','Km Retorno']); const iKD=findIdx_(head,['KmRodado','Km Rodado']); const iDR=findIdx_(head,['Retorno','DataRetorno']); const iM=findIdx_(head,['Motorista']); const iSg=findIdx_(head,['Seguranca','Segurança']); if([iV,iKS,iSt,iKR,iKD,iDR].some(i=>i<0)) throw new Error('Colunas esperadas não encontradas.');
-  const rows=aba.getRange(2,1,lr-1,lc).getValues(); const alvo=norm_(p.veiculo); let idx=-1; for(let i=rows.length-1;i>=0;i--){{ const v=norm_(rows[i][iV]||''); const st=String(rows[i][iSt]||'').toLowerCase(); if(v===alvo && !st.includes('conclu')){{ idx=i; break; }} }} if(idx<0) throw new Error('Nenhuma saída em aberto para este veículo.');
-  const abs=2+idx; const kmSaida=Number(rows[idx][iKS]||0); const kmRet=Number(p.kmRetorno); if(!Number.isFinite(kmRet)) throw new Error('KmRetorno inválido.'); if(kmRet<kmSaida) throw new Error(`KmRetorno menor que KmSaida (${{kmSaida}}).`);
-  const kmRod=kmRet-kmSaida; const now=nowStr_(new Date()); aba.getRange(abs,iKR+1).setValue(kmRet); aba.getRange(abs,iKD+1).setValue(kmRod); aba.getRange(abs,iDR+1).setValue(now); aba.getRange(abs,iSt+1).setValue('Concluído'); if(p.motorista && iM>=0) aba.getRange(abs,iM+1).setValue(String(p.motorista).trim()); if(p.seguranca && iSg>=0) aba.getRange(abs,iSg+1).setValue(String(p.seguranca).trim()); cache_().removeAll(['dadosDigest','listsAvail','homeData','bootstrap']); return {{ ok:true, message:'Entrada registrada com sucesso.', kmRodado:kmRod, dataRetorno:now }};
-}}
+function normalizarTexto(v) {
+  return String(v == null ? "" : v)
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+}
 
-/************** AGRUPADO **************/
-function bootstrap_(){{ const ck='bootstrap'; const c=getCacheJson_(ck); if(c) return c; const out={{ ok:true, listsAvail:getListsAvail_(), home:getHomeData_() }}; putCacheJson_(ck,out); return out; }}
+function mesmoVeiculo(a, b) {
+  return normalizarTexto(a) === normalizarTexto(b);
+}
 
-/************** DIAGNÓSTICO **************/
-function diag_(){{ const ss=openSS_(); return {{ ok:true, sheetId:SHEET_ID, fileName:ss.getName(), sheets:ss.getSheets().map(s=>s.getName()), time: nowStr_() }}; }}
+function statusEmTransito(v) {
+  return normalizarTexto(v) === "EM TRANSITO";
+}
+
+function parseNumeroSeguro(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  const texto = String(v).trim();
+  if (/^\d+(?:\.\d+)?$/.test(texto)) return Number(texto) || 0;
+  const n = Number(texto.replace(/\./g, "").replace(",", "."));
+  return isNaN(n) ? 0 : n;
+}
+
+function getFaixaUltimasLinhas(sheet, maxLinhas, totalColunas) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return { startRow: 2, numRows: 0, values: [], displayValues: [] };
+
+  const startRow = Math.max(2, lastRow - maxLinhas + 1);
+  const numRows = lastRow - startRow + 1;
+
+  return {
+    startRow: startRow,
+    numRows: numRows,
+    values: sheet.getRange(startRow, 1, numRows, totalColunas).getValues(),
+    displayValues: sheet.getRange(startRow, 1, numRows, totalColunas).getDisplayValues()
+  };
+}
+
+function cachePutSeguro(cache, key, obj) {
+  try {
+    const texto = JSON.stringify(obj);
+    if (texto.length > 95000) return false;
+    cache.put(key, texto, CACHE_TTL_SEGUNDOS);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getMapaUltimoKm(dados) {
+  const mapa = {};
+  for (let i = dados.length - 1; i >= 0; i--) {
+    const veiculo = String(dados[i][0] || "").trim();
+    if (!veiculo || mapa[veiculo] !== undefined) continue;
+    mapa[veiculo] = parseNumeroSeguro(dados[i][7]) || parseNumeroSeguro(dados[i][3]) || 0;
+  }
+  return mapa;
+}
+
+/* ================= FROTA - DASHBOARD ================= */
+
+function getDashboardAndLists() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(CACHE_KEY_DASHBOARD);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const shDados = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
+  const faixa = getFaixaUltimasLinhas(shDados, MAX_LINHAS_DASHBOARD, TOTAL_COLUNAS_FROTA);
+  const dados = faixa.displayValues;
+
+  const veiculosNaRua = [];
+  for (let i = dados.length - 1; i >= 0; i--) {
+    const r = dados[i];
+    if (!r[0]) continue;
+    if (statusEmTransito(r[6])) {
+      veiculosNaRua.push({
+        veiculo: r[0],
+        motorista: r[1],
+        seguranca: r[2],
+        kmSaida: r[3]
+      });
+    }
+  }
+
+  const recentes = dados
+    .filter(r => r[0])
+    .slice(-5)
+    .reverse()
+    .map(r => ({
+      veiculo: r[0],
+      motorista: r[1],
+      status: r[6],
+      dataHora: r[9] || r[5] || "---"
+    }));
+
+  const listas = getListasFrota();
+  const emTransitoSet = new Set(veiculosNaRua.map(x => String(x.veiculo).trim()));
+
+  const result = {
+    ok: true,
+    recentes: recentes,
+    veiculosNaRua: veiculosNaRua,
+    veiculos: listas.veiculos.filter(v => !emTransitoSet.has(v)),
+    motoristas: listas.motoristas,
+    segurancas: listas.segurancas
+  };
+
+  cachePutSeguro(cache, CACHE_KEY_DASHBOARD, result);
+  return result;
+}
+
+function getDashboardFast() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(CACHE_KEY_HOME_FAST);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const shDados = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
+  const faixa = getFaixaUltimasLinhas(shDados, 30, TOTAL_COLUNAS_FROTA);
+  const dados = faixa.displayValues;
+
+  const recentes = dados
+    .filter(r => r[0])
+    .slice(-5)
+    .reverse()
+    .map(r => ({
+      veiculo: r[0],
+      motorista: r[1],
+      status: r[6],
+      dataHora: r[9] || r[5] || "---"
+    }));
+
+  const result = { ok: true, recentes: recentes };
+  cachePutSeguro(cache, CACHE_KEY_HOME_FAST, result);
+  return result;
+}
+
+function getVeiculosAvail() {
+  const data = getDashboardAndLists();
+  return { ok: true, veiculos: data.veiculos || [] };
+}
+
+function getApoioSaida() {
+  const data = getDashboardAndLists();
+  return { ok: true, motoristas: data.motoristas || [], segurancas: data.segurancas || [] };
+}
+
+function getBootstrapVeiculos() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(CACHE_KEY_HOME_FAST);
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      return { ok: true, recentes: parsed.recentes || [] };
+    } catch (_) {}
+  }
+  return getDashboardFast();
+}
+
+function getBootstrapSaida() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(CACHE_KEY_SAIDA_BOOTSTRAP);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const shDados = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
+  const faixa = getFaixaUltimasLinhas(shDados, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
+  const dados = faixa.values;
+  const listas = getListasFrota();
+  const kmMap = getMapaUltimoKm(dados);
+
+  const emTransitoSet = new Set();
+  for (let i = dados.length - 1; i >= 0; i--) {
+    const r = dados[i];
+    const veiculo = String(r[0] || "").trim();
+    if (veiculo && statusEmTransito(r[6])) emTransitoSet.add(veiculo);
+  }
+
+  const result = {
+    ok: true,
+    veiculos: listas.veiculos.filter(v => !emTransitoSet.has(v)),
+    motoristas: listas.motoristas,
+    segurancas: listas.segurancas,
+    kmMap: kmMap
+  };
+
+  cachePutSeguro(cache, CACHE_KEY_SAIDA_BOOTSTRAP, result);
+  return result;
+}
+
+function getBootstrapEntrada() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(CACHE_KEY_ENTRADA_BOOTSTRAP);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const shDados = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
+  const faixa = getFaixaUltimasLinhas(shDados, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
+  const dados = faixa.displayValues;
+  const listas = getListasFrota();
+
+  const veiculosNaRua = [];
+  for (let i = dados.length - 1; i >= 0; i--) {
+    const r = dados[i];
+    if (!r[0]) continue;
+    if (statusEmTransito(r[6])) {
+      veiculosNaRua.push({
+        veiculo: r[0],
+        motorista: r[1],
+        seguranca: r[2],
+        kmSaida: r[3]
+      });
+    }
+  }
+
+  const result = {
+    ok: true,
+    veiculosNaRua: veiculosNaRua,
+    motoristas: listas.motoristas
+  };
+
+  cachePutSeguro(cache, CACHE_KEY_ENTRADA_BOOTSTRAP, result);
+  return result;
+}
+
+/* ================= FROTA - OPERACAO ================= */
+
+function limparCacheDashboard() {
+  const cache = CacheService.getScriptCache();
+  cache.remove(CACHE_KEY_DASHBOARD);
+  cache.remove(CACHE_KEY_HOME_FAST);
+  cache.remove(CACHE_KEY_SAIDA_BOOTSTRAP);
+  cache.remove(CACHE_KEY_ENTRADA_BOOTSTRAP);
+}
+
+function registrarSaidaFrota(p) {
+  const sessao = exigirSessaoSeguranca(p.token);
+  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
+
+  const faixa = getFaixaUltimasLinhas(sh, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
+  const dados = faixa.values;
+
+  for (let i = dados.length - 1; i >= 0; i--) {
+    const r = dados[i];
+    if (mesmoVeiculo(r[0], p.veiculo) && statusEmTransito(r[6])) {
+      return { ok: false, message: "Veiculo ja esta em transito." };
+    }
+  }
+
+  sh.appendRow([
+    p.veiculo,
+    p.motorista,
+    sessao.seguranca,
+    parseNumeroSeguro(p.KmSaida || p.kmSaida),
+    p.destino,
+    new Date(),
+    "EM TRANSITO",
+    "",
+    "",
+    ""
+  ]);
+
+  limparCacheDashboard();
+  return { ok: true, seguranca: sessao.seguranca };
+}
+
+function registrarEntradaFrota(p) {
+  const sessao = exigirSessaoSeguranca(p.token);
+  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
+
+  const faixa = getFaixaUltimasLinhas(sh, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
+  const data = faixa.values;
+  const startRow = faixa.startRow;
+
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (mesmoVeiculo(data[i][0], p.veiculo) && statusEmTransito(data[i][6])) {
+      const linha = startRow + i;
+      const kmSai = parseNumeroSeguro(data[i][3]);
+      const kmRet = parseNumeroSeguro(p.KmRetorno || p.kmRetorno);
+
+      if (kmRet < kmSai) {
+        return { ok: false, message: "KM de retorno inferior ao KM de saida." };
+      }
+
+      sh.getRange(linha, 3).setValue(sessao.seguranca);
+      sh.getRange(linha, 7).setValue("CONCLUIDO");
+      sh.getRange(linha, 8).setValue(kmRet);
+      sh.getRange(linha, 9).setValue(kmRet - kmSai);
+      sh.getRange(linha, 10).setValue(new Date());
+
+      limparCacheDashboard();
+      return { ok: true, seguranca: sessao.seguranca };
+    }
+  }
+
+  return { ok: false, message: "Veiculo nao encontrado em transito." };
+}
+
+function getKmAtual(veiculo) {
+  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
+  const faixa = getFaixaUltimasLinhas(sh, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
+  const data = faixa.values;
+
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (mesmoVeiculo(data[i][0], veiculo)) {
+      return { ok: true, km: parseNumeroSeguro(data[i][7]) || parseNumeroSeguro(data[i][3]) || 0 };
+    }
+  }
+  return { ok: true, km: 0 };
+}
