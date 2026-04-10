@@ -36,8 +36,11 @@ function doGet(e) {{
     const r = String(e && e.parameter && e.parameter.route || 'home');
     if (r === 'ping')          return ok_(e, {{ service:'online', when: nowStr_() }});
     if (r === 'home')          return ok_(e, getHomeData_());
+    if (r === 'homeFast')      return ok_(e, getHomeData_());
     if (r === 'lists')         return ok_(e, getLists_());
     if (r === 'listsAvail')    return ok_(e, getListsAvail_());
+    if (r === 'veiculosAvail') return ok_(e, getVeiculosAvail_());
+    if (r === 'apoioSaida')    return ok_(e, getApoioSaida_());
     if (r === 'kmAtual')       return ok_(e, getKmAtual_(String(e.parameter.veiculo || '').trim()));
     if (r === 'statusVeiculo') return ok_(e, statusVeiculo_(String(e.parameter.veiculo || '').trim()));
     if (r === 'bootstrap')     return ok_(e, bootstrap_());
@@ -91,6 +94,31 @@ function getSheetByName_(ss, name){{ const sh = ss.getSheetByName(name); if(!sh)
 function getNamedRange_(ss, named){{ return ss.getRangeByName(named) || null; }}
 function norm_(s){{ return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,''); }}
 function findIdx_(headers, candidates){{ const H = headers.map(h=>norm_(h)); for(const c of candidates){{ const i = H.indexOf(norm_(c)); if(i>=0) return i; }} return -1; }}
+function toTextList_(arr){{
+  return Array.from(new Set((arr || [])
+    .map(function(item){{
+      const v = (item && typeof item === 'object') ? (item.nome || item.name || '') : item;
+      return String(v || '').trim();
+    }})
+    .filter(Boolean)
+  )).sort(function(a,b){{ return a.localeCompare(b, 'pt-BR'); }});
+}}
+function getFixedListsSafe_(){{
+  try {{
+    if (typeof getListasFrotaFixas === 'function') {{
+      const data = getListasFrotaFixas();
+      return {{ ok:true, veiculos: toTextList_(data.veiculos), motoristas: toTextList_(data.motoristas), segurancas: toTextList_(data.segurancas) }};
+    }}
+    if (typeof getListasFrota === 'function') {{
+      const data = getListasFrota();
+      return {{ ok:true, veiculos: toTextList_(data.veiculos), motoristas: toTextList_(data.motoristas), segurancas: toTextList_(data.segurancas) }};
+    }}
+  }} catch (err) {{
+    // Em caso de erro na nova fonte local, continua no fluxo legado (planilha)
+    Logger.log('Falha ao usar listas locais: ' + err);
+  }}
+  return null;
+}}
 
 /************** CACHE **************/
 const CACHE_TTL_SEC = 45;
@@ -177,6 +205,8 @@ function getMovimentacaoRecente__(ss,limit){{
 
 /************** LISTAS & DISP **************/
 function getLists_(){{
+  const fix = getFixedListsSafe_();
+  if (fix) return fix;
   const ss=openSS_(); const aba=getSheetByName_(ss,ABA_LISTAGEM); let r=getNamedRange_(ss,NOME_TABELA_LIST); if(!r) r=aba.getRange(1,1,aba.getLastRow(),aba.getLastColumn());
   const vals=r.getValues(); if(vals.length<2) return {{ ok:true, veiculos:[], motoristas:[], segurancas:[] }};
   const head=vals[0].map(h=>String(h).trim()); const iV=findIdx_(head,['Veiculo','Veículo']); const iM=findIdx_(head,['Motorista']); const iSg=findIdx_(head,['Seguranca','Segurança']); if(iV<0||iM<0||iSg<0) throw new Error('Cabeçalhos ausentes em "Listagem2".');
@@ -186,12 +216,30 @@ function getLists_(){{
 function getListsAvail_(){{
   const ck='listsAvail'; const c=getCacheJson_(ck); if(c) return c; const lists=getLists_(); const ss=openSS_(); const d=getDadosDigest_(ss);
   const disp=[], ocp=[]; (lists.veiculos||[]).forEach(v=>{{ if(d.inCourseSet.has(norm_(v))) ocp.push(v); else disp.push(v); }});
-  const out={{ ok:true, veiculosDisponiveis:disp, veiculosEmCurso:Array.from(new Set([...ocp, ...d.listInCourse])), motoristas:lists.motoristas, segurancas:lists.segurancas }};
+  const veiculosNaRua = Array.from(new Set([...ocp, ...d.listInCourse])).map(function(v){{
+    const m = d.lastMetaByVehicle[norm_(v)] || {{}};
+    return {{
+      veiculo: v,
+      motorista: m.motorista || '',
+      kmSaida: Number(m.kmSaida || 0)
+    }};
+  }});
+  const out={{ ok:true, veiculosDisponiveis:disp, veiculosEmCurso:veiculosNaRua.map(function(x){{ return x.veiculo; }}), veiculosNaRua:veiculosNaRua, emTransito:veiculosNaRua, motoristas:lists.motoristas, segurancas:lists.segurancas }};
   putCacheJson_(ck,out); return out;
 }}
 
+function getVeiculosAvail_(){{
+  const l = getListsAvail_();
+  return {{ ok:true, veiculos:l.veiculosDisponiveis || [] }};
+}}
+
+function getApoioSaida_(){{
+  const l = getLists_();
+  return {{ ok:true, motoristas:l.motoristas || [], segurancas:l.segurancas || [] }};
+}}
+
 /************** KM + STATUS **************/
-function getKmAtual_(veiculo){{ if(!veiculo) return {{ ok:true, kmAtual:0 }}; const ss=openSS_(); const d=getDadosDigest_(ss); const m=d.lastMetaByVehicle[norm_(veiculo)]; return {{ ok:true, kmAtual: m?Number(m.kmAtual||0):0 }}; }}
+function getKmAtual_(veiculo){{ if(!veiculo) return {{ ok:true, kmAtual:0, km:0 }}; const ss=openSS_(); const d=getDadosDigest_(ss); const m=d.lastMetaByVehicle[norm_(veiculo)]; const valor = m?Number(m.kmAtual||0):0; return {{ ok:true, kmAtual: valor, km: valor }}; }}
 function statusVeiculo_(veiculo){{ const ss=openSS_(); const d=getDadosDigest_(ss); const key=norm_(veiculo); const m=d.lastMetaByVehicle[key]; const em=d.inCourseSet.has(key); const out={{ ok:true, emCurso:em, kmAtual: m?m.kmAtual:0 }}; if(m && em){{ out.motorista=m.motorista; out.seguranca=m.seguranca; out.kmSaida=m.kmSaida; out.dataSaida=m.dataSaida; }} return out; }}
 
 /************** SAÍDA / ENTRADA **************/

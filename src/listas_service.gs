@@ -6,7 +6,11 @@
 function normalizarListaTexto_(lista) {
   return [...new Set(
     (lista || [])
-      .map(function(item) { return String(item || "").trim(); })
+      .map(function(item) {
+        // Durante a migração, algumas listas podem vir como objeto ({ nome, ... }).
+        var valor = (item && typeof item === "object") ? (item.nome || item.name || "") : item;
+        return String(valor || "").trim();
+      })
       .filter(Boolean)
   )].sort(function(a, b) {
     return a.localeCompare(b, "pt-BR");
