@@ -1,6 +1,6 @@
 /**
  * Lista fixa de veículos cadastrados.
- * Atualize este arquivo sempre que houver alteração na frota base.
+ * Atualize este arquivo sempre que houver alteração na frota base...
  */
 const LISTA_VEICULOS = [
   "Amarok - QCH7131",
