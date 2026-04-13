@@ -4,58 +4,34 @@ on:
   push:
     branches:
       - main
-      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar código do repositório
+      - name: Baixar código
         uses: actions/checkout@v4
 
-      - name: Instalar Node.js
+      - name: Instalar Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
-      - name: Instalar CLASP
+      - name: Instalar clasp
         run: npm install -g @google/clasp
 
-      - name: Criar autenticação CLASP
+      - name: Configurar autenticação
         run: |
-          mkdir -p ~/.config
-          cat > ~/.clasprc.json <<EOF
-          {
+          echo '{
             "token": {
               "access_token": "${{ secrets.CLASP_ACCESS_TOKEN }}",
               "refresh_token": "${{ secrets.CLASP_REFRESH_TOKEN }}",
-              "scope": "https://www.googleapis.com/auth/script.projects https://www.googleapis.com/auth/script.deployments",
-              "token_type": "Bearer"
-            },
-            "oauth2ClientSettings": {
-              "clientId": "${{ secrets.CLASP_CLIENT_ID }}",
-              "clientSecret": "${{ secrets.CLASP_CLIENT_SECRET }}",
-              "redirectUri": "http://localhost"
-            },
-            "isLocalCreds": false
-          }
-          EOF
+              "scope": "https://www.googleapis.com/auth/script.projects https://www.googleapis.com/auth/drive",
+              "token_type": "Bearer",
+              "expiry_date": 9999999999999
+            }
+          }' > ~/.clasprc.json
 
-      - name: Criar .clasp.json
-        run: |
-          cat > .clasp.json <<EOF
-          {
-            "scriptId": "${{ secrets.SCRIPT_ID }}",
-            "rootDir": "./"
-          }
-          EOF
-
-      - name: Push para Apps Script
-        run: clasp push -f
-
-      - name: Criar nova versão
-        run: clasp version "Deploy automático GitHub"
-
-      - name: Fazer deploy do Web App
-        run: clasp deploy -d "Deploy GitHub automático"
+      - name: Publicar Apps Script
+        run: clasp push
