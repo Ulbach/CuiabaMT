@@ -5,6 +5,7 @@
 const LISTA_MOTORISTAS = [
   { nome: "ELIESER DA SILVA SANTOS", validadeCnh: "17/12/2023" },
   { nome: "EDINEY MOREIRA DOS SANTOS", validadeCnh: "10/11/2034" },
+  { nome: "FABRICIO ULBACH", validadeCnh: "06/12/2032" },
   { nome: "THACITO MARCELO DE PAULA FERREIRA", validadeCnh: "06/12/2032" },
   { nome: "GUILHERME AUGUSTO MARTINS DA SILVA", validadeCnh: "19/06/2033" },
   { nome: "PAULO SERGIO DOS SANTOS", validadeCnh: "22/01/2035" },
