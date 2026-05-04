@@ -2,7 +2,7 @@
  * Lista fixa de motoristas autorizados - Delta Cuiabá
  * validadeCnh no formato dd/MM/yyyy
  */
-const LISTA_MOTORISTAS = [
+var LISTA_MOTORISTAS = [
   { nome: "ELIESER DA SILVA SANTOS", validadeCnh: "17/12/2023" },
   { nome: "EDINEY MOREIRA DOS SANTOS", validadeCnh: "10/11/2034" },
   { nome: "FABRICIO ULBACH", validadeCnh: "06/12/2032" },
