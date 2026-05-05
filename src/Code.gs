@@ -114,6 +114,10 @@ function getListasFrota() {
   };
 }
 
+function getListasFrotaFixas() {
+  return getListasFrota();
+}
+
 /* ================= CORE ================= */
 
 function doGet(e) {
@@ -123,7 +127,7 @@ function doGet(e) {
   let result;
 
   try {
-    if (route === "pingVersao") result = { ok: true, versao: "CUIABA_CODE_REVISAO_FINAL_2026_05_05", scriptId: ScriptApp.getScriptId() };
+    if (route === "pingVersao") result = { ok: true, versao: "CUIABA_CODE_ALINHADO_FINAL_2026_05_05", scriptId: ScriptApp.getScriptId() };
     else if (route === "debugListas") result = debugListasFixas();
     else if (route === "loginSeguranca") result = loginSeguranca(p.codigo);
     else if (route === "validarSessao") result = validarSessaoSeguranca(p.token);
@@ -377,7 +381,7 @@ function debugListasFixas() {
   const listas = getListasFrota();
   return {
     ok: true,
-    versao: "CUIABA_CODE_REVISAO_FINAL_2026_05_05",
+    versao: "CUIABA_CODE_ALINHADO_FINAL_2026_05_05",
     scriptId: ScriptApp.getScriptId(),
     tipoListaVeiculos: typeof LISTA_VEICULOS,
     totalVeiculosRaw: getListaVeiculosRaw_().length,
