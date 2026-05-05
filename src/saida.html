@@ -100,6 +100,7 @@
 
 <script>
 const API_URL='https://script.google.com/macros/s/AKfycbyii2idYKWcwJkusNJyvnlUQH1zN1RhEh4gGBQmVYM8t17AYqRe9GlJ282RiEtzk_jbxQ/exec';
+const TELA_VERSAO='SAIDA_ALINHADA_2026_05_05';
 const STORAGE_KEY='delta_auth_v1';
 const SESSION_RECHECK_MS = 5 * 60 * 1000;
 
@@ -157,7 +158,7 @@ async function validarSessaoOuRedirecionar(forceRemote){
   const auth = getAuth();
   if(!sessaoValidaLocal(auth)){
     clearAuth();
-    location.href='index.html';
+    location.href='../index.html';
     return null;
   }
 
@@ -185,7 +186,7 @@ async function validarSessaoOuRedirecionar(forceRemote){
   }
 
   clearAuth();
-  location.href='index.html';
+  location.href='../index.html';
   return null;
 }
 
@@ -195,7 +196,7 @@ async function logoutSistema(){
     if(auth && auth.token) await jsonp(API_URL + '?route=logoutSeguranca&token=' + encodeURIComponent(auth.token));
   } catch(_) {}
   clearAuth();
-  location.href='index.html';
+  location.href='../index.html';
 }
 
 let inFlight = false;
@@ -230,19 +231,59 @@ async function init() {
   const segurancaEl = document.getElementById('seguranca');
   segurancaEl.value = AUTH.seguranca || '';
 
+  preencher(veiculoEl, [], 'Carregando...');
+  preencher(motoristaEl, [], 'Carregando...');
+  msg.style.color = 'var(--text-soft)';
+  msg.innerText = 'Carregando listas...';
+
   try {
-    const [v, a] = await Promise.all([
-      jsonp(`${API_URL}?route=veiculosAvail&t=${Date.now()}`),
-      jsonp(`${API_URL}?route=apoioSaida&t=${Date.now()}`)
-    ]);
+    // Rota principal: carrega veículos, motoristas, seguranças e KM em uma única chamada.
+    let boot = await jsonp(`${API_URL}?route=bootstrapSaida&t=${Date.now()}`);
 
-    if (!v || v.ok === false) throw new Error(v && v.message ? v.message : 'Falha ao carregar veículos');
-    if (!a || a.ok === false) throw new Error(a && a.message ? a.message : 'Falha ao carregar apoio');
+    // Fallback: se por algum motivo bootstrapSaida falhar ou vier incompleto,
+    // usa as rotas separadas que já foram testadas no navegador.
+    if (!boot || boot.ok === false || !Array.isArray(boot.veiculos) || !Array.isArray(boot.motoristas)) {
+      const [v, a] = await Promise.all([
+        jsonp(`${API_URL}?route=veiculosAvail&t=${Date.now()}`),
+        jsonp(`${API_URL}?route=apoioSaida&t=${Date.now()}`)
+      ]);
 
-    preencher(veiculoEl, v.veiculos, 'Selecione...');
-    preencher(motoristaEl, a.motoristas, 'Selecione...');
-    msg.innerText = '';
+      if (!v || v.ok === false) throw new Error(v && v.message ? v.message : 'Falha ao carregar veículos');
+      if (!a || a.ok === false) throw new Error(a && a.message ? a.message : 'Falha ao carregar motoristas');
+
+      boot = {
+        ok: true,
+        veiculos: v.veiculos || [],
+        motoristas: a.motoristas || [],
+        segurancas: a.segurancas || [],
+        kmMap: {}
+      };
+    }
+
+    const veiculos = Array.isArray(boot.veiculos) ? boot.veiculos : [];
+    const motoristas = Array.isArray(boot.motoristas) ? boot.motoristas : [];
+
+    preencher(veiculoEl, veiculos, veiculos.length ? 'Selecione...' : 'Nenhum veículo disponível');
+    preencher(motoristaEl, motoristas, motoristas.length ? 'Selecione...' : 'Nenhum motorista disponível');
+
+    if (boot.kmMap && typeof boot.kmMap === 'object') {
+      Object.keys(boot.kmMap).forEach(function(k) {
+        KM_CACHE[k] = Number(boot.kmMap[k] || 0);
+      });
+    }
+
+    if (!veiculos.length || !motoristas.length) {
+      msg.style.color = 'var(--red)';
+      msg.innerText = `Listas incompletas. Veículos: ${veiculos.length} | Motoristas: ${motoristas.length}`;
+      return;
+    }
+
+    msg.style.color = 'var(--green)';
+    msg.innerText = `Listas carregadas. Veículos: ${veiculos.length} | Motoristas: ${motoristas.length}`;
+    setTimeout(function(){ if (msg.innerText.startsWith('Listas carregadas')) msg.innerText = ''; }, 1800);
   } catch (e) {
+    preencher(veiculoEl, [], 'Erro ao carregar');
+    preencher(motoristaEl, [], 'Erro ao carregar');
     msg.style.color = 'var(--red)';
     msg.innerText = (e && e.message) ? e.message : 'Erro ao carregar dados.';
   }
