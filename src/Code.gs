@@ -33,81 +33,115 @@ const TOTAL_COLUNAS_FROTA = 10;
  * Não declare LISTA_VEICULOS, LISTA_MOTORISTAS ou LISTA_SEGURANCAS aqui.
  */
 
-/* ================= LISTAS FIXAS - SERVICE ================= */
+/* ================= LISTAS FIXAS - SERVICE EMBUTIDO =================
+ * Mantido dentro do Code.gs para evitar erro de função não definida no login.
+ * As listas continuam nos arquivos separados:
+ * - listas_veiculos.gs
+ * - listas_motoristas.gs
+ * - listas_segurancas.gs
+ */
+
+function getListaVeiculosRaw_() {
+  return (typeof LISTA_VEICULOS !== "undefined" && Array.isArray(LISTA_VEICULOS)) ? LISTA_VEICULOS : [];
+}
+
+function getListaMotoristasRaw_() {
+  return (typeof LISTA_MOTORISTAS !== "undefined" && Array.isArray(LISTA_MOTORISTAS)) ? LISTA_MOTORISTAS : [];
+}
+
+function getListaSegurancasRaw_() {
+  return (typeof LISTA_SEGURANCAS !== "undefined" && Array.isArray(LISTA_SEGURANCAS)) ? LISTA_SEGURANCAS : [];
+}
 
 function normalizarListaTexto_(lista) {
-  return [...new Set(
+  return Array.from(new Set(
     (lista || [])
-      .map(function(item) { return String(item || "").trim(); })
+      .map(function(item) {
+        var valor = (item && typeof item === "object") ? (item.nome || item.name || "") : item;
+        return String(valor || "").trim();
+      })
       .filter(Boolean)
-  )].sort(function(a, b) {
+  )).sort(function(a, b) {
     return a.localeCompare(b, "pt-BR");
   });
 }
 
 function parseDataListaFixa_(texto) {
   if (!texto) return null;
-  const m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  var m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!m) return null;
   return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
 
 function hojeNormalizado_() {
-  const d = new Date();
+  var d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 function cnhListaFixaValida_(texto) {
-  const d = parseDataListaFixa_(texto);
+  var d = parseDataListaFixa_(texto);
   if (!d) return false;
   return d.getTime() >= hojeNormalizado_().getTime();
 }
 
 function getListaVeiculosFixos() {
-  if (typeof LISTA_VEICULOS === "undefined") {
-    throw new Error("LISTA_VEICULOS não encontrada. Verifique se listas_veiculos.gs está no src e foi enviado pelo clasp.");
-  }
-  return normalizarListaTexto_(LISTA_VEICULOS);
+  return normalizarListaTexto_(getListaVeiculosRaw_());
 }
 
 function getListaMotoristasFixos() {
-  if (typeof LISTA_MOTORISTAS === "undefined") {
-    throw new Error("LISTA_MOTORISTAS não encontrada. Verifique se listas_motoristas.gs está no src e foi enviado pelo clasp.");
-  }
   return normalizarListaTexto_(
-    (LISTA_MOTORISTAS || [])
-      .filter(function(item) { return cnhListaFixaValida_(item.validadeCnh); })
-      .map(function(item) { return item.nome; })
+    getListaMotoristasRaw_()
+      .filter(function(item) { return item && cnhListaFixaValida_(item.validadeCnh); })
+      .map(function(item) { return item && item.nome; })
   );
 }
 
 function getListaSegurancasFixos() {
-  if (typeof LISTA_SEGURANCAS === "undefined") {
-    throw new Error("LISTA_SEGURANCAS não encontrada. Verifique se listas_segurancas.gs está no src e foi enviado pelo clasp.");
-  }
   return normalizarListaTexto_(
-    (LISTA_SEGURANCAS || []).map(function(item) { return item.nome; })
+    getListaSegurancasRaw_().map(function(item) { return item && item.nome; })
   );
 }
 
 function getMapaCodigosSegurancasFixos() {
-  if (typeof LISTA_SEGURANCAS === "undefined") {
-    throw new Error("LISTA_SEGURANCAS não encontrada. Verifique se listas_segurancas.gs está no src e foi enviado pelo clasp.");
-  }
-  const mapa = {};
-  (LISTA_SEGURANCAS || []).forEach(function(item) {
-    const codigo = String(item.codigo || "").trim();
-    const nome = String(item.nome || "").trim();
+  var mapa = {};
+
+  getListaSegurancasRaw_().forEach(function(item) {
+    if (!item || typeof item !== "object") return;
+
+    var codigo = String(item.codigo || "").trim();
+    var nome = String(item.nome || item.name || "").trim();
+
     if (codigo && nome) mapa[codigo] = nome;
   });
+
   return mapa;
 }
 
-function getListasFrota() {
+function getListasFrotaFixas() {
   return {
     veiculos: getListaVeiculosFixos(),
     motoristas: getListaMotoristasFixos(),
     segurancas: getListaSegurancasFixos()
+  };
+}
+
+function getListasFrota() {
+  return getListasFrotaFixas();
+}
+
+function debugListasFixas() {
+  var listas = getListasFrotaFixas();
+  return {
+    ok: true,
+    versao: "CUIABA_CODE_FINAL_2026_05_05",
+    scriptId: ScriptApp.getScriptId(),
+    tipoListaVeiculos: typeof LISTA_VEICULOS,
+    totalVeiculosRaw: getListaVeiculosRaw_().length,
+    totalVeiculos: listas.veiculos.length,
+    veiculos: listas.veiculos,
+    totalMotoristas: listas.motoristas.length,
+    totalSegurancas: listas.segurancas.length,
+    mapaSegurancas: getMapaCodigosSegurancasFixos()
   };
 }
 
@@ -120,7 +154,9 @@ function doGet(e) {
   let result;
 
   try {
-    if (route === "loginSeguranca") result = loginSeguranca(p.codigo);
+    if (route === "pingVersao") result = { ok: true, versao: "CUIABA_CODE_FINAL_2026_05_05", scriptId: ScriptApp.getScriptId() };
+    else if (route === "debugListas") result = debugListasFixas();
+    else if (route === "loginSeguranca") result = loginSeguranca(p.codigo);
     else if (route === "validarSessao") result = validarSessaoSeguranca(p.token);
     else if (route === "logoutSeguranca") result = logoutSeguranca(p.token);
 
