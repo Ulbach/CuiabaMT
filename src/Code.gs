@@ -33,115 +33,81 @@ const TOTAL_COLUNAS_FROTA = 10;
  * Não declare LISTA_VEICULOS, LISTA_MOTORISTAS ou LISTA_SEGURANCAS aqui.
  */
 
-/* ================= LISTAS FIXAS - SERVICE EMBUTIDO =================
- * Mantido dentro do Code.gs para evitar erro de função não definida no login.
- * As listas continuam nos arquivos separados:
- * - listas_veiculos.gs
- * - listas_motoristas.gs
- * - listas_segurancas.gs
- */
-
-function getListaVeiculosRaw_() {
-  return (typeof LISTA_VEICULOS !== "undefined" && Array.isArray(LISTA_VEICULOS)) ? LISTA_VEICULOS : [];
-}
-
-function getListaMotoristasRaw_() {
-  return (typeof LISTA_MOTORISTAS !== "undefined" && Array.isArray(LISTA_MOTORISTAS)) ? LISTA_MOTORISTAS : [];
-}
-
-function getListaSegurancasRaw_() {
-  return (typeof LISTA_SEGURANCAS !== "undefined" && Array.isArray(LISTA_SEGURANCAS)) ? LISTA_SEGURANCAS : [];
-}
+/* ================= LISTAS FIXAS - SERVICE ================= */
 
 function normalizarListaTexto_(lista) {
-  return Array.from(new Set(
+  return [...new Set(
     (lista || [])
-      .map(function(item) {
-        var valor = (item && typeof item === "object") ? (item.nome || item.name || "") : item;
-        return String(valor || "").trim();
-      })
+      .map(function(item) { return String(item || "").trim(); })
       .filter(Boolean)
-  )).sort(function(a, b) {
+  )].sort(function(a, b) {
     return a.localeCompare(b, "pt-BR");
   });
 }
 
 function parseDataListaFixa_(texto) {
   if (!texto) return null;
-  var m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!m) return null;
   return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
 
 function hojeNormalizado_() {
-  var d = new Date();
+  const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 function cnhListaFixaValida_(texto) {
-  var d = parseDataListaFixa_(texto);
+  const d = parseDataListaFixa_(texto);
   if (!d) return false;
   return d.getTime() >= hojeNormalizado_().getTime();
 }
 
 function getListaVeiculosFixos() {
-  return normalizarListaTexto_(getListaVeiculosRaw_());
+  if (typeof LISTA_VEICULOS === "undefined") {
+    throw new Error("LISTA_VEICULOS não encontrada. Verifique se listas_veiculos.gs está no src e foi enviado pelo clasp.");
+  }
+  return normalizarListaTexto_(LISTA_VEICULOS);
 }
 
 function getListaMotoristasFixos() {
+  if (typeof LISTA_MOTORISTAS === "undefined") {
+    throw new Error("LISTA_MOTORISTAS não encontrada. Verifique se listas_motoristas.gs está no src e foi enviado pelo clasp.");
+  }
   return normalizarListaTexto_(
-    getListaMotoristasRaw_()
-      .filter(function(item) { return item && cnhListaFixaValida_(item.validadeCnh); })
-      .map(function(item) { return item && item.nome; })
+    (LISTA_MOTORISTAS || [])
+      .filter(function(item) { return cnhListaFixaValida_(item.validadeCnh); })
+      .map(function(item) { return item.nome; })
   );
 }
 
 function getListaSegurancasFixos() {
+  if (typeof LISTA_SEGURANCAS === "undefined") {
+    throw new Error("LISTA_SEGURANCAS não encontrada. Verifique se listas_segurancas.gs está no src e foi enviado pelo clasp.");
+  }
   return normalizarListaTexto_(
-    getListaSegurancasRaw_().map(function(item) { return item && item.nome; })
+    (LISTA_SEGURANCAS || []).map(function(item) { return item.nome; })
   );
 }
 
 function getMapaCodigosSegurancasFixos() {
-  var mapa = {};
-
-  getListaSegurancasRaw_().forEach(function(item) {
-    if (!item || typeof item !== "object") return;
-
-    var codigo = String(item.codigo || "").trim();
-    var nome = String(item.nome || item.name || "").trim();
-
+  if (typeof LISTA_SEGURANCAS === "undefined") {
+    throw new Error("LISTA_SEGURANCAS não encontrada. Verifique se listas_segurancas.gs está no src e foi enviado pelo clasp.");
+  }
+  const mapa = {};
+  (LISTA_SEGURANCAS || []).forEach(function(item) {
+    const codigo = String(item.codigo || "").trim();
+    const nome = String(item.nome || "").trim();
     if (codigo && nome) mapa[codigo] = nome;
   });
-
   return mapa;
 }
 
-function getListasFrotaFixas() {
+function getListasFrota() {
   return {
     veiculos: getListaVeiculosFixos(),
     motoristas: getListaMotoristasFixos(),
     segurancas: getListaSegurancasFixos()
-  };
-}
-
-function getListasFrota() {
-  return getListasFrotaFixas();
-}
-
-function debugListasFixas() {
-  var listas = getListasFrotaFixas();
-  return {
-    ok: true,
-    versao: "CUIABA_CODE_FINAL_2026_05_05",
-    scriptId: ScriptApp.getScriptId(),
-    tipoListaVeiculos: typeof LISTA_VEICULOS,
-    totalVeiculosRaw: getListaVeiculosRaw_().length,
-    totalVeiculos: listas.veiculos.length,
-    veiculos: listas.veiculos,
-    totalMotoristas: listas.motoristas.length,
-    totalSegurancas: listas.segurancas.length,
-    mapaSegurancas: getMapaCodigosSegurancasFixos()
   };
 }
 
@@ -154,9 +120,7 @@ function doGet(e) {
   let result;
 
   try {
-    if (route === "pingVersao") result = { ok: true, versao: "CUIABA_CODE_FINAL_2026_05_05", scriptId: ScriptApp.getScriptId() };
-    else if (route === "debugListas") result = debugListasFixas();
-    else if (route === "loginSeguranca") result = loginSeguranca(p.codigo);
+    if (route === "loginSeguranca") result = loginSeguranca(p.codigo);
     else if (route === "validarSessao") result = validarSessaoSeguranca(p.token);
     else if (route === "logoutSeguranca") result = logoutSeguranca(p.token);
 
@@ -201,11 +165,21 @@ function buscarSegurancaPorCodigo(codigo) {
   const alvo = String(codigo == null ? "" : codigo).trim();
   if (!alvo) return null;
 
-  const mapa = getMapaCodigosSegurancasFixos();
-  const seguranca = mapa[alvo];
-  if (!seguranca) return null;
+  const lista = (typeof LISTA_SEGURANCAS !== "undefined" && Array.isArray(LISTA_SEGURANCAS))
+    ? LISTA_SEGURANCAS
+    : getListaSegurancasRaw_();
 
-  return { seguranca: seguranca, codigo: alvo };
+  for (let i = 0; i < lista.length; i++) {
+    const item = lista[i] || {};
+    const cod = String(item.codigo || "").trim();
+    const nome = String(item.nome || item.name || "").trim();
+
+    if (cod === alvo && nome) {
+      return { seguranca: nome, codigo: alvo };
+    }
+  }
+
+  return null;
 }
 
 function salvarSessaoSeguranca(token, payload) {
