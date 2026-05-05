@@ -1,12 +1,40 @@
 /**
- * SERVIÇO CENTRAL DE LISTAS FIXAS
- * Responsável por normalizar, validar e expor as listas do sistema.
+ * SERVIÇO CENTRAL PARA ACESSO ÀS LISTAS FIXAS DO PROJETO.
+ *
+ * Este arquivo é obrigatório quando o Code.gs chama:
+ * - getListasFrotaFixas()
+ * - getMapaCodigosSegurancasFixos()
+ *
+ * As listas devem existir nos arquivos:
+ * - listas_veiculos.gs      -> var LISTA_VEICULOS = [...]
+ * - listas_motoristas.gs    -> var LISTA_MOTORISTAS = [{ nome, validadeCnh }, ...]
+ * - listas_segurancas.gs    -> var LISTA_SEGURANCAS = [{ nome, codigo }, ...]
  */
+
+/* ================= ACESSO SEGURO ÀS LISTAS GLOBAIS ================= */
+
+function getListaVeiculosRaw_() {
+  return (typeof LISTA_VEICULOS !== "undefined" && Array.isArray(LISTA_VEICULOS))
+    ? LISTA_VEICULOS
+    : [];
+}
+
+function getListaMotoristasRaw_() {
+  return (typeof LISTA_MOTORISTAS !== "undefined" && Array.isArray(LISTA_MOTORISTAS))
+    ? LISTA_MOTORISTAS
+    : [];
+}
+
+function getListaSegurancasRaw_() {
+  return (typeof LISTA_SEGURANCAS !== "undefined" && Array.isArray(LISTA_SEGURANCAS))
+    ? LISTA_SEGURANCAS
+    : [];
+}
 
 /* ================= NORMALIZAÇÃO ================= */
 
 function normalizarListaTexto_(lista) {
-  return [...new Set(
+  return Array.from(new Set(
     (lista || [])
       .map(function(item) {
         var valor = (item && typeof item === "object")
@@ -16,7 +44,7 @@ function normalizarListaTexto_(lista) {
         return String(valor || "").trim();
       })
       .filter(Boolean)
-  )].sort(function(a, b) {
+  )).sort(function(a, b) {
     return a.localeCompare(b, "pt-BR");
   });
 }
@@ -29,11 +57,7 @@ function parseDataListaFixa_(texto) {
   var m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!m) return null;
 
-  return new Date(
-    Number(m[3]),
-    Number(m[2]) - 1,
-    Number(m[1])
-  );
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
 
 function hojeNormalizado_() {
@@ -44,21 +68,20 @@ function hojeNormalizado_() {
 function cnhListaFixaValida_(texto) {
   var d = parseDataListaFixa_(texto);
   if (!d) return false;
-
   return d.getTime() >= hojeNormalizado_().getTime();
 }
 
-/* ================= LISTAS ================= */
+/* ================= LISTAS PARA O APP ================= */
 
 function getListaVeiculosFixos() {
-  return normalizarListaTexto_(LISTA_VEICULOS);
+  return normalizarListaTexto_(getListaVeiculosRaw_());
 }
 
 function getListaMotoristasFixos() {
   return normalizarListaTexto_(
-    (LISTA_MOTORISTAS || [])
+    getListaMotoristasRaw_()
       .filter(function(item) {
-        return cnhListaFixaValida_(item && item.validadeCnh);
+        return item && cnhListaFixaValida_(item.validadeCnh);
       })
       .map(function(item) {
         return item && item.nome;
@@ -68,25 +91,22 @@ function getListaMotoristasFixos() {
 
 function getListaSegurancasFixos() {
   return normalizarListaTexto_(
-    (LISTA_SEGURANCAS || []).map(function(item) {
+    getListaSegurancasRaw_().map(function(item) {
       return item && item.nome;
     })
   );
 }
 
-/* ================= LOGIN ================= */
+/* ================= LOGIN / SEGURANÇAS ================= */
 
 function getMapaCodigosSegurancasFixos() {
   var mapa = {};
 
-  (LISTA_SEGURANCAS || []).forEach(function(item) {
-    var codigo = "";
-    var nome = "";
+  getListaSegurancasRaw_().forEach(function(item) {
+    if (!item || typeof item !== "object") return;
 
-    if (item && typeof item === "object") {
-      codigo = String(item.codigo || "").trim();
-      nome = String(item.nome || item.name || "").trim();
-    }
+    var codigo = String(item.codigo || "").trim();
+    var nome = String(item.nome || item.name || "").trim();
 
     if (codigo && nome) {
       mapa[codigo] = nome;
@@ -96,7 +116,7 @@ function getMapaCodigosSegurancasFixos() {
   return mapa;
 }
 
-/* ================= FROTA ================= */
+/* ================= OBJETO CENTRAL DE LISTAS ================= */
 
 function getListasFrotaFixas() {
   return {
@@ -104,4 +124,9 @@ function getListasFrotaFixas() {
     motoristas: getListaMotoristasFixos(),
     segurancas: getListaSegurancasFixos()
   };
+}
+
+/* Compatibilidade com versões antigas do Code.gs, caso alguma função ainda chame getListasFrota(). */
+function getListasFrota() {
+  return getListasFrotaFixas();
 }
