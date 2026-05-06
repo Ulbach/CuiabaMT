@@ -1,122 +1,158 @@
 /**
  * DELTA PRO CUIABA - SISTEMA UNIFICADO (FROTA & VISITANTES)
- * VERSAO COM LISTAS FIXAS REAIS
+ * VERSAO FULL FIREBASE
  */
 
-const PLANILHA_ID = "1h1kgl9w6UL8JlxMvlywJM1AIthU_U1dGzQ84JicrlOU";
-const ABA_DADOS_FROTA = "App_Controle2";
-const ABA_VISITANTES = "Visitantes";
+const FIREBASE_PROJECT_ID = "cuiaba-01617931-f126e"; // <-- CORRIGIDO
+const FIRESTORE_API_BASE_URL = "https://firestore.googleapis.com/v1/projects/" + FIREBASE_PROJECT_ID + "/databases/(default)/documents/";
 
-const CACHE_KEY_DASHBOARD = "frota_dashboard_lists_v3";
-const CACHE_KEY_HOME_FAST = "frota_home_fast_v3";
-const CACHE_KEY_SAIDA_BOOTSTRAP = "frota_saida_bootstrap_v3";
-const CACHE_KEY_ENTRADA_BOOTSTRAP = "frota_entrada_bootstrap_v3";
-const CACHE_TTL_SEGUNDOS = 20;
+// A planhilha não é mais usada para frota ou visitantes, mas mantemos o ID para referência ou futuro fallback.
+const PLANILHA_ID = "1h1kgl9w6UL8JlxMvlywJM1AIthU_U1dGzQ84JicrlOU";
 
 const SESSION_PREFIX = "sessao_seguranca_";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 
-const MAX_LINHAS_DASHBOARD = 180;
-const MAX_LINHAS_BUSCA_OPERACIONAL = 400;
-const TOTAL_COLUNAS_FROTA = 10;
+/* ================= FIREBASE SERVICE ================= */
 
-/* ================= LISTAS FIXAS =================
- *
- * As listas NÃO ficam mais dentro do Code.gs.
- * Elas devem ficar somente nestes arquivos do projeto Apps Script:
- * - listas_veiculos.gs      -> const LISTA_VEICULOS
- * - listas_motoristas.gs    -> const LISTA_MOTORISTAS
- * - listas_segurancas.gs    -> const LISTA_SEGURANCAS
- *
- * Como o Apps Script carrega todos os arquivos .gs do projeto juntos,
- * este Code.gs apenas consome essas constantes globais.
- * Não declare LISTA_VEICULOS, LISTA_MOTORISTAS ou LISTA_SEGURANCAS aqui.
- */
+function getFirebaseToken_() {
+  const cache = CacheService.getScriptCache();
+  const token = cache.get("firebase_token");
+  if (token) return token;
+  const newToken = ScriptApp.getOAuthToken();
+  cache.put("firebase_token", newToken, 1800);
+  return newToken;
+}
 
-/* ================= LISTAS FIXAS - SERVICE ================= */
+function readCollectionFromFirestore_(collectionName) {
+  if (!FIREBASE_PROJECT_ID || FIREBASE_PROJECT_ID.startsWith("SEU-ID")) {
+    console.error("ID do Projeto Firebase não configurado.");
+    return null;
+  }
+  const url = FIRESTORE_API_BASE_URL + collectionName;
+  const options = { method: "get", headers: { "Authorization": "Bearer " + getFirebaseToken_() }, muteHttpExceptions: true };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const responseCode = response.getResponseCode();
+    const responseBody = response.getContentText();
+
+    if (responseCode === 200) {
+      const firestoreResponse = JSON.parse(responseBody);
+      if (!firestoreResponse.documents) return [];
+      return firestoreResponse.documents.map(function(doc) {
+        const docNameParts = doc.name.split('/');
+        const docId = docNameParts[docNameParts.length - 1];
+        const fields = doc.fields;
+        const result = { id: docId };
+        for (const key in fields) {
+          const valueObj = fields[key];
+          if (valueObj.stringValue !== undefined) result[key] = valueObj.stringValue;
+          else if (valueObj.integerValue !== undefined) result[key] = parseInt(valueObj.integerValue, 10);
+          else if (valueObj.doubleValue !== undefined) result[key] = parseFloat(valueObj.doubleValue);
+          else if (valueObj.booleanValue !== undefined) result[key] = valueObj.booleanValue;
+          else if (valueObj.timestampValue !== undefined) result[key] = valueObj.timestampValue;
+        }
+        return result;
+      });
+    } else {
+      console.error("Erro ao ler do Firestore (" + collectionName + "): " + responseBody);
+      return null;
+    }
+  } catch (e) {
+    console.error("Exceção ao ler do Firestore (" + collectionName + "): " + e.toString());
+    return null;
+  }
+}
+
+function createDocumentInFirestore_(collectionName, dataFields) {
+  if (!FIREBASE_PROJECT_ID || FIREBASE_PROJECT_ID.startsWith("SEU-ID")) return null;
+  const url = FIRESTORE_API_BASE_URL + collectionName;
+  const options = { method: 'post', contentType: 'application/json', headers: { 'Authorization': 'Bearer ' + getFirebaseToken_() }, payload: JSON.stringify({ fields: dataFields }), muteHttpExceptions: true };
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() < 300) return JSON.parse(response.getContentText());
+    console.error("Erro ao criar documento em (" + collectionName + "): " + response.getContentText());
+    return null;
+  } catch (e) {
+    console.error("Exceção ao criar documento em (" + collectionName + "): " + e.toString());
+    return null;
+  }
+}
+
+function patchDocumentInFirestore_(collectionName, documentId, dataFields, updateMask) {
+  if (!FIREBASE_PROJECT_ID || FIREBASE_PROJECT_ID.startsWith("SEU-ID")) return null;
+  let url = FIRESTORE_API_BASE_URL + collectionName + "/" + documentId;
+  if (updateMask && Array.isArray(updateMask)) {
+    url += "?" + updateMask.map(field => "updateMask.fieldPaths=" + encodeURIComponent(field)).join("&");
+  }
+  const options = { method: 'patch', contentType: 'application/json', headers: { 'Authorization': 'Bearer ' + getFirebaseToken_() }, payload: JSON.stringify({ fields: dataFields }), muteHttpExceptions: true };
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() === 200) return JSON.parse(response.getContentText());
+    console.error("Erro ao atualizar documento (" + documentId + "): " + response.getContentText());
+    return null;
+  } catch (e) {
+    console.error("Exceção ao atualizar documento (" + documentId + "): " + e.toString());
+    return null;
+  }
+}
+
+/* ================= LISTAS FIXAS - SERVICE (com CACHE) ================= */
 
 function getListaVeiculosRaw_() {
-  return (typeof LISTA_VEICULOS !== "undefined" && Array.isArray(LISTA_VEICULOS)) ? LISTA_VEICULOS : [];
+  const cache = CacheService.getScriptCache(); const cacheKey = "firebase_list_veiculos_v2";
+  const cached = cache.get(cacheKey); if (cached) { try { return JSON.parse(cached); } catch(e){} }
+  const fromFirebase = readCollectionFromFirestore_("frota_veiculos");
+  if (fromFirebase !== null) {
+    const result = fromFirebase.map(item => item.nome);
+    cache.put(cacheKey, JSON.stringify(result), 300);
+    return result;
+  }
+  return [];
 }
 
 function getListaMotoristasRaw_() {
-  return (typeof LISTA_MOTORISTAS !== "undefined" && Array.isArray(LISTA_MOTORISTAS)) ? LISTA_MOTORISTAS : [];
+  const cache = CacheService.getScriptCache(); const cacheKey = "firebase_list_motoristas_v2";
+  const cached = cache.get(cacheKey); if (cached) { try { return JSON.parse(cached); } catch(e){} }
+  const fromFirebase = readCollectionFromFirestore_("frota_motoristas");
+  if (fromFirebase !== null) {
+    cache.put(cacheKey, JSON.stringify(fromFirebase), 300);
+    return fromFirebase;
+  }
+  return [];
 }
 
 function getListaSegurancasRaw_() {
-  return (typeof LISTA_SEGURANCAS !== "undefined" && Array.isArray(LISTA_SEGURANCAS)) ? LISTA_SEGURANCAS : [];
+  const cache = CacheService.getScriptCache(); const cacheKey = "firebase_list_segurancas_v2";
+  const cached = cache.get(cacheKey); if (cached) { try { return JSON.parse(cached); } catch(e){} }
+  const fromFirebase = readCollectionFromFirestore_("frota_segurancas");
+  if (fromFirebase !== null) {
+    cache.put(cacheKey, JSON.stringify(fromFirebase), 300);
+    return fromFirebase;
+  }
+  return [];
 }
 
-
-function normalizarListaTexto_(lista) {
-  return [...new Set(
-    (lista || [])
-      .map(function(item) { return String(item || "").trim(); })
-      .filter(Boolean)
-  )].sort(function(a, b) {
-    return a.localeCompare(b, "pt-BR");
-  });
-}
-
-function parseDataListaFixa_(texto) {
-  if (!texto) return null;
-  const m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!m) return null;
-  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-}
-
-function hojeNormalizado_() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-function cnhListaFixaValida_(texto) {
-  const d = parseDataListaFixa_(texto);
-  if (!d) return false;
-  return d.getTime() >= hojeNormalizado_().getTime();
-}
-
-function getListaVeiculosFixos() {
-  return normalizarListaTexto_(getListaVeiculosRaw_());
-}
-
-function getListaMotoristasFixos() {
-  return normalizarListaTexto_(
-    getListaMotoristasRaw_()
-      .filter(function(item) { return item && cnhListaFixaValida_(item.validadeCnh); })
-      .map(function(item) { return item && item.nome; })
-  );
-}
-
-function getListaSegurancasFixos() {
-  return normalizarListaTexto_(
-    getListaSegurancasRaw_().map(function(item) { return item && item.nome; })
-  );
-}
+function normalizarListaTexto_(lista) { return [...new Set((lista || []).map(item => String(item || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR")); }
+function parseDataListaFixa_(texto) { if (!texto) return null; const m = String(texto).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if (!m) return null; return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])); }
+function hojeNormalizado_() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function cnhListaFixaValida_(texto) { const d = parseDataListaFixa_(texto); return d ? d.getTime() >= hojeNormalizado_().getTime() : false; }
+function getListaVeiculosFixos() { return normalizarListaTexto_(getListaVeiculosRaw_()); }
+function getListaMotoristasFixos() { return normalizarListaTexto_(getListaMotoristasRaw_().filter(item => item && cnhListaFixaValida_(item.validadeCnh)).map(item => item && item.nome)); }
+function getListaSegurancasFixos() { return normalizarListaTexto_(getListaSegurancasRaw_().map(item => item && item.nome)); }
 
 function getMapaCodigosSegurancasFixos() {
   const mapa = {};
-  getListaSegurancasRaw_().forEach(function(item) {
+  getListaSegurancasRaw_().forEach(item => {
     if (!item || typeof item !== "object") return;
-
     const codigo = String(item.codigo || "").trim();
-    const nome = String(item.nome || item.name || "").trim();
+    const nome = String(item.nome || "").trim();
     if (codigo && nome) mapa[codigo] = nome;
   });
   return mapa;
 }
 
-function getListasFrota() {
-  return {
-    veiculos: getListaVeiculosFixos(),
-    motoristas: getListaMotoristasFixos(),
-    segurancas: getListaSegurancasFixos()
-  };
-}
-
-function getListasFrotaFixas() {
-  return getListasFrota();
-}
+function getListasFrota() { return { veiculos: getListaVeiculosFixos(), motoristas: getListaMotoristasFixos(), segurancas: getListaSegurancasFixos() }; }
 
 /* ================= CORE ================= */
 
@@ -125,529 +161,202 @@ function doGet(e) {
   const route = p.route || "";
   const callback = p.callback || "callback";
   let result;
-
   try {
-    if (route === "pingVersao") result = { ok: true, versao: "CUIABA_CODE_ALINHADO_FINAL_2026_05_05", scriptId: ScriptApp.getScriptId() };
-    else if (route === "debugListas") result = debugListasFixas();
+    if (route === "pingVersao") result = { ok: true, versao: "CUIABA_CODE_FULL_FIREBASE_01", scriptId: ScriptApp.getScriptId() };
     else if (route === "loginSeguranca") result = loginSeguranca(p.codigo);
     else if (route === "validarSessao") result = validarSessaoSeguranca(p.token);
     else if (route === "logoutSeguranca") result = logoutSeguranca(p.token);
-
-    else if (route === "bootstrapVeiculos") result = getBootstrapVeiculos();
+    else if (route === "getVisitantesData") result = getVisitantesData();
+    else if (route === "salvarVisitante") result = salvarVisitante(p.data);
     else if (route === "bootstrapSaida") result = getBootstrapSaida();
     else if (route === "bootstrapEntrada") result = getBootstrapEntrada();
-
     else if (route === "home" || route === "listsAvail") result = getDashboardAndLists();
-    else if (route === "homeFast") result = getDashboardFast();
-    else if (route === "veiculosAvail") result = getVeiculosAvail();
-    else if (route === "apoioSaida") result = getApoioSaida();
     else if (route === "kmAtual") result = getKmAtual(p.veiculo);
     else if (route === "saida") result = registrarSaidaFrota(p);
     else if (route === "entrada") result = registrarEntradaFrota(p);
-    else if (route === "getVisitantesData") result = getVisitantesData();
-    else if (route === "salvarVisitante") result = salvarVisitante(p.data);
-    else result = { ok: false, message: "Rota desconhecida" };
+    else result = { ok: false, message: "Rota desconhecida: " + route };
   } catch (err) {
     result = { ok: false, message: err && err.toString ? err.toString() : String(err) };
   }
-
-  return ContentService
-    .createTextOutput(callback + "(" + JSON.stringify(result) + ")")
-    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  return ContentService.createTextOutput(callback + "(" + JSON.stringify(result) + ")").setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 
 /* ================= LOGIN / SESSAO ================= */
 
-function normalizarTextoSeguranca(v) {
-  return String(v || "").trim();
+function gerarTokenSessao() { return Utilities.getUuid().replace(/-/g, "") + "_" + new Date().getTime(); }
+function getSessaoKey(token) { return SESSION_PREFIX + String(token || "").trim(); }
+function salvarSessaoSeguranca(token, payload) { PropertiesService.getScriptProperties().setProperty(getSessaoKey(token), JSON.stringify(payload)); }
+function removerSessaoSeguranca(token) { if (token) PropertiesService.getScriptProperties().deleteProperty(getSessaoKey(token)); }
+function lerSessaoSeguranca(token) {
+  if (!token) return null;
+  const raw = PropertiesService.getScriptProperties().getProperty(getSessaoKey(token));
+  if (!raw) return null;
+  try {
+    const sessao = JSON.parse(raw);
+    if (sessao && sessao.expiraEm && Number(sessao.expiraEm) >= Date.now()) return sessao;
+  } catch (e) {}
+  removerSessaoSeguranca(token);
+  return null;
 }
-
-function gerarTokenSessao() {
-  return Utilities.getUuid().replace(/-/g, "") + "_" + new Date().getTime();
-}
-
-function getSessaoKey(token) {
-  return SESSION_PREFIX + String(token || "").trim();
-}
-
 function buscarSegurancaPorCodigo(codigo) {
-  const alvo = String(codigo == null ? "" : codigo).trim();
+  const alvo = String(codigo || "").trim();
   if (!alvo) return null;
-
   const lista = getListaSegurancasRaw_();
-
   for (let i = 0; i < lista.length; i++) {
     const item = lista[i] || {};
     const cod = String(item.codigo || "").trim();
-    const nome = String(item.nome || item.name || "").trim();
-
-    if (cod === alvo && nome) {
-      return { seguranca: nome, codigo: alvo };
-    }
+    const nome = String(item.nome || "").trim();
+    if (cod === alvo && nome) return { seguranca: nome, codigo: alvo };
   }
-
   return null;
 }
-
-function salvarSessaoSeguranca(token, payload) {
-  PropertiesService.getScriptProperties().setProperty(getSessaoKey(token), JSON.stringify(payload));
-}
-
-function lerSessaoSeguranca(token) {
-  const tk = String(token || "").trim();
-  if (!tk) return null;
-
-  const raw = PropertiesService.getScriptProperties().getProperty(getSessaoKey(tk));
-  if (!raw) return null;
-
-  var sessao;
-  try {
-    sessao = JSON.parse(raw);
-  } catch (e) {
-    PropertiesService.getScriptProperties().deleteProperty(getSessaoKey(tk));
-    return null;
-  }
-
-  if (!sessao || !sessao.expiraEm || Number(sessao.expiraEm) < Date.now()) {
-    PropertiesService.getScriptProperties().deleteProperty(getSessaoKey(tk));
-    return null;
-  }
-
-  return sessao;
-}
-
-function removerSessaoSeguranca(token) {
-  const tk = String(token || "").trim();
-  if (!tk) return;
-  PropertiesService.getScriptProperties().deleteProperty(getSessaoKey(tk));
-}
-
 function loginSeguranca(codigo) {
-  const codigoInformado = String(codigo == null ? "" : codigo).trim();
-  if (!codigoInformado) return { ok: false, message: "Informe o codigo de acesso." };
-
-  const cadastro = buscarSegurancaPorCodigo(codigoInformado);
+  const cadastro = buscarSegurancaPorCodigo(codigo);
   if (!cadastro) return { ok: false, message: "Codigo invalido." };
-
-  const token = gerarTokenSessao();
-  const agora = Date.now();
-  const payload = {
-    token: token,
-    seguranca: cadastro.seguranca,
-    criadoEm: agora,
-    expiraEm: agora + SESSION_TTL_MS
-  };
-
+  const token = gerarTokenSessao(), agora = Date.now();
+  const payload = { token, seguranca: cadastro.seguranca, criadoEm: agora, expiraEm: agora + SESSION_TTL_MS };
   salvarSessaoSeguranca(token, payload);
-
-  return {
-    ok: true,
-    token: token,
-    seguranca: cadastro.seguranca,
-    expiraEm: payload.expiraEm,
-    message: "Ola, " + cadastro.seguranca + "!"
-  };
+  return { ok: true, token, seguranca: cadastro.seguranca, expiraEm: payload.expiraEm, message: "Ola, " + cadastro.seguranca + "!" };
 }
-
 function validarSessaoSeguranca(token) {
   const sessao = lerSessaoSeguranca(token);
   if (!sessao) return { ok: false, autenticado: false, message: "Sessao invalida ou expirada." };
-
-  return {
-    ok: true,
-    autenticado: true,
-    seguranca: sessao.seguranca,
-    expiraEm: sessao.expiraEm
-  };
+  return { ok: true, autenticado: true, seguranca: sessao.seguranca, expiraEm: sessao.expiraEm };
 }
+function logoutSeguranca(token) { removerSessaoSeguranca(token); return { ok: true }; }
+function exigirSessaoSeguranca(token) { const sessao = lerSessaoSeguranca(token); if (!sessao) throw new Error("Sessao invalida ou expirada."); return sessao; }
 
-function logoutSeguranca(token) {
-  removerSessaoSeguranca(token);
-  return { ok: true };
-}
-
-function exigirSessaoSeguranca(token) {
-  const sessao = lerSessaoSeguranca(token);
-  if (!sessao) throw new Error("Sessao invalida ou expirada.");
-  return sessao;
-}
-
-/* ================= VISITANTES ================= */
+/* ================= VISITANTES (FIREBASE) ================= */
 
 function getVisitantesData() {
-  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_VISITANTES);
-  const dados = sh.getDataRange().getValues();
-
-  const visitantes = dados.slice(1).map((r, i) => ({
-    linha: i + 2,
-    cpf: String(r[1]).replace(/\D/g, ""),
-    nome: String(r[2]),
-    telefone: String(r[3]),
-    status: String(r[4])
-  })).filter(v => v.cpf && v.cpf !== "undefined");
-
-  const responsaveis = [...new Set(dados.slice(1).map(r => r[7]).filter(Boolean))];
-  return { ok: true, visitantes, responsaveis };
+  const firestoreData = readCollectionFromFirestore_("visitantes");
+  if (firestoreData) {
+    const visitantes = firestoreData.map(v => ({ documentId: v.id, cpf: v.cpf||"", nome: v.nome||"", telefone: v.telefone||"", status: v.status||"" }));
+    const responsaveis = [...new Set(firestoreData.map(v => v.responsavel).filter(Boolean))];
+    return { ok: true, visitantes, responsaveis, source: 'firestore' };
+  }
+  return { ok: false, message: "Falha ao buscar dados de visitantes." };
 }
-
 function salvarVisitante(jsonData) {
   const p = JSON.parse(decodeURIComponent(jsonData));
-  const token = p.token || "";
-  let seguranca = String(p.seguranca || "").trim();
-
-  if (token) {
-    const sessao = lerSessaoSeguranca(token);
-    if (!sessao) return { ok: false, message: "Sessao invalida ou expirada." };
-    seguranca = String(sessao.seguranca || seguranca || "").trim();
-  }
-
-  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_VISITANTES);
-
+  const sessao = p.token ? lerSessaoSeguranca(p.token) : null;
+  const seguranca = sessao ? String(sessao.seguranca || p.seguranca || "").trim() : String(p.seguranca || "").trim();
   if (p.tipo === "SAIDA") {
-    sh.getRange(p.linha, 5).setValue("CONCLUIDO");
-    sh.getRange(p.linha, 7).setValue(new Date());
-    sh.getRange(p.linha, 9).setValue(seguranca);
+    if (!p.documentId) return { ok: false, message: "ID do visitante (documentId) não fornecido para a saída."};
+    const updatedFields = { 'status': { stringValue: "CONCLUIDO" }, 'timestamp_saida': { timestampValue: new Date().toISOString() }, 'seguranca_saida': { stringValue: seguranca } };
+    const updateMask = ['status', 'timestamp_saida', 'seguranca_saida'];
+    if (!patchDocumentInFirestore_('visitantes', p.documentId, updatedFields, updateMask)) return { ok: false, message: "Falha ao registrar saída no Firestore." };
   } else {
-    sh.appendRow([new Date(), p.cpf, p.nome, p.telefone, "EM VISITA", p.responsavel, "", "", seguranca]);
+    const newVisitorFields = { 'timestamp_entrada':{timestampValue:new Date().toISOString()}, 'cpf':{stringValue:p.cpf||""}, 'nome':{stringValue:p.nome||""}, 'telefone':{stringValue:p.telefone||""}, 'status':{stringValue:"EM VISITA"}, 'responsavel':{stringValue:p.responsavel||""}, 'seguranca_entrada':{stringValue:seguranca}};
+    if (!createDocumentInFirestore_('visitantes', newVisitorFields)) return { ok: false, message: "Falha ao registrar entrada no Firestore." };
   }
-
   return { ok: true, seguranca: seguranca };
 }
 
-/* ================= FROTA - HELPERS ================= */
+/* ================= FROTA (FIREBASE) ================= */
 
-function normalizarTexto(v) {
-  return String(v == null ? "" : v)
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toUpperCase();
-}
+function parseKmStringAsNumber_(kmString) { if (kmString === null || kmString === undefined) return 0; return Number(String(kmString).replace(/[^0-9]/g, '')) || 0; }
 
-function mesmoVeiculo(a, b) {
-  return normalizarTexto(a) === normalizarTexto(b);
-}
+function getFrotaDataFromFirestore_() {
+    const cache = CacheService.getScriptCache();
+    const cacheKey = "firestore_frota_data_v2";
+    const cached = cache.get(cacheKey);
+    if (cached) { try { return JSON.parse(cached); } catch(e) { console.error("Erro no parse do cache da frota: " + e.toString()); } }
 
-function statusEmTransito(v) {
-  return normalizarTexto(v) === "EM TRANSITO";
-}
+    const firestoreData = readCollectionFromFirestore_("frota_movimentacao");
+    if (!firestoreData) return { ok: false, message: "Could not fetch fleet data from Firestore." };
+    
+    firestoreData.sort((a, b) => { const dateA = a.timestamp_saida ? new Date(a.timestamp_saida) : 0; const dateB = b.timestamp_saida ? new Date(b.timestamp_saida) : 0; return dateB - dateA; });
 
-function parseNumeroSeguro(v) {
-  if (v === null || v === undefined || v === "") return 0;
-  const texto = String(v).trim();
-  if (/^\d+(?:\.\d+)?$/.test(texto)) return Number(texto) || 0;
-  const n = Number(texto.replace(/\./g, "").replace(",", "."));
-  return isNaN(n) ? 0 : n;
-}
-
-function getFaixaUltimasLinhas(sheet, maxLinhas, totalColunas) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return { startRow: 2, numRows: 0, values: [], displayValues: [] };
-
-  const startRow = Math.max(2, lastRow - maxLinhas + 1);
-  const numRows = lastRow - startRow + 1;
-
-  return {
-    startRow: startRow,
-    numRows: numRows,
-    values: sheet.getRange(startRow, 1, numRows, totalColunas).getValues(),
-    displayValues: sheet.getRange(startRow, 1, numRows, totalColunas).getDisplayValues()
-  };
-}
-
-function cachePutSeguro(cache, key, obj) {
-  try {
-    const texto = JSON.stringify(obj);
-    if (texto.length > 95000) return false;
-    cache.put(key, texto, CACHE_TTL_SEGUNDOS);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-function getMapaUltimoKm(dados) {
-  const mapa = {};
-  for (let i = dados.length - 1; i >= 0; i--) {
-    const veiculo = String(dados[i][0] || "").trim();
-    if (!veiculo || mapa[veiculo] !== undefined) continue;
-    mapa[veiculo] = parseNumeroSeguro(dados[i][7]) || parseNumeroSeguro(dados[i][3]) || 0;
-  }
-  return mapa;
-}
-
-
-function debugListasFixas() {
-  const listas = getListasFrota();
-  return {
-    ok: true,
-    versao: "CUIABA_CODE_ALINHADO_FINAL_2026_05_05",
-    scriptId: ScriptApp.getScriptId(),
-    tipoListaVeiculos: typeof LISTA_VEICULOS,
-    totalVeiculosRaw: getListaVeiculosRaw_().length,
-    totalVeiculos: listas.veiculos.length,
-    veiculos: listas.veiculos,
-    totalMotoristasRaw: getListaMotoristasRaw_().length,
-    totalMotoristas: listas.motoristas.length,
-    totalSegurancasRaw: getListaSegurancasRaw_().length,
-    totalSegurancas: listas.segurancas.length,
-    mapaSegurancas: getMapaCodigosSegurancasFixos()
-  };
-}
-
-/* ================= FROTA - DASHBOARD ================= */
-
-function getDashboardAndLists() {
-  const cache = CacheService.getScriptCache();
-  const cached = cache.get(CACHE_KEY_DASHBOARD);
-  if (cached) {
-    try { return JSON.parse(cached); } catch (_) {}
-  }
-
-  const shDados = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
-  const faixa = getFaixaUltimasLinhas(shDados, MAX_LINHAS_DASHBOARD, TOTAL_COLUNAS_FROTA);
-  const dados = faixa.displayValues;
-
-  const veiculosNaRua = [];
-  for (let i = dados.length - 1; i >= 0; i--) {
-    const r = dados[i];
-    if (!r[0]) continue;
-    if (statusEmTransito(r[6])) {
-      veiculosNaRua.push({
-        veiculo: r[0],
-        motorista: r[1],
-        seguranca: r[2],
-        kmSaida: r[3]
-      });
+    const veiculosNaRua = firestoreData.filter(item => item.status === "EM TRANSITO");
+    const recentes = firestoreData.slice(0, 5);
+    const ultimosKm = {};
+    for (const item of firestoreData) {
+        const veiculo = item.veiculo;
+        if (!veiculo || ultimosKm[veiculo]) continue;
+        if (item.status === "CONCLUIDO" && item.km_retorno) ultimosKm[veiculo] = item.km_retorno;
+        else if (item.km_saida) ultimosKm[veiculo] = item.km_saida;
     }
-  }
-
-  const recentes = dados
-    .filter(r => r[0])
-    .slice(-5)
-    .reverse()
-    .map(r => ({
-      veiculo: r[0],
-      motorista: r[1],
-      status: r[6],
-      dataHora: r[9] || r[5] || "---"
-    }));
-
-  const listas = getListasFrota();
-  const emTransitoSet = new Set(veiculosNaRua.map(x => String(x.veiculo).trim()));
-
-  const result = {
-    ok: true,
-    recentes: recentes,
-    veiculosNaRua: veiculosNaRua,
-    veiculos: listas.veiculos.filter(v => !emTransitoSet.has(v)),
-    motoristas: listas.motoristas,
-    segurancas: listas.segurancas
-  };
-
-  cachePutSeguro(cache, CACHE_KEY_DASHBOARD, result);
-  return result;
-}
-
-function getDashboardFast() {
-  const cache = CacheService.getScriptCache();
-  const cached = cache.get(CACHE_KEY_HOME_FAST);
-  if (cached) {
-    try { return JSON.parse(cached); } catch (_) {}
-  }
-
-  const shDados = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
-  const faixa = getFaixaUltimasLinhas(shDados, 30, TOTAL_COLUNAS_FROTA);
-  const dados = faixa.displayValues;
-
-  const recentes = dados
-    .filter(r => r[0])
-    .slice(-5)
-    .reverse()
-    .map(r => ({
-      veiculo: r[0],
-      motorista: r[1],
-      status: r[6],
-      dataHora: r[9] || r[5] || "---"
-    }));
-
-  const result = { ok: true, recentes: recentes };
-  cachePutSeguro(cache, CACHE_KEY_HOME_FAST, result);
-  return result;
-}
-
-function getVeiculosAvail() {
-  const data = getDashboardAndLists();
-  return { ok: true, veiculos: data.veiculos || [] };
-}
-
-function getApoioSaida() {
-  const data = getDashboardAndLists();
-  return { ok: true, motoristas: data.motoristas || [], segurancas: data.segurancas || [] };
-}
-
-function getBootstrapVeiculos() {
-  const cache = CacheService.getScriptCache();
-  const cached = cache.get(CACHE_KEY_HOME_FAST);
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      return { ok: true, recentes: parsed.recentes || [] };
-    } catch (_) {}
-  }
-  return getDashboardFast();
-}
-
-function getBootstrapSaida() {
-  const cache = CacheService.getScriptCache();
-  const cached = cache.get(CACHE_KEY_SAIDA_BOOTSTRAP);
-  if (cached) {
-    try { return JSON.parse(cached); } catch (_) {}
-  }
-
-  const shDados = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
-  const faixa = getFaixaUltimasLinhas(shDados, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
-  const dados = faixa.values;
-  const listas = getListasFrota();
-  const kmMap = getMapaUltimoKm(dados);
-
-  const emTransitoSet = new Set();
-  for (let i = dados.length - 1; i >= 0; i--) {
-    const r = dados[i];
-    const veiculo = String(r[0] || "").trim();
-    if (veiculo && statusEmTransito(r[6])) emTransitoSet.add(veiculo);
-  }
-
-  const result = {
-    ok: true,
-    veiculos: listas.veiculos.filter(v => !emTransitoSet.has(v)),
-    motoristas: listas.motoristas,
-    segurancas: listas.segurancas,
-    kmMap: kmMap
-  };
-
-  cachePutSeguro(cache, CACHE_KEY_SAIDA_BOOTSTRAP, result);
-  return result;
-}
-
-function getBootstrapEntrada() {
-  const cache = CacheService.getScriptCache();
-  const cached = cache.get(CACHE_KEY_ENTRADA_BOOTSTRAP);
-  if (cached) {
-    try { return JSON.parse(cached); } catch (_) {}
-  }
-
-  const shDados = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
-  const faixa = getFaixaUltimasLinhas(shDados, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
-  const dados = faixa.displayValues;
-  const listas = getListasFrota();
-
-  const veiculosNaRua = [];
-  for (let i = dados.length - 1; i >= 0; i--) {
-    const r = dados[i];
-    if (!r[0]) continue;
-    if (statusEmTransito(r[6])) {
-      veiculosNaRua.push({
-        veiculo: r[0],
-        motorista: r[1],
-        seguranca: r[2],
-        kmSaida: r[3]
-      });
-    }
-  }
-
-  const result = {
-    ok: true,
-    veiculosNaRua: veiculosNaRua,
-    motoristas: listas.motoristas
-  };
-
-  cachePutSeguro(cache, CACHE_KEY_ENTRADA_BOOTSTRAP, result);
-  return result;
-}
-
-/* ================= FROTA - OPERACAO ================= */
-
-function limparCacheDashboard() {
-  const cache = CacheService.getScriptCache();
-  cache.remove(CACHE_KEY_DASHBOARD);
-  cache.remove(CACHE_KEY_HOME_FAST);
-  cache.remove(CACHE_KEY_SAIDA_BOOTSTRAP);
-  cache.remove(CACHE_KEY_ENTRADA_BOOTSTRAP);
+    
+    const result = { ok: true, veiculosNaRua, recentes, ultimosKm };
+    cache.put(cacheKey, JSON.stringify(result), 45);
+    return result;
 }
 
 function registrarSaidaFrota(p) {
-  const sessao = exigirSessaoSeguranca(p.token);
-  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
+    const sessao = exigirSessaoSeguranca(p.token);
+    const frotaData = getFrotaDataFromFirestore_();
+    if (frotaData.ok && frotaData.veiculosNaRua.some(v => v.veiculo === p.veiculo)) return { ok: false, message: "Veículo já está em trânsito." };
 
-  const faixa = getFaixaUltimasLinhas(sh, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
-  const dados = faixa.values;
-
-  for (let i = dados.length - 1; i >= 0; i--) {
-    const r = dados[i];
-    if (mesmoVeiculo(r[0], p.veiculo) && statusEmTransito(r[6])) {
-      return { ok: false, message: "Veiculo ja esta em transito." };
-    }
-  }
-
-  sh.appendRow([
-    p.veiculo,
-    p.motorista,
-    sessao.seguranca,
-    parseNumeroSeguro(p.KmSaida || p.kmSaida),
-    p.destino,
-    new Date(),
-    "EM TRANSITO",
-    "",
-    "",
-    ""
-  ]);
-
-  limparCacheDashboard();
-  return { ok: true, seguranca: sessao.seguranca };
+    const newTripFields = { 'timestamp_saida': { timestampValue: new Date().toISOString() }, 'veiculo': { stringValue: p.veiculo || "" }, 'motorista': { stringValue: p.motorista || "" }, 'seguranca_saida': { stringValue: sessao.seguranca }, 'km_saida': { stringValue: String(p.KmSaida || p.kmSaida || "0") }, 'destino': { stringValue: p.destino || "" }, 'status': { stringValue: "EM TRANSITO" } };
+    if (!createDocumentInFirestore_('frota_movimentacao', newTripFields)) return { ok: false, message: "Falha ao registrar saída no Firestore." };
+    
+    CacheService.getScriptCache().remove("firestore_frota_data_v2");
+    return { ok: true, seguranca: sessao.seguranca };
 }
 
 function registrarEntradaFrota(p) {
-  const sessao = exigirSessaoSeguranca(p.token);
-  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
-
-  const faixa = getFaixaUltimasLinhas(sh, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
-  const data = faixa.values;
-  const startRow = faixa.startRow;
-
-  for (let i = data.length - 1; i >= 0; i--) {
-    if (mesmoVeiculo(data[i][0], p.veiculo) && statusEmTransito(data[i][6])) {
-      const linha = startRow + i;
-      const kmSai = parseNumeroSeguro(data[i][3]);
-      const kmRet = parseNumeroSeguro(p.KmRetorno || p.kmRetorno);
-
-      if (kmRet < kmSai) {
-        return { ok: false, message: "KM de retorno inferior ao KM de saida." };
+    const sessao = exigirSessaoSeguranca(p.token);
+    if (!p.documentId) return { ok: false, message: "ID do registro de frota (documentId) não fornecido."};
+    
+    const kmRet = parseKmStringAsNumber_(p.KmRetorno || p.kmRetorno);
+    const frotaData = getFrotaDataFromFirestore_();
+    if (frotaData.ok) {
+      const trip = frotaData.veiculosNaRua.find(v => v.id === p.documentId);
+      if (trip) {
+        const kmSai = parseKmStringAsNumber_(trip.km_saida);
+        if (kmRet < kmSai) return { ok: false, message: "KM de retorno não pode ser inferior ao KM de saída (" + kmSai + " km)." };
       }
-
-      sh.getRange(linha, 3).setValue(sessao.seguranca);
-      sh.getRange(linha, 7).setValue("CONCLUIDO");
-      sh.getRange(linha, 8).setValue(kmRet);
-      sh.getRange(linha, 9).setValue(kmRet - kmSai);
-      sh.getRange(linha, 10).setValue(new Date());
-
-      limparCacheDashboard();
-      return { ok: true, seguranca: sessao.seguranca };
     }
-  }
 
-  return { ok: false, message: "Veiculo nao encontrado em transito." };
+    const updatedFields = { 'status': { stringValue: "CONCLUIDO" }, 'timestamp_retorno': { timestampValue: new Date().toISOString() }, 'seguranca_retorno': { stringValue: sessao.seguranca }, 'km_retorno': { stringValue: String(kmRet) } };
+    const updateMask = ['status', 'timestamp_retorno', 'seguranca_retorno', 'km_retorno'];
+    if (!patchDocumentInFirestore_('frota_movimentacao', p.documentId, updatedFields, updateMask)) return { ok: false, message: "Falha ao registrar entrada no Firestore." };
+    
+    CacheService.getScriptCache().remove("firestore_frota_data_v2");
+    return { ok: true, seguranca: sessao.seguranca };
 }
 
 function getKmAtual(veiculo) {
-  const sh = SpreadsheetApp.openById(PLANILHA_ID).getSheetByName(ABA_DADOS_FROTA);
-  const faixa = getFaixaUltimasLinhas(sh, MAX_LINHAS_BUSCA_OPERACIONAL, TOTAL_COLUNAS_FROTA);
-  const data = faixa.values;
+    const frotaData = getFrotaDataFromFirestore_();
+    if (frotaData.ok && frotaData.ultimosKm[veiculo]) return { ok: true, km: frotaData.ultimosKm[veiculo] };
+    return { ok: true, km: 0 };
+}
 
-  for (let i = data.length - 1; i >= 0; i--) {
-    if (mesmoVeiculo(data[i][0], veiculo)) {
-      return { ok: true, km: parseNumeroSeguro(data[i][7]) || parseNumeroSeguro(data[i][3]) || 0 };
+function getDashboardAndLists() {
+    const frotaData = getFrotaDataFromFirestore_();
+    const listas = getListasFrota();
+    if (!frotaData.ok) return { ok: true, recentes: [], veiculosNaRua: [], veiculos: listas.veiculos, motoristas: listas.motoristas, segurancas: listas.segurancas };
+    
+    const emTransitoSet = new Set(frotaData.veiculosNaRua.map(v => v.veiculo));
+    return {
+        ok: true,
+        recentes: frotaData.recentes.map(r => ({ veiculo: r.veiculo, motorista: r.motorista, status: r.status, dataHora: r.timestamp_retorno || r.timestamp_saida })),
+        veiculosNaRua: frotaData.veiculosNaRua.map(r => ({ documentId: r.id, veiculo: r.veiculo, motorista: r.motorista, seguranca: r.seguranca_saida, kmSaida: r.km_saida })),
+        veiculos: listas.veiculos.filter(v => !emTransitoSet.has(v)),
+        motoristas: listas.motoristas,
+        segurancas: listas.segurancas
+    };
+}
+
+function getBootstrapSaida() {
+    const frotaData = getFrotaDataFromFirestore_();
+    const listas = getListasFrota();
+    let veiculosDisponiveis = listas.veiculos, kmMap = {};
+    if (frotaData.ok) {
+        const emTransitoSet = new Set(frotaData.veiculosNaRua.map(v => v.veiculo));
+        veiculosDisponiveis = listas.veiculos.filter(v => !emTransitoSet.has(v));
+        kmMap = frotaData.ultimosKm;
     }
-  }
-  return { ok: true, km: 0 };
+    return { ok: true, veiculos: veiculosDisponiveis, motoristas: listas.motoristas, segurancas: listas.segurancas, kmMap };
+}
+
+function getBootstrapEntrada() {
+    const frotaData = getFrotaDataFromFirestore_();
+    const listas = getListasFrota();
+    let veiculosNaRua = [];
+    if (frotaData.ok) {
+        veiculosNaRua = frotaData.veiculosNaRua.map(r => ({ documentId: r.id, veiculo: r.veiculo, motorista: r.motorista, seguranca: r.seguranca_saida, kmSaida: r.km_saida }));
+    }
+    return { ok: true, veiculosNaRua, motoristas: listas.motoristas };
 }

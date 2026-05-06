@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Entrada Visitante — Delta</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="header-top">
+    <i class="fa-solid fa-person-walking-luggage"></i>
+    <h2>Entrada de Visitantes</h2>
+    <p>DELTA BIOCOMBUSTIVEIS</p>
+  </div>
+
+  <div class="sessao">
+    <div class="sessao-box">Segurança logado: <strong id="sessaoSegurancaTopo" style="color:#e6edf7;">...</strong></div>
+  </div>
+
+  <div class="form-container">
+    <div class="field">
+      <label for="cpf">CPF (apenas números)</label>
+      <div class="input-group"><i class="fa-solid fa-id-card"></i><input type="number" id="cpf" placeholder="Buscar por CPF..." oninput="onCpfInput()"></div>
+      <div class="sugestoes" id="sugestoes_cpf" style="display:none;"></div>
+    </div>
+    <div class="field">
+      <label for="nome">Nome Completo</label>
+      <div class="input-group"><i class="fa-solid fa-user"></i><input type="text" id="nome" placeholder="Nome do visitante" oninput="onAnyInput()"></div>
+    </div>
+    <div class="field">
+      <label for="telefone">Telefone/Contato</label>
+      <div class="input-group"><i class="fa-solid fa-phone"></i><input type="text" id="telefone" placeholder="(opcional)" oninput="onAnyInput()"></div>
+    </div>
+    <div class="field">
+      <label for="responsavel">Responsável na Empresa</label>
+      <div class="input-group"><i class="fa-solid fa-user-group"></i><input type="text" id="responsavel" placeholder="Quem irá receber?" list="lista_responsaveis" oninput="onAnyInput()"></div>
+      <datalist id="lista_responsaveis"></datalist>
+    </div>
+    <button class="btn-save" id="btnSalvar" onclick="salvarEntrada()">Registrar Entrada</button>
+    <div id="msg"></div>
+  </div>
+
+  <div class="footer-action">
+    <a href="visitantes.html" class="btn-back" id="btnVoltarMenu"><i class="fa-solid fa-chevron-left"></i> Voltar ao Menu Principal</a>
+  </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxo8EEnDKeZrd6EszuumEqnEV0TUtnB6gUqa1DnVGr_XbLtNXIkIjM5UicqakEF8RO7rA/exec';
+    const STORAGE_KEY = 'delta_auth_v1';
+    let inFlight = false;
+    let cacheVisitantes = [];
+    let cacheResponsaveis = [];
+    let AUTH = null;
+
+    function getAuth() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+      catch(_) { return null; }
+    }
+    function clearAuth() { localStorage.removeItem(STORAGE_KEY); }
+
+    function jsonp(url) {
+      return new Promise((resolve, reject) => {
+        const cb = 'cb_' + Math.round(100000 * Math.random());
+        const script = document.createElement('script');
+        script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
+        window[cb] = (data) => {
+          try { resolve(data); }
+          finally { delete window[cb]; if (script.parentNode) document.body.removeChild(script); }
+        };
+        script.onerror = () => {
+          try { delete window[cb]; } catch(_) {}
+          if (script.parentNode) document.body.removeChild(script);
+          reject(new Error('Erro de conexão'));
+        };
+        document.body.appendChild(script);
+      });
+    }
+
+    async function validarSessaoOuRedirecionar() {
+      const auth = getAuth();
+      if(!auth || !auth.token) { location.href='index.html'; return null; }
+      try {
+        const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
+        if(res && res.ok && res.autenticado){
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm }));
+          return { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm };
+        }
+      } catch(_) {}
+      clearAuth();
+      location.href='index.html';
+      return null;
+    }
+
+    function onAnyInput() {
+      const btn = document.getElementById('btnSalvar');
+      const nome = document.getElementById('nome').value.trim();
+      const responsavel = document.getElementById('responsavel').value.trim();
+      btn.classList.toggle('ready', nome.length > 2 && responsavel.length > 1 && !inFlight);
+    }
+
+    function onCpfInput() {
+      const cpf = document.getElementById('cpf').value.replace(/\D/g, '');
+      const container = document.getElementById('sugestoes_cpf');
+      if (cpf.length < 3) {
+        container.style.display = 'none';
+        return;
+      }
+      const sugestoes = cacheVisitantes.filter(v => v.cpf && v.cpf.includes(cpf));
+      if (sugestoes.length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+      container.innerHTML = sugestoes.map(s => `<div class="sugestao-item" onclick="preencherForm(${s.documentId})">${s.nome} (${s.cpf})</div>`).join('');
+      container.style.display = 'block';
+      onAnyInput();
+    }
+
+    function preencherForm(docId) {
+      const visitante = cacheVisitantes.find(v => v.documentId === docId);
+      if (!visitante) return;
+      document.getElementById('cpf').value = visitante.cpf || '';
+      document.getElementById('nome').value = visitante.nome || '';
+      document.getElementById('telefone').value = visitante.telefone || '';
+      document.getElementById('sugestoes_cpf').style.display = 'none';
+      onAnyInput();
+    }
+
+    async function salvarEntrada() {
+      if (inFlight) return;
+      const btn = document.getElementById('btnSalvar');
+      if (!btn.classList.contains('ready')) return;
+
+      inFlight = true;
+      btn.classList.remove('ready');
+      const msg = document.getElementById('msg');
+      msg.style.color = 'var(--text-soft)';
+      msg.innerText = 'Registrando entrada...';
+
+      const dados = {
+        token: AUTH.token,
+        seguranca: AUTH.seguranca,
+        cpf: document.getElementById('cpf').value.replace(/\D/g, ''),
+        nome: document.getElementById('nome').value.trim(),
+        telefone: document.getElementById('telefone').value.trim(),
+        responsavel: document.getElementById('responsavel').value.trim(),
+        tipo: 'ENTRADA'
+      };
+
+      try {
+        const res = await jsonp(API_URL + '?route=salvarVisitante&data=' + encodeURIComponent(JSON.stringify(dados)));
+        if (!res || res.ok === false) throw new Error(res.message || 'Erro desconhecido');
+        
+        msg.style.color = 'var(--green)';
+        msg.innerText = 'Entrada registrada com sucesso!';
+        setTimeout(() => { location.href = 'visitantes.html'; }, 1200);
+
+      } catch (e) {
+        msg.style.color = 'var(--red)';
+        msg.innerText = e.message || 'Falha ao salvar. Verifique a conexão.';
+        inFlight = false;
+        onAnyInput();
+      }
+    }
+
+    window.onload = async function() {
+      AUTH = await validarSessaoOuRedirecionar();
+      if (!AUTH) return;
+      document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || '---';
+      document.getElementById('btnVoltarMenu').addEventListener('click', e => { e.preventDefault(); location.href = 'visitantes.html'; });
+
+      try {
+        const res = await jsonp(API_URL + '?route=getVisitantesData');
+        if (res && res.ok) {
+          cacheVisitantes = res.visitantes || [];
+          cacheResponsaveis = res.responsaveis || [];
+          const datalist = document.getElementById('lista_responsaveis');
+          datalist.innerHTML = cacheResponsaveis.map(r => `<option value="${r}"></option>`).join('');
+        }
+      } catch (e) {
+        document.getElementById('msg').innerText = 'Falha ao carregar dados iniciais.';
+      }
+    };
+  </script>
+</body>
+</html>

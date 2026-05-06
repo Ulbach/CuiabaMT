@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Database Initializer</title>
+    <style>
+        body { font-family: sans-serif; background-color: #1a1a1a; color: #e0e0e0; padding: 20px; }
+        h1 { color: #4CAF50; }
+        p { background-color: #333; padding: 10px; border-radius: 5px; }
+        .success { color: #00ff7f; }
+        .error { color: #ff4444; }
+    </style>
+</head>
+<body>
+    <h1>Inicializador de Banco de Dados</h1>
+    <div id="log">Aguardando para iniciar...</div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+            authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+            projectId: "cuiaba-01617931-f126e",
+            storageBucket: "cuiaba-01617931-f126e.appspot.com",
+            messagingSenderId: "797115279316",
+            appId: "1:797115279316:web:f229366de16d4e066e1841"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const logContainer = document.getElementById('log');
+
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.textContent = message;
+            p.className = type;
+            logContainer.appendChild(p);
+        }
+
+        async function initDatabase() {
+            logContainer.innerHTML = '';
+            log('Iniciando a criação das coleções...');
+
+            // --- 1. Coleção Seguranças ---
+            const segurancas = [
+                { nome: "PATRICK HALISSON DE BARROS TORALES", codigo: "1122", perfil: "admin", status: "ativo" },
+                { nome: "RONALDO ESTRAL SANTANA", codigo: "3344", perfil: "operador", status: "ativo" },
+                { nome: "OPERADOR ULBACH", codigo: "5566", perfil: "operador", status: "ativo" }
+            ];
+            try {
+                log('--- Criando coleção "segurancas"... ---');
+                for (const seg of segurancas) {
+                    // Usando 'codigo' como ID do documento para evitar duplicatas
+                    await db.collection('segurancas').doc(seg.codigo).set(seg);
+                    log(`Documento para ${seg.nome} criado com sucesso.`);
+                }
+                log('Coleção "segurancas" populada.', 'success');
+            } catch (e) {
+                log(`Erro ao criar coleção "segurancas": ${e.message}`, 'error');
+            }
+            
+            // --- 2. Coleção Veículos ---
+            const veiculos = [
+                "Amarok - QCH7131",
+                "Gol Prata - QCH7171",
+                "Gol Prata - QCI3271",
+                "Caminhão - FBZ8609"
+            ];
+            try {
+                log('--- Criando coleção "frota_veiculos"... ---');
+                for (const v of veiculos) {
+                    await db.collection('frota_veiculos').add({ nome: v });
+                }
+                log('Coleção "frota_veiculos" populada.', 'success');
+            } catch (e) {
+                log(`Erro ao criar coleção "frota_veiculos": ${e.message}`, 'error');
+            }
+
+            // --- 3. Coleção Motoristas (vazia) ---
+            try {
+                log('--- Criando coleção "frota_motoristas" (vazia)... ---');
+                // Adiciona um documento placeholder para garantir que a coleção seja criada
+                const placeholderDoc = db.collection('frota_motoristas').doc('placeholder');
+                await placeholderDoc.set({ note: 'Esta coleção foi iniciada vazia.' });
+                await placeholderDoc.delete(); // Deleta para deixar a coleção realmente vazia
+                log('Coleção "frota_motoristas" criada.', 'success');
+            } catch (e) {
+                log(`Erro ao criar coleção "frota_motoristas": ${e.message}`, 'error');
+            }
+
+            log('--- PROCESSO FINALIZADO! ---', 'success');
+            log('O banco de dados foi inicializado. Você já pode voltar para a tela de login.');
+        }
+
+        window.onload = initDatabase;
+    </script>
+</body>
+</html>

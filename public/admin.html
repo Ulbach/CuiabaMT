@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Gestão Veicular - Delta Cuiabá - MT</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="hero-header">
+    <div class="hero-content">
+      <div class="brand-title">Delta Cuiabá</div>
+      <div class="brand-title">Controle de Frota</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="head">
+      <div class="chip" id="chipStatus">● MODO RÁPIDO</div>
+      <h1 class="logo">GESTÃO<span>INTELIGENTE</span></h1>
+      <div class="tagline"># DELTA CUIABA #</div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="card" id="login-view">
+      <h2 class="title">Acesso do Segurança</h2>
+      <p class="sub">Digite apenas o seu código pessoal para acessar o sistema.</p>
+
+      <div class="field">
+        <label for="codigo">Código de acesso</label>
+        <div class="pin-wrap">
+          <input id="senha" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" autocomplete="one-time-code">
+        </div>
+      </div>
+
+      <button id="btnEntrar" class="btn btn-primary" type="button">Entrar</button>
+      <div id="login-msg" class="msg">Digite seu código para entrar.</div>
+    </div>
+
+    <!-- Menu Card -->
+    <div class="card hidden" id="app-view">
+      <div id="user-greeting" class="menu-user">Olá!</div>
+      <div id="main-menu-view" class="menu-grid">
+          <!-- Menu buttons will be injected here -->
+      </div>
+      <div class="menu-actions">
+        <button id="logout-btn" class="btn btn-light" type="button">Trocar usuário</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">by Ulbach</div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <!-- App Logic -->
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

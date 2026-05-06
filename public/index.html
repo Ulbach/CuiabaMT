@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Controle de Frota</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg1: #061427; --bg2: #0b1b33; --card: rgba(255, 255, 255, 0.04);
+      --border: rgba(255, 255, 255, 0.12); --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --text-main: #e6edf7; --text-soft: #9fb4d3; --text-muted: #7b8ca7;
+      --accent: #22c55e; --alert: #ef4444; --blue: #3b82f6; --radius: 14px;
+    }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(180deg, var(--bg1), var(--bg2));
+      color: var(--text-main); min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-container { max-width: 400px; width: 100%; padding: 20px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 35px;
+      backdrop-filter: blur(5px); box-shadow: var(--shadow);
+    }
+    h1 { text-align: center; color: var(--accent); margin: 0 0 20px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 700; color: var(--text-muted);
+      margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .field input {
+      width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+      padding: 12px; border-radius: 8px; color: var(--text-main); font-size: 15px;
+      outline: none; transition: 0.2s; margin-bottom: 20px;
+    }
+    .field input:focus { border-color: var(--blue); background: rgba(255,255,255,0.05); }
+    .btn {
+      width: 100%; padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px;
+      font-weight: 700; cursor: pointer; text-transform: uppercase;
+      letter-spacing: 0.5px; transition: 0.2s;
+    }
+    .btn-primary { background-color: var(--blue); color: #fff; }
+    .btn-primary:hover { background-color: #4f9aff; }
+    #error-message { color: var(--alert); text-align: center; margin-top: 15px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="card">
+      <h1>Login de Administrador</h1>
+      <form id="login-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" required>
+        </div>
+        <div class="field">
+          <label for="password">Senha</label>
+          <input type="password" id="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+        <p id="error-message"></p>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+      authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+      projectId: "cuiaba-01617931-f126e",
+      storageBucket: "cuiaba-01617931-f126e.appspot.com",
+      messagingSenderId: "797115279316",
+      appId: "1:797115279316:web:f229366de16d4e066e1841"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const errorMessage = document.getElementById('error-message');
+
+    // Redireciona se o usuário já estiver logado e for admin
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'segurancas', user.uid));
+        if (userDoc.exists() && userDoc.data().perfil === 'admin') {
+          window.location.href = 'admin.html';
+        }
+      }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      errorMessage.style.display = 'none';
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        const userDoc = await getDoc(doc(db, 'segurancas', user.uid));
+
+        if (userDoc.exists() && userDoc.data().perfil === 'admin') {
+          window.location.href = 'admin.html';
+        } else {
+          errorMessage.textContent = 'Você não tem permissão de administrador.';
+          errorMessage.style.display = 'block';
+          auth.signOut();
+        }
+      } catch (error) {
+        errorMessage.textContent = 'Email ou senha inválidos.';
+        errorMessage.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
