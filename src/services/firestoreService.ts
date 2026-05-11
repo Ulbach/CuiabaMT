@@ -5,7 +5,9 @@ import {
   updateDoc,
   doc,
   query,
-  orderBy
+  orderBy,
+  where,
+  getDoc
 } from "firebase/firestore";
 
 import { db } from "../firebase";
@@ -34,15 +36,39 @@ export const firestoreService = {
 
   async getReferenceData(): Promise<ReferenceData> {
     try {
+      const veiculosQuery = query(
+        collection(db, "veiculos"),
+        where("Ativo", "==", true)
+      );
 
-      const veiculosSnap = await getDocs(collection(db, "veiculos"));
-      const motoristasSnap = await getDocs(collection(db, "motoristas"));
-      const segurancasSnap = await getDocs(collection(db, "segurancas"));
+      const motoristasQuery = query(
+        collection(db, "motoristas"),
+        where("Ativo", "==", true)
+      );
+
+      const segurancasQuery = query(
+        collection(db, "segurancas"),
+        where("Ativo", "==", true)
+      );
+
+      const [veiculosSnap, motoristasSnap, segurancasSnap] = await Promise.all([
+        getDocs(veiculosQuery),
+        getDocs(motoristasQuery),
+        getDocs(segurancasQuery)
+      ]);
 
       return {
-        veiculos: veiculosSnap.docs.map(doc => doc.data().nome || ""),
-        motoristas: motoristasSnap.docs.map(doc => doc.data().nome || ""),
-        segurancas: segurancasSnap.docs.map(doc => doc.data().nome || "")
+        veiculos: veiculosSnap.docs
+          .map(docItem => docItem.data().Nome || "")
+          .filter(Boolean),
+
+        motoristas: motoristasSnap.docs
+          .map(docItem => docItem.data().Nome || "")
+          .filter(Boolean),
+
+        segurancas: segurancasSnap.docs
+          .map(docItem => docItem.data().Nome || "")
+          .filter(Boolean)
       };
 
     } catch (error) {
@@ -57,9 +83,7 @@ export const firestoreService = {
   },
 
   async getTrips(): Promise<Trip[]> {
-
     try {
-
       const q = query(
         collection(db, "movimentacoes_frota"),
         orderBy("dataSaida", "desc")
@@ -67,24 +91,50 @@ export const firestoreService = {
 
       const snap = await getDocs(q);
 
-      return snap.docs.map(docItem => ({
-        id: docItem.id,
-        ...docItem.data()
-      })) as Trip[];
+      return snap.docs
+        .map(docItem => ({
+          id: docItem.id,
+          ...docItem.data()
+        }))
+        .filter((item: any) => item.Modelo !== true) as Trip[];
 
     } catch (error) {
-
       console.error("Erro getTrips:", error);
       return [];
     }
   },
 
   async saveTrip(data: any) {
-
     try {
+      const veiculoSnap = await getDocs(
+        query(
+          collection(db, "veiculos"),
+          where("Nome", "==", data.veiculo)
+        )
+      );
+
+      if (!veiculoSnap.empty) {
+        const veiculoDoc = veiculoSnap.docs[0];
+        const veiculoData = veiculoDoc.data();
+
+        if (veiculoData.Ativo !== true) {
+          throw new Error("Veículo inativo.");
+        }
+
+        if (veiculoData.EmTransito === true) {
+          throw new Error("Veículo já está em trânsito.");
+        }
+
+        await updateDoc(doc(db, "veiculos", veiculoDoc.id), {
+          EmTransito: true
+        });
+      }
 
       await addDoc(collection(db, "movimentacoes_frota"), {
-        ...data,
+        veiculo: data.veiculo,
+        motorista: data.motorista,
+        seguranca: data.seguranca,
+        destino: data.destino,
         kmSaida: Number(data.kmSaida),
         dataSaida: new Date().toISOString(),
         status: "Em Viagem"
@@ -93,7 +143,6 @@ export const firestoreService = {
       return true;
 
     } catch (error) {
-
       console.error("Erro saveTrip:", error);
       return false;
     }
@@ -104,26 +153,47 @@ export const firestoreService = {
     kmRetorno: number,
     updatedData?: Partial<Trip>
   ) {
-
     try {
+      const tripRef = doc(db, "movimentacoes_frota", id);
+      const tripSnap = await getDoc(tripRef);
 
-      const ref = doc(db, "movimentacoes_frota", id);
+      if (!tripSnap.exists()) {
+        throw new Error("Movimentação não encontrada.");
+      }
 
-      const kmSaida =
-        updatedData?.kmSaida || 0;
+      const tripData = tripSnap.data() as Trip;
+      const kmSaida = Number(updatedData?.kmSaida ?? tripData.kmSaida ?? 0);
+      const veiculoNome = updatedData?.veiculo ?? tripData.veiculo;
 
-      await updateDoc(ref, {
-        kmRetorno,
-        kmRodado: Number(kmRetorno) - Number(kmSaida),
+      await updateDoc(tripRef, {
+        kmRetorno: Number(kmRetorno),
+        kmRodado: Number(kmRetorno) - kmSaida,
         dataRetorno: new Date().toISOString(),
         status: "Concluído",
         ...updatedData
       });
 
+      if (veiculoNome) {
+        const veiculoSnap = await getDocs(
+          query(
+            collection(db, "veiculos"),
+            where("Nome", "==", veiculoNome)
+          )
+        );
+
+        if (!veiculoSnap.empty) {
+          const veiculoDoc = veiculoSnap.docs[0];
+
+          await updateDoc(doc(db, "veiculos", veiculoDoc.id), {
+            EmTransito: false,
+            KmAtualCadastro: Number(kmRetorno)
+          });
+        }
+      }
+
       return true;
 
     } catch (error) {
-
       console.error("Erro finishTrip:", error);
       return false;
     }
