@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AppView, Trip, ReferenceData } from './types';
-import { firestoreService } from './src/services/firestoreService';
+import { sheetsService } from './services/sheetsService';
 import TripForm from './components/TripForm';
 import ActiveTrips from './components/ActiveTrips';
 import History from './components/History';
@@ -16,13 +16,13 @@ const App: React.FC = () => {
   const fetchData = async () => {
     try {
       const [tripsData, refData] = await Promise.all([
-        firestoreService.getTrips(),
-        firestoreService.getReferenceData()
+        sheetsService.getTrips(),
+        sheetsService.getReferenceData()
       ]);
       setTrips(tripsData);
       setRefs(refData);
     } catch (err) {
-      console.error("Erro ao carregar dados do Firebase:", err);
+      console.error("Erro ao carregar dados da planilha:", err);
     } finally {
       setIsLoading(false);
     }
@@ -35,11 +35,11 @@ const App: React.FC = () => {
   const handleCreateTrip = async (data: any) => {
     setIsActionLoading(true);
     try {
-      await firestoreService.saveTrip(data);
+      await sheetsService.saveTrip(data);
       await fetchData();
       setCurrentView(AppView.DASHBOARD);
     } catch (err) {
-      alert("Erro ao salvar saída no Firebase.");
+      alert("Erro ao salvar saída na planilha.");
     } finally {
       setIsActionLoading(false);
     }
@@ -49,11 +49,11 @@ const App: React.FC = () => {
     setIsActionLoading(true);
     try {
       // O serviço recebe o KM e dados extras se houver edição manual
-      await firestoreService.finishTrip(id, kmRetorno, updatedData);
+      await sheetsService.finishTrip(id, kmRetorno, updatedData);
       await fetchData();
       setCurrentView(AppView.DASHBOARD);
     } catch (err) {
-      alert("Erro ao finalizar viagem no Firebase.");
+      alert("Erro ao finalizar viagem na planilha.");
     } finally {
       setIsActionLoading(false);
     }
@@ -67,7 +67,7 @@ const App: React.FC = () => {
             <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
           </div>
-          <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Conectando Firebase...</p>
+          <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Conectando Planilha...</p>
         </div>
       </div>
     );
