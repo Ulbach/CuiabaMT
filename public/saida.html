@@ -315,12 +315,19 @@ function clearAuth(){
 }
 
 function sessaoValidaLocal(auth){
-  return !!(
-    auth &&
-    auth.token &&
-    auth.expiraEm &&
-    Number(auth.expiraEm) > Date.now()
-  );
+  /*
+    Correção importante:
+    Algumas telas antigas gravam no localStorage apenas { token, seguranca }
+    e não gravam expiraEm/ultimoCheck. A versão anterior exigia expiraEm
+    obrigatoriamente; por isso a tela podia derrubar a sessão ao abrir.
+  */
+  if(!auth || !auth.token) return false;
+
+  if(auth.expiraEm !== undefined && auth.expiraEm !== null && String(auth.expiraEm).trim() !== ''){
+    return Number(auth.expiraEm) > Date.now();
+  }
+
+  return true;
 }
 
 function apiUrl(path, params){
@@ -371,6 +378,12 @@ async function apiPost(path, payload){
 async function validarSessaoOuRedirecionar(forceRemote){
   const auth = getAuth();
 
+  if(!auth || !auth.token){
+    clearAuth();
+    location.href = 'index.html';
+    return null;
+  }
+
   if(!sessaoValidaLocal(auth)){
     clearAuth();
     location.href = 'index.html';
@@ -378,7 +391,8 @@ async function validarSessaoOuRedirecionar(forceRemote){
   }
 
   const ultimoCheck = Number(auth.ultimoCheck || 0);
-  const precisaRevalidar = !!forceRemote || !ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS);
+  const temExpiracao = !!(auth.expiraEm !== undefined && auth.expiraEm !== null && String(auth.expiraEm).trim() !== '');
+  const precisaRevalidar = !!forceRemote || (temExpiracao && (!ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS)));
 
   if(!precisaRevalidar){
     return auth;
@@ -390,8 +404,8 @@ async function validarSessaoOuRedirecionar(forceRemote){
     if(res && res.ok && res.autenticado){
       const novoAuth = {
         token: auth.token,
-        seguranca: res.seguranca || auth.seguranca || '',
-        expiraEm: res.expiraEm || auth.expiraEm,
+        seguranca: res.seguranca || auth.seguranca || auth.nome || auth.usuario || '',
+        expiraEm: res.expiraEm || auth.expiraEm || '',
         ultimoCheck: Date.now()
       };
 
@@ -401,10 +415,7 @@ async function validarSessaoOuRedirecionar(forceRemote){
 
     throw new Error('Sessão inválida.');
   }catch(_){
-    /*
-      Durante a transição para Firebase, se o endpoint validarSessao
-      ainda não existir, mantém a sessão local válida.
-    */
+    // Se o backend de validar sessão ainda não existe no Firebase, mantém a sessão local válida.
     return auth;
   }
 }
