@@ -257,8 +257,6 @@ import {
   getFirestore,
   collection,
   getDocs,
-  query,
-  where,
   doc,
   updateDoc,
   addDoc,
@@ -304,14 +302,25 @@ function textoVeiculo(v){ const nome=v.Nome||v.nome||v.Veiculo||v.veiculo||'Veí
 function kmAtualVeiculo(v){ return Number(String(v.KmAtualCadastro ?? v.KmAtual ?? v.kmAtual ?? v.Km ?? v.km ?? 0).replace(',','.')) || 0; }
 
 async function carregarVeiculosNaRua(){
-  const snap = await getDocs(query(collection(db,'veiculos'), where('EmTransito','==',true)));
-  VEICULOS_NA_RUA = snap.docs.map(d=>({ id:d.id, ...d.data() })).filter(v=>v.Ativo !== false);
+  /*
+    Leitura direta da coleção inteira e filtro local.
+    Motivo: evita erro de query/index/regra no Firestore durante a migração.
+  */
+  const snap = await getDocs(collection(db,'veiculos'));
+
+  VEICULOS_NA_RUA = snap.docs
+    .map(d=>({ id:d.id, ...d.data() }))
+    .filter(v => v.Ativo !== false)
+    .filter(v => v.EmTransito === true || v.emTransito === true || String(v.Status || v.status || '').toUpperCase().includes('TRANSITO'));
+
   const el=document.getElementById('veiculo');
+
   if(!VEICULOS_NA_RUA.length){
     el.innerHTML='<option value="">Nenhum veículo em trânsito</option>';
     setHint('Não há veículos aguardando entrada.');
     return;
   }
+
   el.innerHTML='<option value="">Selecione o veículo...</option>' + VEICULOS_NA_RUA
     .sort((a,b)=>textoVeiculo(a).localeCompare(textoVeiculo(b),'pt-BR'))
     .map(v=>`<option value="${esc(v.id)}">${esc(textoVeiculo(v))}</option>`)
@@ -319,15 +328,32 @@ async function carregarVeiculosNaRua(){
 }
 
 async function buscarMovimentacaoAberta(veiculo){
-  const snap = await getDocs(query(collection(db,'movimentacoes_frota'), where('veiculoId','==',veiculo.id)));
+  /*
+    Também evita where() aqui.
+    Procura localmente a movimentação aberta mais recente do veículo.
+  */
+  const snap = await getDocs(collection(db,'movimentacoes_frota'));
+
+  const nomeAtual = textoVeiculo(veiculo).toUpperCase();
+  const placaAtual = String(veiculo.Placa || veiculo.placa || '').toUpperCase();
+
   const abertas = snap.docs
     .map(d=>({ id:d.id, ...d.data() }))
-    .filter(m => !m.dataRetorno && !m.DataRetorno && String(m.status || m.Status || '').toUpperCase() !== 'CONCLUIDO' && String(m.status || m.Status || '').toUpperCase() !== 'CONCLUÍDO')
+    .filter(m => {
+      const status = String(m.status || m.Status || '').toUpperCase();
+      const semRetorno = !m.dataRetorno && !m.DataRetorno;
+      const naoConcluido = status !== 'CONCLUIDO' && status !== 'CONCLUÍDO' && !status.includes('PÁTIO') && !status.includes('PATIO');
+      const mesmoId = String(m.veiculoId || '') === String(veiculo.id);
+      const mesmoNome = String(m.veiculo || m.Veiculo || '').toUpperCase() === nomeAtual;
+      const mesmaPlaca = placaAtual && String(m.placa || m.Placa || '').toUpperCase() === placaAtual;
+      return semRetorno && naoConcluido && (mesmoId || mesmoNome || mesmaPlaca);
+    })
     .sort((a,b)=>{
-      const da = a.dataSaida?.toMillis ? a.dataSaida.toMillis() : new Date(a.dataSaida || 0).getTime();
-      const dbb = b.dataSaida?.toMillis ? b.dataSaida.toMillis() : new Date(b.dataSaida || 0).getTime();
+      const da = a.dataSaida?.toMillis ? a.dataSaida.toMillis() : new Date(a.dataSaida || a.DataSaida || 0).getTime();
+      const dbb = b.dataSaida?.toMillis ? b.dataSaida.toMillis() : new Date(b.dataSaida || b.DataSaida || 0).getTime();
       return dbb - da;
     });
+
   return abertas[0] || null;
 }
 
@@ -465,7 +491,7 @@ async function init(){
     setMsg('');
   }catch(e){
     console.error(e);
-    setMsg((e && e.message) ? e.message : 'Erro ao carregar dados do Firebase.', '--red');
+    setMsg('Erro ao carregar veículos em trânsito. Verifique regras/permissão do Firestore.', '--red');
     document.getElementById('veiculo').innerHTML='<option value="">Erro ao carregar</option>';
   }
   validateForm();
