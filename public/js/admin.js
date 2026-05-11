@@ -1,37 +1,24 @@
-// ================================= FIREBASE CONFIG =================================
-const firebaseConfig = {
-apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
-authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
-projectId: "cuiaba-01617931-f126e",
-storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
-messagingSenderId: "797115279316",
-appId: "1:797115279316:web:f229366de16d4e066e1841"
-};
+// ================================= ADMIN.JS - SESSÃO ÚNICA =================================
+// ADMIN usa a sessão criada no index.html.
+// Não existe segundo login aqui.
 
-if (!firebase.apps.length) {
-firebase.initializeApp(firebaseConfig);
-}
+const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 
-const db = firebase.firestore();
-
-// ================================= DOM ELEMENTS =================================
+// ================================= DOM =================================
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const mainMenuContainer = document.getElementById('main-menu-view');
 const userGreeting = document.getElementById('user-greeting');
 const loginMsg = document.getElementById('login-msg');
+const btnLogout = document.getElementById('logout-btn');
 
 const btnEntrar = document.getElementById('btnEntrar');
-const btnLogout = document.getElementById('logout-btn');
 const senhaInput = document.getElementById('senha');
-
-// ================================= SESSION =================================
-const STORAGE_KEY = 'delta_auth_firebase_v1';
-const STORAGE_KEY_LEGADO = 'delta_auth_v1';
-const SESSION_MS = 8 * 60 * 60 * 1000;
 
 let currentUser = null;
 
+// ================================= HELPERS =================================
 function normalizarPerfil(perfil) {
 return String(perfil || '').trim().toUpperCase();
 }
@@ -48,21 +35,6 @@ return null;
 }
 }
 
-function setAuth(sessao) {
-
-localStorage.setItem(STORAGE_KEY, JSON.stringify(sessao));
-
-// Compatibilidade telas antigas
-localStorage.setItem(STORAGE_KEY_LEGADO, JSON.stringify({
-token: sessao.id || sessao.Sen_Segura || 'firebase-local',
-seguranca: sessao.Nome || '',
-nome: sessao.Nome || '',
-usuario: sessao.Nome || '',
-perfil: sessao.Perfil || '',
-expiraEm: sessao.expiraEm
-}));
-}
-
 function clearAuth() {
 localStorage.removeItem(STORAGE_KEY);
 localStorage.removeItem(STORAGE_KEY_LEGADO);
@@ -70,67 +42,41 @@ localStorage.removeItem(STORAGE_KEY_LEGADO);
 
 function sessaoValidaLocal(auth) {
 
-return !!(
-auth &&
-(auth.Nome || auth.seguranca || auth.nome || auth.usuario) &&
-(auth.Perfil || auth.perfil) &&
-auth.expiraEm &&
-Number(auth.expiraEm) > Date.now()
-);
+if (!auth) return false;
+
+const nome =
+auth.Nome ||
+auth.seguranca ||
+auth.nome ||
+auth.usuario;
+
+const perfil =
+auth.Perfil ||
+auth.perfil;
+
+if (!nome || !perfil) return false;
+
+if (auth.expiraEm && Number(auth.expiraEm) <= Date.now()) {
+return false;
+}
+
+return true;
 }
 
 function authParaUsuario(auth) {
 
 return {
 id: auth.id || auth.token || '',
-Nome: auth.Nome || auth.seguranca || auth.nome || auth.usuario || '',
-Email: auth.Email || '',
-Perfil: normalizarPerfil(auth.Perfil || auth.perfil),
-Sen_Segura: auth.Sen_Segura || ''
+Nome:
+auth.Nome ||
+auth.seguranca ||
+auth.nome ||
+auth.usuario ||
+'',
+Perfil: normalizarPerfil(
+auth.Perfil || auth.perfil
+)
 };
-}
-
-// ================================= VIEW =================================
-
-function showLoginMessage(message) {
-loginMsg.textContent = message || '';
-}
-
-function setLoading(loading) {
-
-btnEntrar.disabled = !!loading;
-senhaInput.disabled = !!loading;
-}
-
-function showLoginView() {
-
-currentUser = null;
-
-appView.classList.add('hidden');
-loginView.classList.remove('hidden');
-
-senhaInput.value = '';
-senhaInput.disabled = false;
-btnEntrar.disabled = false;
-
-showLoginMessage('Digite seu código para entrar.');
-
-setTimeout(() => {
-senhaInput.focus();
-}, 50);
-}
-
-function showAppView() {
-
-loginView.classList.add('hidden');
-appView.classList.remove('hidden');
-
-const perfil = normalizarPerfil(currentUser.Perfil);
-
-userGreeting.innerHTML =
-`Olá, <strong>${escapeHtml(currentUser.Nome || 'Segurança')}</strong> • ${escapeHtml(perfil)}`;
-
-renderMainMenu();
 }
 
 function escapeHtml(v) {
@@ -143,109 +89,40 @@ return String(v == null ? '' : v)
 .replace(/'/g, ''');
 }
 
-// ================================= FIRESTORE LOGIN =================================
+// ================================= BLOQUEIO =================================
+function mostrarMensagemBloqueio(msg) {
 
-async function buscarSegurancaPorCodigo(codigo) {
+if (appView) appView.classList.add('hidden');
 
-const snap = await db.collection('segurancas')
-.where('Sen_Segura', '==', codigo)
-.where('Ativo', '==', true)
-.limit(1)
-.get();
+if (loginView) loginView.classList.remove('hidden');
 
-if (snap.empty) {
-return null;
+const title = loginView.querySelector('.title');
+const sub = loginView.querySelector('.sub');
+const field = loginView.querySelector('.field');
+
+if (title) title.textContent = 'Acesso restrito';
+
+if (sub) {
+sub.textContent =
+'Esta área é exclusiva para ADMIN.';
 }
 
-const docItem = snap.docs[0];
+if (field) field.style.display = 'none';
 
-return {
-id: docItem.id,
-...docItem.data()
-};
+if (btnEntrar) btnEntrar.style.display = 'none';
+
+if (loginMsg) {
+loginMsg.textContent =
+msg || 'Acesso negado.';
+loginMsg.style.color = '#ff4d4f';
 }
 
-async function handleLogin() {
-
-const codigo = (senhaInput.value || '').trim();
-
-if (!codigo) {
-
-```
-showLoginMessage('Digite seu código de acesso.');
-senhaInput.focus();
-return;
-```
-
-}
-
-setLoading(true);
-
-showLoginMessage('Verificando código no Firebase...');
-
-try {
-
-```
-const usuario = await buscarSegurancaPorCodigo(codigo);
-
-if (!usuario) {
-
-  showLoginMessage('Código de acesso não encontrado.');
-  setLoading(false);
-  return;
-}
-
-const perfil = normalizarPerfil(usuario.Perfil);
-
-if (perfil !== 'ADMIN') {
-
-  showLoginMessage('Acesso negado. Área exclusiva ADMIN.');
-  setLoading(false);
-  return;
-}
-
-currentUser = {
-  id: usuario.id,
-  Nome: usuario.Nome || '',
-  Email: usuario.Email || '',
-  Perfil: perfil,
-  Sen_Segura: usuario.Sen_Segura || '',
-  expiraEm: Date.now() + SESSION_MS
-};
-
-setAuth(currentUser);
-
-showLoginMessage('Acesso liberado.');
-
-showAppView();
-```
-
-} catch (e) {
-
-```
-console.error(e);
-
-showLoginMessage('Erro ao conectar no Firebase.');
-```
-
-} finally {
-
-```
-setLoading(false);
-```
-
-}
-}
-
-function handleLogout() {
-
-clearAuth();
-
-showLoginView();
+setTimeout(() => {
+location.href = 'index.html';
+}, 1800);
 }
 
 // ================================= MENU =================================
-
 function renderMainMenu() {
 
 mainMenuContainer.innerHTML = `
@@ -256,7 +133,7 @@ mainMenuContainer.innerHTML = `
     <div class="menu-icon">🚗</div>
     <div>
       Controle de Veículos
-      <small>Entrada, saída e relatórios da frota</small>
+      <small>Entrada, saída e relatórios</small>
     </div>
   </div>
   <div class="menu-arrow">›</div>
@@ -267,7 +144,7 @@ mainMenuContainer.innerHTML = `
     <div class="menu-icon">🛂</div>
     <div>
       Controle de Visitantes
-      <small>Entrada, saída e registros de visitantes</small>
+      <small>Entrada e saída visitantes</small>
     </div>
   </div>
   <div class="menu-arrow">›</div>
@@ -277,8 +154,19 @@ mainMenuContainer.innerHTML = `
   <div style="display:flex;align-items:center;gap:14px;">
     <div class="menu-icon">⚙️</div>
     <div>
-      Cadastros e Configurações
+      Cadastros
       <small>Veículos, motoristas e segurança</small>
+    </div>
+  </div>
+  <div class="menu-arrow">›</div>
+</a>
+
+<a href="rel_geral.html" class="menu-btn">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="menu-icon">📊</div>
+    <div>
+      Relatórios
+      <small>Consultas gerais</small>
     </div>
   </div>
   <div class="menu-arrow">›</div>
@@ -288,18 +176,43 @@ mainMenuContainer.innerHTML = `
 `;
 }
 
-// ================================= INIT =================================
+function showAdminView() {
 
-function tentarAbrirSessaoExistente() {
+if (loginView) {
+loginView.classList.add('hidden');
+}
+
+if (appView) {
+appView.classList.remove('hidden');
+}
+
+const perfil = normalizarPerfil(currentUser.Perfil);
+
+userGreeting.innerHTML =
+`Olá, <strong>${escapeHtml(currentUser.Nome)}</strong> • ${escapeHtml(perfil)}`;
+
+renderMainMenu();
+}
+
+// ================================= LOGOUT =================================
+function trocarUsuario() {
+
+clearAuth();
+
+location.href = 'index.html';
+}
+
+// ================================= INIT =================================
+function initAdmin() {
 
 const auth = getAuth();
 
 if (!sessaoValidaLocal(auth)) {
 
 ```
-clearAuth();
-
-showLoginView();
+mostrarMensagemBloqueio(
+  'Sessão inválida. Faça login novamente.'
+);
 
 return;
 ```
@@ -308,14 +221,14 @@ return;
 
 const usuario = authParaUsuario(auth);
 
-if (normalizarPerfil(usuario.Perfil) !== 'ADMIN') {
+const perfil = normalizarPerfil(usuario.Perfil);
+
+if (perfil !== 'ADMIN') {
 
 ```
-clearAuth();
-
-showLoginView();
-
-showLoginMessage('Acesso negado. Área exclusiva ADMIN.');
+mostrarMensagemBloqueio(
+  'Usuário sem permissão ADMIN.'
+);
 
 return;
 ```
@@ -324,20 +237,12 @@ return;
 
 currentUser = usuario;
 
-showAppView();
+showAdminView();
 }
 
 // ================================= EVENTS =================================
-
-btnEntrar.addEventListener('click', handleLogin);
-
-senhaInput.addEventListener('keydown', function(event) {
-
-if (event.key === 'Enter') {
-handleLogin();
+if (btnLogout) {
+btnLogout.addEventListener('click', trocarUsuario);
 }
-});
 
-btnLogout.addEventListener('click', handleLogout);
-
-window.addEventListener('load', tentarAbrirSessaoExistente);
+window.addEventListener('load', initAdmin);
