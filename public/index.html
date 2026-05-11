@@ -1,122 +1,594 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - Controle de Frota</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>Gestão Veicular - Delta Cuiabá - MT</title>
   <style>
-    :root {
-      --bg1: #061427; --bg2: #0b1b33; --card: rgba(255, 255, 255, 0.04);
-      --border: rgba(255, 255, 255, 0.12); --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-      --text-main: #e6edf7; --text-soft: #9fb4d3; --text-muted: #7b8ca7;
-      --accent: #22c55e; --alert: #ef4444; --blue: #3b82f6; --radius: 14px;
+    :root{
+      --bg1:#0b1220; --bg2:#0b0f17; --card:#0b1221; --border:#1d2940;
+      --text:#e6edf7; --muted:#9fb0cc; --shadow:0 24px 64px rgba(0,0,0,.45);
+      --accent:#22c55e; --danger:#ff4d4f;
     }
-    body {
-      margin: 0; font-family: system-ui, -apple-system, sans-serif;
-      background: linear-gradient(180deg, var(--bg1), var(--bg2));
-      color: var(--text-main); min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;
+      background:
+        radial-gradient(900px 360px at -10% -10%, #22c55e1f 0%, transparent 60%),
+        radial-gradient(900px 360px at 120% -20%, #06b6d41f 0%, transparent 60%),
+        linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 100%);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
     }
-    .login-container { max-width: 400px; width: 100%; padding: 20px; }
-    .card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 35px;
-      backdrop-filter: blur(5px); box-shadow: var(--shadow);
+
+    .hero-header{
+      width:100%;
+      height:180px;
+      background:
+        linear-gradient(180deg,rgba(6,20,39,0.18) 0%,rgba(6,20,39,0.55) 100%),
+        url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
+        center/cover no-repeat;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      flex-shrink:0;
     }
-    h1 { text-align: center; color: var(--accent); margin: 0 0 20px; }
-    .field label {
-      display: block; font-size: 11px; font-weight: 700; color: var(--text-muted);
-      margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+    .hero-content{
+      width:100%;
+      max-width:500px;
+      margin-top:-35px;
     }
-    .field input {
-      width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.2); border: 1px solid var(--border);
-      padding: 12px; border-radius: 8px; color: var(--text-main); font-size: 15px;
-      outline: none; transition: 0.2s; margin-bottom: 20px;
+    .brand-title{
+      font-size:26px;
+      font-weight:900;
+      letter-spacing:4px;
+      margin:4px 0;
+      color:#e6edf7;
+      text-shadow:
+        0 0 8px rgba(34,197,94,0.5),
+        0 0 18px rgba(34,197,94,0.25);
     }
-    .field input:focus { border-color: var(--blue); background: rgba(255,255,255,0.05); }
-    .btn {
-      width: 100%; padding: 12px 20px; border: none; border-radius: 8px; font-size: 14px;
-      font-weight: 700; cursor: pointer; text-transform: uppercase;
-      letter-spacing: 0.5px; transition: 0.2s;
+
+    .wrap{
+      width:100%;
+      max-width:460px;
+      margin-top:-10px;
+      padding:0 16px 18px;
+      animation:fadeIn .5s ease-out;
     }
-    .btn-primary { background-color: var(--blue); color: #fff; }
-    .btn-primary:hover { background-color: #4f9aff; }
-    #error-message { color: var(--alert); text-align: center; margin-top: 15px; display: none; }
+    @keyframes fadeIn{
+      from{opacity:0; transform:translateY(10px)}
+      to{opacity:1; transform:translateY(0)}
+    }
+
+    .head{
+      text-align:center;
+      margin-bottom:24px;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 14px;
+      border-radius:99px;
+      border:1px solid #1d2940;
+      background:rgba(255,255,255,0.03);
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:1px;
+      color:var(--muted);
+      transition:.3s;
+    }
+    .logo{
+      margin:18px 0 0;
+      font-size:42px;
+      font-weight:900;
+      letter-spacing:-2px;
+      font-style:italic;
+      line-height:1;
+    }
+    .logo span{
+      display:block;
+      color:#ff4d4d;
+      margin-top:-4px;
+    }
+    .tagline{
+      margin-top:16px;
+      font-size:10px;
+      font-weight:700;
+      letter-spacing:4px;
+      color:var(--muted);
+      opacity:.6;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:24px;
+      padding:24px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+      transform:translateX(-100%);
+      transition:.6s;
+      pointer-events:none;
+    }
+    .card:hover::before{ transform:translateX(100%); }
+
+    .title{
+      font-size:20px;
+      font-weight:900;
+      margin:0 0 8px;
+      text-align:center;
+    }
+    .sub{
+      font-size:13px;
+      color:var(--muted);
+      text-align:center;
+      margin:0 0 20px;
+      line-height:1.5;
+    }
+
+    .field{ margin-bottom:16px; }
+    .field label{
+      display:block;
+      margin:0 0 8px;
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      letter-spacing:.8px;
+      text-transform:uppercase;
+    }
+    .pin-wrap{ position:relative; }
+    .pin-wrap input{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:rgba(255,255,255,.03);
+      color:#fff;
+      font-size:28px;
+      font-weight:900;
+      letter-spacing:8px;
+      text-align:center;
+      padding:18px 16px;
+      outline:none;
+    }
+    .pin-wrap input:focus{
+      border-color:#2a9d63;
+      box-shadow:0 0 0 3px rgba(34,197,94,.10);
+    }
+
+    .btn{
+      width:100%;
+      border:none;
+      border-radius:18px;
+      padding:16px 18px;
+      font-size:16px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .btn-primary{
+      background:var(--accent);
+      color:#08131f;
+    }
+    .btn-primary:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+    .btn-light{
+      margin-top:12px;
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      border:1px solid var(--border);
+      text-decoration:none;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .msg{
+      min-height:22px;
+      margin-top:14px;
+      font-size:13px;
+      text-align:center;
+      font-weight:700;
+      color:var(--muted);
+    }
+    .welcome{
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:16px;
+      background:rgba(34,197,94,.10);
+      border:1px solid rgba(34,197,94,.22);
+      color:#86efac;
+      font-size:14px;
+      font-weight:800;
+      text-align:center;
+      display:none;
+    }
+
+    .loading{
+      display:none;
+      margin:12px auto 0;
+      width:42px;
+      height:42px;
+      border:4px solid rgba(255,255,255,.10);
+      border-top-color:var(--accent);
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+
+    .menu-user{
+      margin-bottom:16px;
+      padding:12px 14px;
+      border-radius:16px;
+      background:rgba(34,197,94,.10);
+      border:1px solid rgba(34,197,94,.22);
+      color:#86efac;
+      font-size:14px;
+      font-weight:800;
+      text-align:center;
+    }
+    .menu-grid{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    .menu-btn{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      width:100%;
+      padding:20px 18px;
+      text-decoration:none;
+      color:var(--text);
+      border-radius:18px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      font-weight:800;
+      transition:all .25s ease;
+    }
+    .menu-btn:hover{
+      background:rgba(255,255,255,.07);
+      transform:translateY(-3px) scale(1.01);
+      box-shadow:0 10px 30px rgba(0,0,0,0.35), 0 0 12px rgba(34,197,94,0.12);
+      border-color:#1f8f5a;
+    }
+    .menu-btn small{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:600;
+      margin-top:4px;
+    }
+    .menu-icon{
+      font-size:22px;
+      min-width:28px;
+      text-align:center;
+    }
+    .menu-arrow{
+      opacity:.35;
+      font-size:20px;
+    }
+    .menu-actions{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-direction:column;
+    }
+
+    .footer{
+      padding:6px 0 18px;
+      font-size:12px;
+      color:#6b85a6;
+      opacity:.75;
+      letter-spacing:1px;
+      text-align:center;
+    }
+
+    .hidden{ display:none !important; }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <div class="card">
-      <h1>Login de Administrador</h1>
-      <form id="login-form">
-        <div class="field">
-          <label for="email">Email</label>
-          <input type="email" id="email" required>
-        </div>
-        <div class="field">
-          <label for="password">Senha</label>
-          <input type="password" id="password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Entrar</button>
-        <p id="error-message"></p>
-      </form>
+  <div class="hero-header">
+    <div class="hero-content">
+      <div class="brand-title">Delta Cuiabá</div>
+      <div class="brand-title">Controle de Frota</div>
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  <div class="wrap">
+    <div class="head">
+      <div class="chip" id="chipStatus">● FIREBASE</div>
+      <h1 class="logo">GESTÃO<span>INTELIGENTE</span></h1>
+      <div class="tagline"># DELTA CUIABA #</div>
+    </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
-      authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
-      projectId: "cuiaba-01617931-f126e",
-      storageBucket: "cuiaba-01617931-f126e.appspot.com",
-      messagingSenderId: "797115279316",
-      appId: "1:797115279316:web:f229366de16d4e066e1841"
+    <div class="card" id="loginCard">
+      <h2 class="title">Acesso do Segurança</h2>
+      <p class="sub">Digite apenas o seu código pessoal para acessar o sistema.</p>
+
+      <div class="field">
+        <label for="codigo">Código de acesso</label>
+        <div class="pin-wrap">
+          <input id="codigo" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" autocomplete="one-time-code">
+        </div>
+      </div>
+
+      <button id="btnEntrar" class="btn btn-primary" type="button">Entrar</button>
+
+      <div id="welcomeMsg" class="welcome"></div>
+      <div id="loading" class="loading"></div>
+      <div id="msg" class="msg">Digite seu código para entrar.</div>
+    </div>
+
+    <div class="card hidden" id="menuCard">
+      <div class="menu-user" id="menuUser">Olá!</div>
+
+      <div class="menu-grid" id="menuGrid"></div>
+
+      <div class="menu-actions">
+        <button class="btn btn-light" type="button" id="btnTrocar">Trocar usuário</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">by Ulbach</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  limit
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const STORAGE_KEY = 'delta_auth_firebase_v1';
+
+function setChip(text, color){
+  const el = document.getElementById('chipStatus');
+  el.textContent = text;
+  if (color) el.style.color = color;
+}
+
+function getAuth(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+  catch(_) { return null; }
+}
+
+function setAuth(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function clearAuth(){
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+function setLoading(show){
+  document.getElementById('loading').style.display = show ? 'block' : 'none';
+  document.getElementById('btnEntrar').disabled = !!show;
+}
+
+function setMsg(text, ok=false){
+  const el = document.getElementById('msg');
+  el.textContent = text || '';
+  el.style.color = ok ? '#86efac' : (text ? '#ffb020' : '#9fb0cc');
+}
+
+function showWelcome(text){
+  const el = document.getElementById('welcomeMsg');
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+function normalizarPerfil(perfil){
+  return String(perfil || '').trim().toUpperCase();
+}
+
+function montarMenu(perfil){
+  const menuGrid = document.getElementById('menuGrid');
+  menuGrid.innerHTML = '';
+
+  const itensBase = [
+    {
+      icon: '🚗',
+      title: 'Controle de Veículos',
+      desc: 'Entrada, saída e relatórios da frota',
+      href: 'veiculos.html',
+      perfis: ['ADMIN', 'OPERADOR', 'CONSULTA']
+    },
+    {
+      icon: '🛂',
+      title: 'Controle de Visitantes',
+      desc: 'Entrada, saída e registros de visitantes',
+      href: 'visitantes.html',
+      perfis: ['ADMIN', 'OPERADOR', 'CONSULTA']
+    },
+    {
+      icon: '⚙️',
+      title: 'Administração',
+      desc: 'Cadastros, listas e configurações',
+      href: 'admin.html',
+      perfis: ['ADMIN']
+    }
+  ];
+
+  itensBase
+    .filter(item => item.perfis.includes(perfil))
+    .forEach(item => {
+      const a = document.createElement('a');
+      a.href = item.href;
+      a.className = 'menu-btn';
+      a.innerHTML = `
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="menu-icon">${item.icon}</div>
+          <div>
+            ${item.title}
+            <small>${item.desc}</small>
+          </div>
+        </div>
+        <div class="menu-arrow">›</div>
+      `;
+      menuGrid.appendChild(a);
+    });
+}
+
+function openMenu(usuario){
+  const perfil = normalizarPerfil(usuario.Perfil);
+  document.getElementById('loginCard').classList.add('hidden');
+  document.getElementById('menuCard').classList.remove('hidden');
+  document.getElementById('menuUser').textContent =
+    'Olá, ' + (usuario.Nome || 'Segurança') + ' • ' + perfil;
+  montarMenu(perfil);
+}
+
+function openLogin(){
+  document.getElementById('menuCard').classList.add('hidden');
+  document.getElementById('loginCard').classList.remove('hidden');
+  document.getElementById('codigo').value = '';
+  document.getElementById('codigo').focus();
+  document.getElementById('welcomeMsg').style.display = 'none';
+  setMsg('Digite seu código para entrar.');
+}
+
+function sessaoValidaLocal(auth){
+  return !!(auth && auth.Nome && auth.Perfil && auth.expiraEm && Number(auth.expiraEm) > Date.now());
+}
+
+async function validarSessaoExistente(){
+  const auth = getAuth();
+
+  if (!sessaoValidaLocal(auth)) {
+    clearAuth();
+    return false;
+  }
+
+  openMenu(auth);
+  return true;
+}
+
+async function buscarSegurancaPorCodigo(codigo){
+  const q = query(
+    collection(db, 'segurancas'),
+    where('Sen_Segura', '==', codigo),
+    where('Ativo', '==', true),
+    limit(1)
+  );
+
+  const snap = await getDocs(q);
+
+  if (snap.empty) return null;
+
+  const docItem = snap.docs[0];
+  return {
+    id: docItem.id,
+    ...docItem.data()
+  };
+}
+
+async function fazerLogin(){
+  const codigo = (document.getElementById('codigo').value || '').trim();
+
+  if (!codigo) {
+    setMsg('Digite o seu código de acesso.');
+    document.getElementById('codigo').focus();
+    return;
+  }
+
+  setLoading(true);
+  setMsg('Validando acesso no Firebase...');
+
+  try {
+    const usuario = await buscarSegurancaPorCodigo(codigo);
+
+    if (!usuario) {
+      setMsg('Código não encontrado ou usuário inativo.');
+      setLoading(false);
+      return;
+    }
+
+    const perfil = normalizarPerfil(usuario.Perfil);
+
+    if (!['ADMIN', 'OPERADOR', 'CONSULTA'].includes(perfil)) {
+      setMsg('Perfil inválido no cadastro do usuário.');
+      setLoading(false);
+      return;
+    }
+
+    const sessao = {
+      id: usuario.id,
+      Nome: usuario.Nome || '',
+      Email: usuario.Email || '',
+      Perfil: perfil,
+      Sen_Segura: usuario.Sen_Segura || '',
+      expiraEm: Date.now() + (8 * 60 * 60 * 1000)
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const errorMessage = document.getElementById('error-message');
+    setAuth(sessao);
 
-    // Redireciona se o usuário já estiver logado e for admin
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'segurancas', user.uid));
-        if (userDoc.exists() && userDoc.data().perfil === 'admin') {
-          window.location.href = 'admin.html';
-        }
-      }
-    });
+    showWelcome('Olá, ' + (sessao.Nome || 'Segurança') + '!');
+    setMsg('Acesso liberado.', true);
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      errorMessage.style.display = 'none';
+    setTimeout(() => {
+      setLoading(false);
+      openMenu(sessao);
+    }, 350);
 
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+  } catch(e) {
+    console.error(e);
+    setMsg('Erro ao conectar no Firebase.');
+    setLoading(false);
+  }
+}
 
-        const userDoc = await getDoc(doc(db, 'segurancas', user.uid));
+function trocarUsuario(){
+  clearAuth();
+  openLogin();
+}
 
-        if (userDoc.exists() && userDoc.data().perfil === 'admin') {
-          window.location.href = 'admin.html';
-        } else {
-          errorMessage.textContent = 'Você não tem permissão de administrador.';
-          errorMessage.style.display = 'block';
-          auth.signOut();
-        }
-      } catch (error) {
-        errorMessage.textContent = 'Email ou senha inválidos.';
-        errorMessage.style.display = 'block';
-      }
-    });
-  </script>
+document.getElementById('btnEntrar').addEventListener('click', fazerLogin);
+document.getElementById('codigo').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') fazerLogin();
+});
+document.getElementById('btnTrocar').addEventListener('click', trocarUsuario);
+
+window.addEventListener('load', async () => {
+  document.getElementById('codigo').focus();
+  setChip('● FIREBASE', '#86efac');
+  const logado = await validarSessaoExistente();
+  if (!logado) setMsg('Digite seu código para entrar.');
+});
+</script>
 </body>
 </html>
