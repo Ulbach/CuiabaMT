@@ -316,12 +316,19 @@ function clearAuth(){
 }
 
 function sessaoValidaLocal(auth){
-  return !!(
-    auth &&
-    auth.token &&
-    auth.expiraEm &&
-    Number(auth.expiraEm) > Date.now()
-  );
+  /*
+    Correção importante:
+    Durante a migração para Firebase, algumas telas gravam no localStorage
+    apenas { token, seguranca } e não gravam expiraEm.
+    Por isso não podemos derrubar a sessão só porque expiraEm não existe.
+  */
+  if(!auth || !auth.token) return false;
+
+  if(auth.expiraEm !== undefined && auth.expiraEm !== null && String(auth.expiraEm).trim() !== ''){
+    return Number(auth.expiraEm) > Date.now();
+  }
+
+  return true;
 }
 
 function apiUrl(path, params){
@@ -379,7 +386,8 @@ async function validarSessaoOuRedirecionar(forceRemote){
   }
 
   const ultimoCheck = Number(auth.ultimoCheck || 0);
-  const precisaRevalidar = !!forceRemote || !ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS);
+  const temExpiracao = !!(auth.expiraEm !== undefined && auth.expiraEm !== null && String(auth.expiraEm).trim() !== '');
+  const precisaRevalidar = !!forceRemote || (temExpiracao && (!ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS)));
 
   if(!precisaRevalidar){
     return auth;
@@ -391,7 +399,7 @@ async function validarSessaoOuRedirecionar(forceRemote){
     if(res && res.ok && res.autenticado){
       const novoAuth = {
         token: auth.token,
-        seguranca: res.seguranca || auth.seguranca || '',
+        seguranca: res.seguranca || auth.seguranca || auth.nome || auth.usuario || '',
         expiraEm: res.expiraEm || auth.expiraEm,
         ultimoCheck: Date.now()
       };
