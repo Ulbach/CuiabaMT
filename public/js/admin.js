@@ -56,34 +56,35 @@ function abrirAdmin(auth) {
   userGreeting.innerHTML = `Olá, <strong>${esc(nome(auth))}</strong> • ${esc(perfil(auth))}`;
 
   mainMenuContainer.innerHTML = `
-    <a href="veiculos.html" class="menu-btn">
+    <a href="cad_motoristas.html" class="menu-btn">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="menu-icon">👨‍✈️</div>
+        <div>
+          Cadastro de Motoristas
+          <small>Gerenciar motoristas autorizados</small>
+        </div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+
+    <a href="cad_segurancas.html" class="menu-btn">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="menu-icon">🛡️</div>
+        <div>
+          Cadastro de Seguranças
+          <small>Usuários e permissões do sistema</small>
+        </div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+
+    <a href="cad_veiculos.html" class="menu-btn">
       <div style="display:flex;align-items:center;gap:14px;">
         <div class="menu-icon">🚗</div>
-        <div>Controle de Veículos<small>Entrada, saída e relatórios</small></div>
-      </div>
-      <div class="menu-arrow">›</div>
-    </a>
-
-    <a href="visitantes.html" class="menu-btn">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div class="menu-icon">🛂</div>
-        <div>Controle de Visitantes<small>Entrada e saída visitantes</small></div>
-      </div>
-      <div class="menu-arrow">›</div>
-    </a>
-
-    <a href="cadastros.html" class="menu-btn">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div class="menu-icon">⚙️</div>
-        <div>Cadastros<small>Veículos, motoristas e segurança</small></div>
-      </div>
-      <div class="menu-arrow">›</div>
-    </a>
-
-    <a href="rel_geral.html" class="menu-btn">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div class="menu-icon">📊</div>
-        <div>Relatórios<small>Consultas gerais</small></div>
+        <div>
+          Cadastro de Veículos
+          <small>Gerenciar frota e veículos ativos</small>
+        </div>
       </div>
       <div class="menu-arrow">›</div>
     </a>
