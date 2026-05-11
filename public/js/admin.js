@@ -1,248 +1,118 @@
-// ================================= ADMIN.JS - SESSÃO ÚNICA =================================
-// ADMIN usa a sessão criada no index.html.
-// Não existe segundo login aqui.
-
 const STORAGE_KEY = 'delta_auth_firebase_v1';
 const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 
-// ================================= DOM =================================
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const mainMenuContainer = document.getElementById('main-menu-view');
 const userGreeting = document.getElementById('user-greeting');
-const loginMsg = document.getElementById('login-msg');
 const btnLogout = document.getElementById('logout-btn');
 
-const btnEntrar = document.getElementById('btnEntrar');
-const senhaInput = document.getElementById('senha');
-
-let currentUser = null;
-
-// ================================= HELPERS =================================
-function normalizarPerfil(perfil) {
-return String(perfil || '').trim().toUpperCase();
-}
-
 function getAuth() {
-try {
-return JSON.parse(
-localStorage.getItem(STORAGE_KEY) ||
-localStorage.getItem(STORAGE_KEY_LEGADO) ||
-'null'
-);
-} catch (_) {
-return null;
-}
+  try {
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(STORAGE_KEY_LEGADO) ||
+      'null'
+    );
+  } catch (_) {
+    return null;
+  }
 }
 
 function clearAuth() {
-localStorage.removeItem(STORAGE_KEY);
-localStorage.removeItem(STORAGE_KEY_LEGADO);
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
 }
 
-function sessaoValidaLocal(auth) {
-
-if (!auth) return false;
-
-const nome =
-auth.Nome ||
-auth.seguranca ||
-auth.nome ||
-auth.usuario;
-
-const perfil =
-auth.Perfil ||
-auth.perfil;
-
-if (!nome || !perfil) return false;
-
-if (auth.expiraEm && Number(auth.expiraEm) <= Date.now()) {
-return false;
+function perfil(auth) {
+  return String(auth?.Perfil || auth?.perfil || '').trim().toUpperCase();
 }
 
-return true;
+function nome(auth) {
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
 }
 
-function authParaUsuario(auth) {
-
-return {
-id: auth.id || auth.token || '',
-Nome:
-auth.Nome ||
-auth.seguranca ||
-auth.nome ||
-auth.usuario ||
-'',
-Perfil: normalizarPerfil(
-auth.Perfil || auth.perfil
-)
-};
+function sessaoValida(auth) {
+  if (!auth) return false;
+  if (!nome(auth)) return false;
+  if (!perfil(auth)) return false;
+  if (auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return true;
 }
 
-function escapeHtml(v) {
-
-return String(v == null ? '' : v)
-.replace(/&/g, '&')
-.replace(/</g, '<')
-.replace(/>/g, '>')
-.replace(/"/g, '"')
-.replace(/'/g, ''');
+function esc(v) {
+  return String(v || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
 }
 
-// ================================= BLOQUEIO =================================
-function mostrarMensagemBloqueio(msg) {
+function abrirAdmin(auth) {
+  loginView.classList.add('hidden');
+  appView.classList.remove('hidden');
 
-if (appView) appView.classList.add('hidden');
+  userGreeting.innerHTML = `Olá, <strong>${esc(nome(auth))}</strong> • ${esc(perfil(auth))}`;
 
-if (loginView) loginView.classList.remove('hidden');
+  mainMenuContainer.innerHTML = `
+    <a href="veiculos.html" class="menu-btn">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="menu-icon">🚗</div>
+        <div>Controle de Veículos<small>Entrada, saída e relatórios</small></div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
 
-const title = loginView.querySelector('.title');
-const sub = loginView.querySelector('.sub');
-const field = loginView.querySelector('.field');
+    <a href="visitantes.html" class="menu-btn">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="menu-icon">🛂</div>
+        <div>Controle de Visitantes<small>Entrada e saída visitantes</small></div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
 
-if (title) title.textContent = 'Acesso restrito';
+    <a href="cadastros.html" class="menu-btn">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="menu-icon">⚙️</div>
+        <div>Cadastros<small>Veículos, motoristas e segurança</small></div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
 
-if (sub) {
-sub.textContent =
-'Esta área é exclusiva para ADMIN.';
+    <a href="rel_geral.html" class="menu-btn">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="menu-icon">📊</div>
+        <div>Relatórios<small>Consultas gerais</small></div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+  `;
 }
 
-if (field) field.style.display = 'none';
-
-if (btnEntrar) btnEntrar.style.display = 'none';
-
-if (loginMsg) {
-loginMsg.textContent =
-msg || 'Acesso negado.';
-loginMsg.style.color = '#ff4d4f';
+function bloquear() {
+  location.href = 'index.html';
 }
 
-setTimeout(() => {
-location.href = 'index.html';
-}, 1800);
-}
+window.addEventListener('load', () => {
+  const auth = getAuth();
 
-// ================================= MENU =================================
-function renderMainMenu() {
+  if (!sessaoValida(auth)) {
+    bloquear();
+    return;
+  }
 
-mainMenuContainer.innerHTML = `
+  if (perfil(auth) !== 'ADMIN') {
+    bloquear();
+    return;
+  }
 
-```
-<a href="veiculos.html" class="menu-btn">
-  <div style="display:flex;align-items:center;gap:14px;">
-    <div class="menu-icon">🚗</div>
-    <div>
-      Controle de Veículos
-      <small>Entrada, saída e relatórios</small>
-    </div>
-  </div>
-  <div class="menu-arrow">›</div>
-</a>
+  abrirAdmin(auth);
+});
 
-<a href="visitantes.html" class="menu-btn">
-  <div style="display:flex;align-items:center;gap:14px;">
-    <div class="menu-icon">🛂</div>
-    <div>
-      Controle de Visitantes
-      <small>Entrada e saída visitantes</small>
-    </div>
-  </div>
-  <div class="menu-arrow">›</div>
-</a>
-
-<a href="cadastros.html" class="menu-btn">
-  <div style="display:flex;align-items:center;gap:14px;">
-    <div class="menu-icon">⚙️</div>
-    <div>
-      Cadastros
-      <small>Veículos, motoristas e segurança</small>
-    </div>
-  </div>
-  <div class="menu-arrow">›</div>
-</a>
-
-<a href="rel_geral.html" class="menu-btn">
-  <div style="display:flex;align-items:center;gap:14px;">
-    <div class="menu-icon">📊</div>
-    <div>
-      Relatórios
-      <small>Consultas gerais</small>
-    </div>
-  </div>
-  <div class="menu-arrow">›</div>
-</a>
-```
-
-`;
-}
-
-function showAdminView() {
-
-if (loginView) {
-loginView.classList.add('hidden');
-}
-
-if (appView) {
-appView.classList.remove('hidden');
-}
-
-const perfil = normalizarPerfil(currentUser.Perfil);
-
-userGreeting.innerHTML =
-`Olá, <strong>${escapeHtml(currentUser.Nome)}</strong> • ${escapeHtml(perfil)}`;
-
-renderMainMenu();
-}
-
-// ================================= LOGOUT =================================
-function trocarUsuario() {
-
-clearAuth();
-
-location.href = 'index.html';
-}
-
-// ================================= INIT =================================
-function initAdmin() {
-
-const auth = getAuth();
-
-if (!sessaoValidaLocal(auth)) {
-
-```
-mostrarMensagemBloqueio(
-  'Sessão inválida. Faça login novamente.'
-);
-
-return;
-```
-
-}
-
-const usuario = authParaUsuario(auth);
-
-const perfil = normalizarPerfil(usuario.Perfil);
-
-if (perfil !== 'ADMIN') {
-
-```
-mostrarMensagemBloqueio(
-  'Usuário sem permissão ADMIN.'
-);
-
-return;
-```
-
-}
-
-currentUser = usuario;
-
-showAdminView();
-}
-
-// ================================= EVENTS =================================
 if (btnLogout) {
-btnLogout.addEventListener('click', trocarUsuario);
+  btnLogout.addEventListener('click', () => {
+    clearAuth();
+    location.href = 'index.html';
+  });
 }
-
-window.addEventListener('load', initAdmin);
