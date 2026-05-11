@@ -258,179 +258,60 @@
     <div id="msg"></div>
   </div>
 
-<script>
-/*
-  SAÍDA.HTML — VERSÃO FIREBASE / FUNCTIONS
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  updateDoc,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  Espera os seguintes endpoints no Firebase Functions via Hosting rewrite:
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
 
-  GET  /api/veiculos
-       retorno: { ok:true, veiculos:[...] }
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  GET  /api/motoristas
-       retorno: { ok:true, motoristas:[...] }
-
-  GET  /api/kmAtual?veiculo=...
-       retorno: { ok:true, km:12345 }
-
-  POST /api/saida
-       body:
-       {
-         token,
-         veiculo,
-         motorista,
-         seguranca,
-         KmSaida,
-         destino
-       }
-
-  Opcional:
-  GET /api/validarSessao?token=...
-  GET /api/logoutSeguranca?token=...
-*/
-
-const API_BASE = '/api';
-const STORAGE_KEY = 'delta_auth_v1';
-const SESSION_RECHECK_MS = 5 * 60 * 1000;
+const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 
 let AUTH = null;
 let inFlight = false;
+let VEICULOS = [];
+let MOTORISTAS = [];
 let KM_ANTERIOR = 0;
-const KM_CACHE = Object.create(null);
 
 function getAuth(){
   try{
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-  }catch(_){
-    return null;
-  }
-}
-
-function setAuth(auth){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY_LEGADO) || 'null');
+  }catch(_){ return null; }
 }
 
 function clearAuth(){
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
 }
 
 function sessaoValidaLocal(auth){
-  /*
-    Correção importante:
-    Algumas telas antigas gravam no localStorage apenas { token, seguranca }
-    e não gravam expiraEm/ultimoCheck. A versão anterior exigia expiraEm
-    obrigatoriamente; por isso a tela podia derrubar a sessão ao abrir.
-  */
-  if(!auth || !auth.token) return false;
-
-  if(auth.expiraEm !== undefined && auth.expiraEm !== null && String(auth.expiraEm).trim() !== ''){
-    return Number(auth.expiraEm) > Date.now();
-  }
-
-  return true;
+  if(!auth) return false;
+  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return !!(auth.Nome || auth.seguranca || auth.nome || auth.usuario);
 }
 
-function apiUrl(path, params){
-  const url = new URL(API_BASE + path, window.location.origin);
-  Object.entries(params || {}).forEach(([k,v])=>{
-    if(v !== undefined && v !== null && v !== ''){
-      url.searchParams.set(k, v);
-    }
-  });
-  return url.toString();
-}
-
-async function apiGet(path, params){
-  const resp = await fetch(apiUrl(path, params), {
-    method:'GET',
-    headers:{'Accept':'application/json'},
-    cache:'no-store'
-  });
-
-  const data = await resp.json().catch(()=>null);
-
-  if(!resp.ok || !data || data.ok === false){
-    throw new Error((data && (data.message || data.error)) || 'Erro na comunicação com o servidor.');
-  }
-
-  return data;
-}
-
-async function apiPost(path, payload){
-  const resp = await fetch(apiUrl(path), {
-    method:'POST',
-    headers:{
-      'Accept':'application/json',
-      'Content-Type':'application/json'
-    },
-    body:JSON.stringify(payload || {})
-  });
-
-  const data = await resp.json().catch(()=>null);
-
-  if(!resp.ok || !data || data.ok === false){
-    throw new Error((data && (data.message || data.error)) || 'Erro na comunicação com o servidor.');
-  }
-
-  return data;
-}
-
-async function validarSessaoOuRedirecionar(forceRemote){
-  const auth = getAuth();
-
-  if(!auth || !auth.token){
-    clearAuth();
-    location.href = 'index.html';
-    return null;
-  }
-
-  if(!sessaoValidaLocal(auth)){
-    clearAuth();
-    location.href = 'index.html';
-    return null;
-  }
-
-  const ultimoCheck = Number(auth.ultimoCheck || 0);
-  const temExpiracao = !!(auth.expiraEm !== undefined && auth.expiraEm !== null && String(auth.expiraEm).trim() !== '');
-  const precisaRevalidar = !!forceRemote || (temExpiracao && (!ultimoCheck || (Date.now() - ultimoCheck > SESSION_RECHECK_MS)));
-
-  if(!precisaRevalidar){
-    return auth;
-  }
-
-  try{
-    const res = await apiGet('/validarSessao', { token: auth.token });
-
-    if(res && res.ok && res.autenticado){
-      const novoAuth = {
-        token: auth.token,
-        seguranca: res.seguranca || auth.seguranca || auth.nome || auth.usuario || '',
-        expiraEm: res.expiraEm || auth.expiraEm || '',
-        ultimoCheck: Date.now()
-      };
-
-      setAuth(novoAuth);
-      return novoAuth;
-    }
-
-    throw new Error('Sessão inválida.');
-  }catch(_){
-    // Se o backend de validar sessão ainda não existe no Firebase, mantém a sessão local válida.
-    return auth;
-  }
-}
-
-async function logoutSistema(){
-  const auth = getAuth();
-
-  try{
-    if(auth && auth.token){
-      await apiGet('/logoutSeguranca', { token: auth.token });
-    }
-  }catch(_){}
-
-  clearAuth();
-  location.href = 'index.html';
+function nomeSeguranca(auth){
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '---';
 }
 
 function esc(v){
@@ -442,37 +323,6 @@ function esc(v){
     .replace(/'/g,'&#39;');
 }
 
-function normalizarLista(res, campoPrincipal){
-  if(Array.isArray(res)) return res;
-  if(res && Array.isArray(res[campoPrincipal])) return res[campoPrincipal];
-  if(res && Array.isArray(res.items)) return res.items;
-  if(res && Array.isArray(res.dados)) return res.dados;
-  return [];
-}
-
-function obterNomeItem(item, campos){
-  if(typeof item === 'string') return item;
-
-  for(const campo of campos){
-    if(item && item[campo] !== undefined && item[campo] !== null && String(item[campo]).trim() !== ''){
-      return String(item[campo]).trim();
-    }
-  }
-
-  return '';
-}
-
-function preencherSelect(el, lista, placeholder, campos){
-  const opcoes = (lista || [])
-    .map(item => obterNomeItem(item, campos))
-    .filter(Boolean)
-    .sort((a,b)=>a.localeCompare(b,'pt-BR'))
-    .map(nome => `<option value="${esc(nome)}">${esc(nome)}</option>`)
-    .join('');
-
-  el.innerHTML = `<option value="">${esc(placeholder)}</option>` + opcoes;
-}
-
 function setMsg(texto, corVar){
   const msg = document.getElementById('msg');
   msg.style.color = corVar ? `var(${corVar})` : 'var(--text-soft)';
@@ -481,85 +331,67 @@ function setMsg(texto, corVar){
 
 function setHint(texto, corVar){
   const hint = document.getElementById('hintKm');
+  if(!hint) return;
   hint.style.color = corVar ? `var(${corVar})` : 'var(--text-soft)';
   hint.innerHTML = texto || '';
 }
 
-async function carregarVeiculos(){
-  const veiculoEl = document.getElementById('veiculo');
+function textoVeiculo(v){
+  const nome = v.Nome || v.nome || v.Veiculo || v.veiculo || 'Veículo';
+  const placa = v.Placa || v.placa || '';
+  return placa ? `${nome} - ${placa}` : nome;
+}
 
-  try{
-    const res = await apiGet('/veiculos', { t: Date.now() });
-    const lista = normalizarLista(res, 'veiculos');
+function textoMotorista(m){
+  return m.Nome || m.nome || m.Motorista || m.motorista || m.Descricao || m.descricao || 'Motorista';
+}
 
-    preencherSelect(
-      veiculoEl,
-      lista,
-      'Selecione...',
-      ['veiculo','nome','placa','id','descricao']
-    );
+function kmAtualVeiculo(v){
+  return Number(String(v.KmAtualCadastro ?? v.KmAtual ?? v.kmAtual ?? v.Km ?? v.km ?? 0).replace(',','.')) || 0;
+}
 
-    if(!lista.length){
-      veiculoEl.innerHTML = '<option value="">Nenhum veículo ativo</option>';
-    }
-  }catch(e){
-    veiculoEl.innerHTML = '<option value="">Erro ao carregar</option>';
-    throw new Error((e && e.message) || 'Falha ao carregar veículos.');
+function preencherVeiculos(){
+  const el = document.getElementById('veiculo');
+  if(!VEICULOS.length){
+    el.innerHTML = '<option value="">Nenhum veículo disponível</option>';
+    return;
   }
+  el.innerHTML = '<option value="">Selecione...</option>' + VEICULOS
+    .sort((a,b)=>textoVeiculo(a).localeCompare(textoVeiculo(b),'pt-BR'))
+    .map(v=>`<option value="${esc(v.id)}">${esc(textoVeiculo(v))}</option>`)
+    .join('');
+}
+
+function preencherMotoristas(){
+  const el = document.getElementById('motorista');
+  if(!MOTORISTAS.length){
+    el.innerHTML = '<option value="">Nenhum motorista ativo</option>';
+    return;
+  }
+  el.innerHTML = '<option value="">Selecione...</option>' + MOTORISTAS
+    .sort((a,b)=>textoMotorista(a).localeCompare(textoMotorista(b),'pt-BR'))
+    .map(m=>`<option value="${esc(m.id)}">${esc(textoMotorista(m))}</option>`)
+    .join('');
+}
+
+async function carregarVeiculos(){
+  const snap = await getDocs(query(collection(db,'veiculos'), where('Ativo','==',true)));
+  VEICULOS = snap.docs
+    .map(d=>({ id:d.id, ...d.data() }))
+    .filter(v => v.EmTransito !== true && v.Restrito !== true);
+  preencherVeiculos();
 }
 
 async function carregarMotoristas(){
-  const motoristaEl = document.getElementById('motorista');
-
-  try{
-    const res = await apiGet('/motoristas', { t: Date.now() });
-    const lista = normalizarLista(res, 'motoristas');
-
-    preencherSelect(
-      motoristaEl,
-      lista,
-      'Selecione...',
-      ['motorista','nome','nomeMotorista','descricao']
-    );
-
-    if(!lista.length){
-      motoristaEl.innerHTML = '<option value="">Nenhum motorista ativo</option>';
-    }
-  }catch(e){
-    motoristaEl.innerHTML = '<option value="">Erro ao carregar</option>';
-    throw new Error((e && e.message) || 'Falha ao carregar motoristas.');
-  }
+  const snap = await getDocs(query(collection(db,'motoristas'), where('Ativo','==',true)));
+  MOTORISTAS = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  preencherMotoristas();
 }
 
-async function buscarKmAtual(veiculo){
-  if(!veiculo) return 0;
-
-  if(KM_CACHE[veiculo] !== undefined){
-    return Number(KM_CACHE[veiculo] || 0);
-  }
-
-  const res = await apiGet('/kmAtual', {
-    veiculo,
-    t: Date.now()
-  });
-
-  const km = Number(
-    String(
-      res.km ??
-      res.kmAtual ??
-      res.KmAtual ??
-      res.ultimoKm ??
-      0
-    ).replace(',','.')
-  ) || 0;
-
-  KM_CACHE[veiculo] = km;
-  return km;
-}
-
-async function onChangeVeiculo(){
-  const veiculo = document.getElementById('veiculo').value;
+function onChangeVeiculo(){
+  const id = document.getElementById('veiculo').value;
   const kmInput = document.getElementById('kmSaida');
+  const veiculo = VEICULOS.find(v=>v.id === id);
 
   if(!veiculo){
     KM_ANTERIOR = 0;
@@ -569,60 +401,38 @@ async function onChangeVeiculo(){
     return;
   }
 
-  kmInput.value = '';
-  setHint('🔍 Buscando último KM...');
-
-  try{
-    KM_ANTERIOR = await buscarKmAtual(veiculo);
-
-    if(KM_ANTERIOR > 0){
-      kmInput.value = KM_ANTERIOR;
-      setHint(`Último KM registrado: <b>${esc(KM_ANTERIOR)}</b>`);
-    }else{
-      setHint('Sem KM anterior encontrado.', '--yellow');
-    }
-
-    setMsg('');
-  }catch(e){
-    KM_ANTERIOR = 0;
-    kmInput.value = '';
-    setHint('Não foi possível buscar o KM.', '--red');
-  }
-
+  KM_ANTERIOR = kmAtualVeiculo(veiculo);
+  kmInput.value = KM_ANTERIOR > 0 ? KM_ANTERIOR : '';
+  setHint(KM_ANTERIOR > 0 ? `Último KM registrado: <b>${esc(KM_ANTERIOR)}</b>` : 'Sem KM anterior encontrado.', KM_ANTERIOR > 0 ? null : '--yellow');
   validateForm();
 }
 
 function validateForm(){
-  const v = document.getElementById('veiculo').value;
-  const m = document.getElementById('motorista').value;
-  const s = document.getElementById('seguranca').value;
-  const k = document.getElementById('kmSaida').value;
-  const d = document.getElementById('destino').value.trim();
+  const veiculoId = document.getElementById('veiculo').value;
+  const motoristaId = document.getElementById('motorista').value;
+  const seguranca = document.getElementById('seguranca').value;
+  const km = Number(String(document.getElementById('kmSaida').value || '0').replace(',','.')) || 0;
+  const destino = document.getElementById('destino').value.trim();
   const btn = document.getElementById('btnSalvar');
 
-  const ok = !!(v && m && s && String(k).trim() !== '' && d);
-  const kmDigitado = Number(String(k || '0').replace(',','.')) || 0;
-  const kmOk = kmDigitado >= KM_ANTERIOR;
-
-  if(ok && !kmOk){
+  if(veiculoId && motoristaId && seguranca && km && destino && km < KM_ANTERIOR){
     setMsg(`KM inferior ao último registrado (${KM_ANTERIOR}).`, '--red');
     btn.disabled = true;
     return;
   }
 
-  const msgAtual = document.getElementById('msg').innerText || '';
-  if(msgAtual.startsWith('KM inferior')){
-    setMsg('');
-  }
-
-  btn.disabled = !ok || !kmOk || inFlight;
+  const atual = document.getElementById('msg').innerText || '';
+  if(atual.startsWith('KM inferior')) setMsg('');
+  btn.disabled = !(veiculoId && motoristaId && seguranca && km && destino) || inFlight;
 }
 
 async function doEnviar(){
-  if(inFlight || !AUTH || !AUTH.token) return;
+  if(inFlight) return;
 
-  const veiculo = document.getElementById('veiculo').value;
-  const motorista = document.getElementById('motorista').value;
+  const veiculoId = document.getElementById('veiculo').value;
+  const motoristaId = document.getElementById('motorista').value;
+  const veiculo = VEICULOS.find(v=>v.id === veiculoId);
+  const motorista = MOTORISTAS.find(m=>m.id === motoristaId);
   const seguranca = document.getElementById('seguranca').value;
   const KmSaida = Number(String(document.getElementById('kmSaida').value || '0').replace(',','.')) || 0;
   const destino = document.getElementById('destino').value.trim();
@@ -631,80 +441,83 @@ async function doEnviar(){
     validateForm();
     return;
   }
-
   if(KmSaida < KM_ANTERIOR){
     setMsg(`KM inferior ao último registrado (${KM_ANTERIOR}).`, '--red');
-    validateForm();
     return;
   }
 
   inFlight = true;
   document.getElementById('btnSalvar').disabled = true;
-  setMsg('Gravando saída...', '--text-soft');
-
-  const payload = {
-    token: AUTH.token,
-    veiculo,
-    motorista,
-    seguranca,
-    KmSaida,
-    destino,
-    origem: 'saida.html',
-    criadoEmCliente: new Date().toISOString()
-  };
+  setMsg('Gravando saída no Firebase...', '--text-soft');
 
   try{
-    await apiPost('/saida', payload);
+    await addDoc(collection(db,'movimentacoes_frota'), {
+      tipo: 'SAIDA',
+      status: 'EM_TRANSITO',
+      veiculoId: veiculo.id,
+      veiculo: textoVeiculo(veiculo),
+      Veiculo: textoVeiculo(veiculo),
+      placa: veiculo.Placa || veiculo.placa || '',
+      motoristaId: motorista.id,
+      motorista: textoMotorista(motorista),
+      Motorista: textoMotorista(motorista),
+      segurancaSaida: seguranca,
+      SegurancaSaida: seguranca,
+      KmSaida: KmSaida,
+      kmSaida: KmSaida,
+      destino: destino,
+      Destino: destino,
+      dataSaida: serverTimestamp(),
+      criadoEm: serverTimestamp(),
+      origem: 'saida.html'
+    });
 
-    setMsg('✅ Gravado com sucesso!', '--green');
+    await updateDoc(doc(db,'veiculos',veiculo.id), {
+      EmTransito: true,
+      KmAtualCadastro: KmSaida,
+      MotoristaAtual: textoMotorista(motorista),
+      DestinoAtual: destino,
+      UltimaSaidaEm: serverTimestamp()
+    });
 
-    setTimeout(()=>{
-      location.href = 'veiculos.html';
-    }, 1200);
-
+    setMsg('✅ Saída gravada com sucesso!', '--green');
+    setTimeout(()=>{ location.href = 'veiculos.html'; }, 1200);
   }catch(e){
-    setMsg((e && e.message) ? e.message : 'Erro ao salvar.', '--red');
+    console.error(e);
+    setMsg((e && e.message) ? e.message : 'Erro ao salvar no Firebase.', '--red');
     inFlight = false;
     validateForm();
   }
 }
 
 async function init(){
-  const veiculoEl = document.getElementById('veiculo');
-  const motoristaEl = document.getElementById('motorista');
-  const segurancaEl = document.getElementById('seguranca');
-  const topo = document.getElementById('sessaoSegurancaTopo');
+  AUTH = getAuth();
+  if(!sessaoValidaLocal(AUTH)){
+    clearAuth();
+    location.href = 'index.html';
+    return;
+  }
 
-  AUTH = await validarSessaoOuRedirecionar(false);
-  if(!AUTH) return;
+  const nome = nomeSeguranca(AUTH);
+  document.getElementById('sessaoSegurancaTopo').textContent = nome;
+  document.getElementById('seguranca').value = nome;
 
-  const nomeSeguranca = AUTH.seguranca || AUTH.nome || AUTH.usuario || '';
-  topo.textContent = nomeSeguranca || '---';
-  segurancaEl.value = nomeSeguranca;
-
-  veiculoEl.addEventListener('change', onChangeVeiculo);
-  motoristaEl.addEventListener('change', validateForm);
+  document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
+  document.getElementById('motorista').addEventListener('change', validateForm);
   document.getElementById('kmSaida').addEventListener('input', validateForm);
   document.getElementById('destino').addEventListener('input', validateForm);
   document.getElementById('btnSalvar').addEventListener('click', doEnviar);
-
-  const btnVoltar = document.getElementById('btnVoltarMenu');
-  if(btnVoltar){
-    btnVoltar.addEventListener('click', function(e){
-      e.preventDefault();
-      location.href = 'veiculos.html';
-    });
-  }
+  document.getElementById('btnVoltarMenu').addEventListener('click', e=>{ e.preventDefault(); location.href='veiculos.html'; });
 
   try{
-    await Promise.all([
-      carregarVeiculos(),
-      carregarMotoristas()
-    ]);
-
+    setMsg('Carregando dados do Firebase...', '--text-soft');
+    await Promise.all([carregarVeiculos(), carregarMotoristas()]);
     setMsg('');
   }catch(e){
-    setMsg((e && e.message) ? e.message : 'Erro ao carregar dados.', '--red');
+    console.error(e);
+    setMsg((e && e.message) ? e.message : 'Erro ao carregar dados do Firebase.', '--red');
+    document.getElementById('veiculo').innerHTML = '<option value="">Erro ao carregar</option>';
+    document.getElementById('motorista').innerHTML = '<option value="">Erro ao carregar</option>';
   }
 
   validateForm();
