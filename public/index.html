@@ -375,6 +375,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 
 function setChip(text, color){
   const el = document.getElementById('chipStatus');
@@ -383,16 +384,39 @@ function setChip(text, color){
 }
 
 function getAuth(){
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
-  catch(_) { return null; }
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY_LEGADO) || 'null');
+  } catch(_) {
+    return null;
+  }
+}
+
+function montarSessaoLegada(data){
+  return {
+    token: data.token || data.id || data.Sen_Segura || '',
+    seguranca: data.seguranca || data.Nome || '',
+    nome: data.Nome || data.seguranca || '',
+    perfil: data.Perfil || data.perfil || '',
+    expiraEm: data.expiraEm || (Date.now() + (8 * 60 * 60 * 1000)),
+    ultimoCheck: Date.now()
+  };
 }
 
 function setAuth(data){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const firebaseSession = {
+    ...data,
+    token: data.token || data.id || data.Sen_Segura || '',
+    seguranca: data.seguranca || data.Nome || '',
+    expiraEm: data.expiraEm || (Date.now() + (8 * 60 * 60 * 1000))
+  };
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(firebaseSession));
+  localStorage.setItem(STORAGE_KEY_LEGADO, JSON.stringify(montarSessaoLegada(firebaseSession)));
 }
 
 function clearAuth(){
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
 }
 
 function setLoading(show){
@@ -465,11 +489,12 @@ function montarMenu(perfil){
 }
 
 function openMenu(usuario){
-  const perfil = normalizarPerfil(usuario.Perfil);
+  const perfil = normalizarPerfil(usuario.Perfil || usuario.perfil || 'OPERADOR');
+  const nome = usuario.Nome || usuario.seguranca || usuario.nome || 'Segurança';
+
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('menuCard').classList.remove('hidden');
-  document.getElementById('menuUser').textContent =
-    'Olá, ' + (usuario.Nome || 'Segurança') + ' • ' + perfil;
+  document.getElementById('menuUser').textContent = 'Olá, ' + nome + ' • ' + perfil;
   montarMenu(perfil);
 }
 
@@ -483,7 +508,13 @@ function openLogin(){
 }
 
 function sessaoValidaLocal(auth){
-  return !!(auth && auth.Nome && auth.Perfil && auth.expiraEm && Number(auth.expiraEm) > Date.now());
+  if(!auth) return false;
+
+  const temNome = !!(auth.Nome || auth.seguranca || auth.nome);
+  const temPerfil = !!(auth.Perfil || auth.perfil);
+  const validadeOk = !auth.expiraEm || Number(auth.expiraEm) > Date.now();
+
+  return !!(temNome && validadeOk && (temPerfil || auth.token));
 }
 
 async function validarSessaoExistente(){
@@ -548,11 +579,14 @@ async function fazerLogin(){
 
     const sessao = {
       id: usuario.id,
+      token: usuario.id || usuario.Sen_Segura || codigo,
       Nome: usuario.Nome || '',
+      seguranca: usuario.Nome || '',
       Email: usuario.Email || '',
       Perfil: perfil,
       Sen_Segura: usuario.Sen_Segura || '',
-      expiraEm: Date.now() + (8 * 60 * 60 * 1000)
+      expiraEm: Date.now() + (8 * 60 * 60 * 1000),
+      ultimoCheck: Date.now()
     };
 
     setAuth(sessao);
