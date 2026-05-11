@@ -1,7 +1,21 @@
 {
-  "name": "delta-cuiaba-apps-script",
+  "name": "delta-cuiaba-firebase",
   "private": true,
-  "devDependencies": {
-    "@google/clasp": "^2.5.0"
-  }
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "deploy": "npm run build && firebase deploy"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "typescript": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "firebase": "latest"
+  },
+  "devDependencies": {}
 }

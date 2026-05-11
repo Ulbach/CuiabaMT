@@ -2,10 +2,11 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite a leitura pública da coleção de veículos
-    match /veiculos/{document=**} {
-      allow read: if true;
-      allow write: if false; // Bloqueia a escrita por segurança
+    // REGRA TEMPORÁRIA PARA TESTES DO APP CUIABÁ.
+    // Permite leitura e escrita sem login apenas durante a fase inicial.
+    // Depois que o app estiver validado, trocar por regras com Firebase Auth.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
