@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Seguranças - Delta Cuiabá</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --bg1:#061427;
+  --bg2:#0b1b33;
+  --card:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.12);
+  --text-main:#e6edf7;
+  --text-soft:#9fb4d3;
+  --accent:#22c55e;
+  --alert:#ef4444;
+  --warn:#f59e0b;
+  --blue:#3b82f6;
+  --purple:#8b5cf6;
+  --shadow:0 12px 28px rgba(0,0,0,.35);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text-main);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:220px;
+  pointer-events:none;
+  background:linear-gradient(
+    to top,
+    rgba(34,197,94,.42) 0%,
+    rgba(34,197,94,.20) 35%,
+    rgba(34,197,94,.08) 58%,
+    rgba(34,197,94,0) 100%
+  );
+  z-index:-1;
+}
+
+.hero{
+  width:100%;
+  height:180px;
+  background:
+    linear-gradient(180deg,rgba(6,20,39,.18),rgba(6,20,39,.65)),
+    url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
+    center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.brand-title{
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:4px;
+  color:#fff;
+  text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);
+  text-transform:uppercase;
+}
+
+.brand-sub{
+  margin-top:10px;
+  font-size:18px;
+  font-weight:800;
+  color:#dbeafe;
+}
+
+.wrap{
+  width:100%;
+  max-width:1220px;
+  margin:0 auto;
+  padding:24px 16px 44px;
+}
+
+.top-actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.06);
+  color:var(--text-main);
+  text-decoration:none;
+  font-weight:800;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.btn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(34,197,94,.45);
+  box-shadow:0 0 18px rgba(34,197,94,.12);
+}
+
+.btn.primary{
+  background:var(--accent);
+  color:#031022;
+  border:none;
+}
+
+.btn.danger{
+  background:rgba(239,68,68,.14);
+  color:#fecaca;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  margin-bottom:18px;
+}
+
+.card-head{
+  padding:16px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.card-head h2{
+  margin:0;
+  font-size:18px;
+}
+
+.card-body{
+  padding:16px 18px;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+}
+
+.stat{
+  background:rgba(255,255,255,.055);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+  min-height:112px;
+}
+
+.stat .label{
+  font-size:12px;
+  font-weight:800;
+  color:var(--text-soft);
+  text-transform:uppercase;
+  letter-spacing:.35px;
+}
+
+.stat .value{
+  font-size:30px;
+  font-weight:900;
+  margin-top:8px;
+}
+
+.stat .sub{
+  font-size:12px;
+  color:var(--text-soft);
+  margin-top:4px;
+}
+
+.filters{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:end;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.field label{
+  font-size:12px;
+  color:var(--text-soft);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.35px;
+}
+
+.field input,
+.field select{
+  min-height:42px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:#09172b;
+  color:#fff;
+  min-width:210px;
+}
+
+.table-wrap{
+  overflow:auto;
+  max-height:620px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:#061226;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  color:var(--text-main);
+}
+
+th,td{
+  padding:11px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  text-align:left;
+  vertical-align:top;
+  white-space:nowrap;
+}
+
+th{
+  background:#09172b;
+  color:#9ed7b0;
+  text-transform:uppercase;
+  font-size:12px;
+  letter-spacing:.35px;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+
+tbody tr:hover{
+  background:rgba(255,255,255,.04);
+}
+
+.empty{
+  text-align:center;
+  color:var(--text-soft);
+  padding:20px;
+}
+
+.pill{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  background:#0b1a30;
+  color:var(--accent);
+  border:1px solid #12314d;
+}
+
+.pill.admin{
+  background:rgba(59,130,246,.13);
+  color:#60a5fa;
+  border-color:rgba(59,130,246,.35);
+}
+
+.pill.operador{
+  background:rgba(34,197,94,.12);
+  color:#22c55e;
+  border-color:rgba(34,197,94,.35);
+}
+
+.pill.consulta{
+  background:rgba(245,158,11,.13);
+  color:#f59e0b;
+  border-color:rgba(245,158,11,.35);
+}
+
+.pill.ok{
+  background:rgba(34,197,94,.12);
+  color:#22c55e;
+  border-color:rgba(34,197,94,.35);
+}
+
+.pill.danger{
+  background:rgba(239,68,68,.13);
+  color:#ef4444;
+  border-color:rgba(239,68,68,.35);
+}
+
+.status{
+  padding:13px 18px;
+  color:var(--text-soft);
+  font-size:14px;
+  border-top:1px solid var(--border);
+  background:rgba(255,255,255,.035);
+}
+
+.assinatura{
+  text-align:center;
+  margin-top:24px;
+  color:var(--text-soft);
+  font-size:13px;
+}
+
+@media(max-width:1080px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:720px){
+  .hero{height:150px}
+  .brand-title{font-size:22px}
+  .brand-sub{font-size:16px}
+  .wrap{padding:18px 10px 34px}
+  .stats-grid{grid-template-columns:1fr}
+  .filters{flex-direction:column;align-items:stretch}
+  .field input,.field select{min-width:100%}
+  .btn{width:100%}
+  table{min-width:760px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="hero">
+  <div>
+    <div class="brand-title">Delta Cuiabá</div>
+    <div class="brand-sub">Relatório de Seguranças</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="top-actions">
+    <a class="btn" href="central_relatorios.html">
+      <i class="fa-solid fa-chevron-left"></i>
+      Voltar aos Relatórios
+    </a>
+
+    <button class="btn danger" type="button" onclick="logoutSistema()">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Sair
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2><i class="fa-solid fa-users"></i> Usuários do Sistema</h2>
+      <button class="btn primary" type="button" id="btnAtualizar">
+        <i class="fa-solid fa-rotate"></i>
+        Atualizar
+      </button>
+    </div>
+
+    <div class="card-body">
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="label">Total</div>
+          <div class="value" id="stTotal">0</div>
+          <div class="sub">Usuários cadastrados</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">Administradores</div>
+          <div class="value" id="stAdmin">0</div>
+          <div class="sub">Perfil ADMIN</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">Operadores</div>
+          <div class="value" id="stOperador">0</div>
+          <div class="sub">Perfil OPERADOR</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">Consulta</div>
+          <div class="value" id="stConsulta">0</div>
+          <div class="sub">Perfil CONSULTA</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">Inativos</div>
+          <div class="value" id="stInativos">0</div>
+          <div class="sub">Bloqueados/desativados</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="statusLinha">Carregando dados.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Listagem de Seguranças</h2>
+
+      <div class="filters">
+        <div class="field">
+          <label for="busca">Buscar</label>
+          <input id="busca" type="text" placeholder="Nome ou e-mail">
+        </div>
+
+        <div class="field">
+          <label for="perfilFiltro">Perfil</label>
+          <select id="perfilFiltro">
+            <option value="">Todos</option>
+            <option value="ADMIN">ADMIN</option>
+            <option value="OPERADOR">OPERADOR</option>
+            <option value="CONSULTA">CONSULTA</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="statusFiltro">Status</label>
+          <select id="statusFiltro">
+            <option value="">Todos</option>
+            <option value="ATIVO">Ativos</option>
+            <option value="INATIVO">Inativos</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Perfil</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbodySegurancas">
+            <tr>
+              <td colspan="4" class="empty">Carregando...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="assinatura">Delta Cuiabá • Controle de Frota</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const STORAGE_KEY = "delta_auth_firebase_v1";
+const STORAGE_KEY_LEGADO = "delta_auth_v1";
+
+let SEGURANCAS = [];
+
+function getAuth(){
+  try{
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(STORAGE_KEY_LEGADO) ||
+      "null"
+    );
+  }catch(_){
+    return null;
+  }
+}
+
+function clearAuth(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+}
+
+function nomeAuth(auth){
+  return auth?.Nome || auth?.nome || auth?.seguranca || auth?.usuario || "";
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || "").trim().toUpperCase();
+}
+
+function sessaoValidaLocal(auth){
+  if(!auth) return false;
+  if(!nomeAuth(auth)) return false;
+  if(!perfilAuth(auth)) return false;
+  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return true;
+}
+
+function validarSessaoOuRedirecionar(){
+  const auth = getAuth();
+
+  if(!sessaoValidaLocal(auth)){
+    clearAuth();
+    location.href = "../index.html";
+    return null;
+  }
+
+  if(perfilAuth(auth) !== "ADMIN"){
+    location.href = "../index.html";
+    return null;
+  }
+
+  return auth;
+}
+
+window.logoutSistema = function(){
+  clearAuth();
+  location.href = "../index.html";
+};
+
+function esc(v){
+  return String(v == null ? "" : v)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function upper(v){
+  return String(v || "").trim().toUpperCase();
+}
+
+function perfilClasse(perfil){
+  const p = upper(perfil);
+  if(p === "ADMIN") return "admin";
+  if(p === "OPERADOR") return "operador";
+  if(p === "CONSULTA") return "consulta";
+  return "";
+}
+
+function render(lista){
+  const tbody = document.getElementById("tbodySegurancas");
+
+  if(!lista.length){
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhum registro encontrado.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista.map(s => {
+    const nome = s.Nome || s.nome || "-";
+    const email = s.Email || s.email || "-";
+    const perfil = upper(s.Perfil || s.perfil || "-");
+    const ativo = s.Ativo === true || s.ativo === true;
+
+    return `
+      <tr>
+        <td>${esc(nome)}</td>
+        <td>${esc(email)}</td>
+        <td><span class="pill ${perfilClasse(perfil)}">${esc(perfil)}</span></td>
+        <td><span class="pill ${ativo ? "ok" : "danger"}">${ativo ? "ATIVO" : "INATIVO"}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function aplicarFiltros(){
+  const busca = String(document.getElementById("busca").value || "").trim().toLowerCase();
+  const perfilFiltro = upper(document.getElementById("perfilFiltro").value);
+  const statusFiltro = upper(document.getElementById("statusFiltro").value);
+
+  const filtrados = SEGURANCAS.filter(s => {
+    const nome = String(s.Nome || s.nome || "").toLowerCase();
+    const email = String(s.Email || s.email || "").toLowerCase();
+    const perfil = upper(s.Perfil || s.perfil || "");
+    const ativo = s.Ativo === true || s.ativo === true;
+
+    const okBusca = !busca || nome.includes(busca) || email.includes(busca);
+    const okPerfil = !perfilFiltro || perfil === perfilFiltro;
+    const okStatus =
+      !statusFiltro ||
+      (statusFiltro === "ATIVO" && ativo) ||
+      (statusFiltro === "INATIVO" && !ativo);
+
+    return okBusca && okPerfil && okStatus;
+  });
+
+  render(filtrados);
+}
+
+function atualizarCards(){
+  const total = SEGURANCAS.length;
+  const admin = SEGURANCAS.filter(s => upper(s.Perfil || s.perfil) === "ADMIN").length;
+  const operador = SEGURANCAS.filter(s => upper(s.Perfil || s.perfil) === "OPERADOR").length;
+  const consulta = SEGURANCAS.filter(s => upper(s.Perfil || s.perfil) === "CONSULTA").length;
+  const inativos = SEGURANCAS.filter(s => !(s.Ativo === true || s.ativo === true)).length;
+
+  document.getElementById("stTotal").textContent = total;
+  document.getElementById("stAdmin").textContent = admin;
+  document.getElementById("stOperador").textContent = operador;
+  document.getElementById("stConsulta").textContent = consulta;
+  document.getElementById("stInativos").textContent = inativos;
+}
+
+async function carregar(){
+  const status = document.getElementById("statusLinha");
+  const tbody = document.getElementById("tbodySegurancas");
+
+  status.textContent = "Buscando seguranças no Firebase...";
+  tbody.innerHTML = '<tr><td colspan="4" class="empty">Carregando...</td></tr>';
+
+  try{
+    let snap;
+
+    try{
+      snap = await getDocs(query(collection(db,"segurancas"), orderBy("NomeBusca")));
+    }catch(_){
+      snap = await getDocs(collection(db,"segurancas"));
+    }
+
+    SEGURANCAS = snap.docs
+      .map(d => ({ id:d.id, ...d.data() }))
+      .filter(s => s && s.Modelo !== true);
+
+    atualizarCards();
+    aplicarFiltros();
+
+    status.textContent = "Dados carregados com sucesso. Registros encontrados: " + SEGURANCAS.length + ".";
+  }catch(e){
+    console.error(e);
+    status.textContent = "Erro ao carregar seguranças: " + (e && e.message ? e.message : "erro desconhecido");
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Erro ao carregar dados do Firebase.</td></tr>';
+  }
+}
+
+document.getElementById("btnAtualizar").addEventListener("click", carregar);
+document.getElementById("busca").addEventListener("input", aplicarFiltros);
+document.getElementById("perfilFiltro").addEventListener("change", aplicarFiltros);
+document.getElementById("statusFiltro").addEventListener("change", aplicarFiltros);
+
+const AUTH = validarSessaoOuRedirecionar();
+if(AUTH){
+  carregar();
+}
+</script>
+
+</body>
+</html>

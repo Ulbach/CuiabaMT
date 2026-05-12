@@ -61,12 +61,12 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;point
 <div id="listaRecentes" class="list-wrap">
 <div style="text-align:center;padding:40px;color:var(--text-soft);"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Buscando dados...</div>
 </div>
-<a href="relatorios/central_relatorios.html" class="btn-footer btn-report"><i class="fa-solid fa-chart-line"></i>Relatório Geral</a>
+<a href="relatorios/central_relatorios.html" class="btn-footer btn-report hidden-admin" id="btnRelatorioGeral"><i class="fa-solid fa-chart-line"></i>Relatório Geral</a>
 <a href="index.html" class="btn-footer" id="btnVoltarInicio"><i class="fa-solid fa-chevron-left"></i>Voltar ao Menu Principal</a>
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -80,9 +80,39 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
+const LOG_ID_KEY = 'delta_log_acesso_id_v1';
+const LOG_INICIO_KEY = 'delta_log_acesso_inicio_v1';
 
-function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');}catch(_){return null;}}
-function clearAuth(){localStorage.removeItem(STORAGE_KEY);}
+function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||localStorage.getItem(STORAGE_KEY_LEGADO)||'null');}catch(_){return null;}}
+function clearAuth(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+  localStorage.removeItem(LOG_ID_KEY);
+  localStorage.removeItem(LOG_INICIO_KEY);
+}
+
+async function registrarLogout(statusFinal='FINALIZADA'){
+  try{
+    const logId=localStorage.getItem(LOG_ID_KEY);
+    const inicioMs=Number(localStorage.getItem(LOG_INICIO_KEY)||0);
+
+    if(!logId) return;
+
+    const fimMs=Date.now();
+    const tempoMin=inicioMs ? Math.max(0, Math.round((fimMs-inicioMs)/60000)) : null;
+
+    await updateDoc(doc(db,'logs_acesso',logId),{
+      logoutEm:serverTimestamp(),
+      logoutMs:fimMs,
+      tempoConectadoMin:tempoMin,
+      status:statusFinal,
+      atualizadoEm:serverTimestamp()
+    });
+  }catch(e){
+    console.error('Erro ao registrar logout:', e);
+  }
+}
 function normalizarPerfil(perfil){return String(perfil||'').trim().toUpperCase();}
 function sessaoValidaLocal(auth){return !!(auth && auth.Nome && auth.Perfil && auth.expiraEm && Number(auth.expiraEm)>Date.now());}
 async function validarSessaoOuRedirecionar(){
@@ -90,7 +120,11 @@ async function validarSessaoOuRedirecionar(){
   if(!sessaoValidaLocal(auth)){clearAuth();location.href='index.html';return null;}
   return auth;
 }
-window.logoutSistema=function(){clearAuth();location.href='index.html';};
+window.logoutSistema=async function(){
+  await registrarLogout('FINALIZADA');
+  clearAuth();
+  location.href='index.html';
+};
 
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function formatarData(valor){
@@ -142,15 +176,27 @@ window.onload=async function(){
   const perfil=normalizarPerfil(AUTH.Perfil);
   const el=document.getElementById('sessaoSeguranca');
   if(el)el.textContent=(AUTH.Nome||'---')+' - '+perfil;
+
+  const btnRelatorioGeral=document.getElementById('btnRelatorioGeral');
+  if(btnRelatorioGeral && perfil==='ADMIN'){
+    btnRelatorioGeral.classList.remove('hidden-admin');
+  }
+
   if(perfil==='CONSULTA'){
     const btnSaida=document.getElementById('btnSaida');
     const btnEntrada=document.getElementById('btnEntrada');
     if(btnSaida)btnSaida.classList.add('hidden-admin');
     if(btnEntrada)btnEntrada.classList.add('hidden-admin');
   }
+
   const btnVoltar=document.getElementById('btnVoltarInicio');
   if(btnVoltar){
-    btnVoltar.addEventListener('click',function(e){e.preventDefault();location.href='index.html';});
+    btnVoltar.addEventListener('click',async function(e){
+      e.preventDefault();
+      await registrarLogout('FINALIZADA');
+      clearAuth();
+      location.href='index.html';
+    });
   }
   carregarDados();
 };

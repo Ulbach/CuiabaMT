@@ -1,0 +1,49 @@
+PASSO A PASSO FIREBASE - LOG DE ACESSOS
+
+1. Acesse Firebase Console > Firestore Database.
+
+2. Crie uma coleção chamada:
+logs_acesso
+
+3. Crie um documento teste com ID automático e os campos:
+segurancaId: string
+nome: string
+email: string
+perfil: string
+loginEm: timestamp
+loginMs: number
+logoutEm: null
+logoutMs: null
+tempoConectadoMin: null
+status: string
+origem: string
+userAgent: string
+criadoEm: timestamp
+atualizadoEm: null
+
+4. Exemplo:
+nome = TESTE ADMIN
+email = admin@teste.com
+perfil = ADMIN
+status = ABERTA
+origem = index.html
+
+5. O relatório consulta:
+public/relatorios/relatorio_log_acessos.html
+coleção: logs_acesso
+
+6. Copie o arquivo:
+public/js/log_acesso.js
+
+7. Integração no login:
+Após validar usuário e salvar localStorage, chamar:
+import { registrarLogin } from "./js/log_acesso.js";
+await registrarLogin(auth, "index.html");
+
+8. Integração no logout:
+Antes de limpar localStorage, chamar:
+import { registrarLogout } from "./js/log_acesso.js";
+await registrarLogout();
+
+9. Índice:
+Se o Firebase pedir índice para loginEm desc, clique no link do erro e crie.

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Acessos - Delta Cuiabá</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --bg1:#061427;
+  --bg2:#0b1b33;
+  --card:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.12);
+  --text-main:#e6edf7;
+  --text-soft:#9fb4d3;
+  --accent:#22c55e;
+  --alert:#ef4444;
+  --warn:#f59e0b;
+  --blue:#3b82f6;
+  --shadow:0 12px 28px rgba(0,0,0,.35);
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text-main);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:220px;
+  pointer-events:none;
+  background:linear-gradient(
+    to top,
+    rgba(34,197,94,.42) 0%,
+    rgba(34,197,94,.20) 35%,
+    rgba(34,197,94,.08) 58%,
+    rgba(34,197,94,0) 100%
+  );
+  z-index:-1;
+}
+
+.hero{
+  width:100%;
+  height:180px;
+  background:
+    linear-gradient(180deg,rgba(6,20,39,.18),rgba(6,20,39,.65)),
+    url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
+    center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.brand-title{
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:4px;
+  color:#fff;
+  text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);
+  text-transform:uppercase;
+}
+
+.brand-sub{
+  margin-top:10px;
+  font-size:18px;
+  font-weight:800;
+  color:#dbeafe;
+}
+
+.wrap{
+  width:100%;
+  max-width:1120px;
+  margin:0 auto;
+  padding:24px 16px 44px;
+}
+
+.top-actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:18px;
+}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.06);
+  color:var(--text-main);
+  text-decoration:none;
+  font-weight:800;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.btn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(34,197,94,.45);
+  box-shadow:0 0 18px rgba(34,197,94,.12);
+}
+
+.btn.primary{
+  background:var(--accent);
+  color:#031022;
+  border:none;
+}
+
+.btn.danger{
+  background:rgba(239,68,68,.14);
+  color:#fecaca;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  margin-bottom:18px;
+}
+
+.card-head{
+  padding:16px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.card-head h2{
+  margin:0;
+  font-size:18px;
+}
+
+.card-body{
+  padding:16px 18px;
+}
+
+.alerta{
+  background:rgba(239,68,68,.13);
+  border:1px solid rgba(239,68,68,.35);
+  color:#fecaca;
+  padding:14px 16px;
+  border-radius:16px;
+  font-weight:800;
+  line-height:1.45;
+  margin-bottom:18px;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+}
+
+.stat{
+  background:rgba(255,255,255,.055);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+  min-height:112px;
+}
+
+.stat .label{
+  font-size:12px;
+  font-weight:800;
+  color:var(--text-soft);
+  text-transform:uppercase;
+  letter-spacing:.35px;
+}
+
+.stat .value{
+  font-size:30px;
+  font-weight:900;
+  margin-top:8px;
+}
+
+.stat .sub{
+  font-size:12px;
+  color:var(--text-soft);
+  margin-top:4px;
+}
+
+.filters{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:end;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.field label{
+  font-size:12px;
+  color:var(--text-soft);
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.35px;
+}
+
+.field input,
+.field select{
+  min-height:42px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:#09172b;
+  color:#fff;
+  min-width:230px;
+}
+
+.table-wrap{
+  overflow:auto;
+  max-height:620px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:#061226;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  color:var(--text-main);
+}
+
+th,td{
+  padding:11px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  text-align:left;
+  vertical-align:top;
+  white-space:nowrap;
+}
+
+th{
+  background:#09172b;
+  color:#9ed7b0;
+  text-transform:uppercase;
+  font-size:12px;
+  letter-spacing:.35px;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+
+tbody tr:hover{
+  background:rgba(255,255,255,.04);
+}
+
+.empty{
+  text-align:center;
+  color:var(--text-soft);
+  padding:20px;
+}
+
+.senha{
+  font-family:Consolas,Monaco,monospace;
+  font-weight:900;
+  color:#4ade80;
+}
+
+.pill{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  background:#0b1a30;
+  color:var(--accent);
+  border:1px solid #12314d;
+}
+
+.pill.operador{
+  background:rgba(34,197,94,.12);
+  color:#22c55e;
+  border-color:rgba(34,197,94,.35);
+}
+
+.pill.ok{
+  background:rgba(34,197,94,.12);
+  color:#22c55e;
+  border-color:rgba(34,197,94,.35);
+}
+
+.pill.warn{
+  background:rgba(245,158,11,.13);
+  color:#f59e0b;
+  border-color:rgba(245,158,11,.35);
+}
+
+.pill.danger{
+  background:rgba(239,68,68,.13);
+  color:#ef4444;
+  border-color:rgba(239,68,68,.35);
+}
+
+.status{
+  padding:13px 18px;
+  color:var(--text-soft);
+  font-size:14px;
+  border-top:1px solid var(--border);
+  background:rgba(255,255,255,.035);
+}
+
+.assinatura{
+  text-align:center;
+  margin-top:24px;
+  color:var(--text-soft);
+  font-size:13px;
+}
+
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:1fr}
+}
+
+@media(max-width:720px){
+  .hero{height:150px}
+  .brand-title{font-size:22px}
+  .brand-sub{font-size:16px}
+  .wrap{padding:18px 10px 34px}
+  .filters{flex-direction:column;align-items:stretch}
+  .field input,.field select{min-width:100%}
+  .btn{width:100%}
+  table{min-width:720px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="hero">
+  <div>
+    <div class="brand-title">Delta Cuiabá</div>
+    <div class="brand-sub">Lista de Acessos</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="top-actions">
+    <a class="btn" href="central_relatorios.html">
+      <i class="fa-solid fa-chevron-left"></i>
+      Voltar aos Relatórios
+    </a>
+
+    <button class="btn danger" type="button" onclick="logoutSistema()">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Sair
+    </button>
+  </div>
+
+  <div class="alerta">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    Relatório sensível. Exibe apenas usuários com perfil OPERADOR, para envio controlado aos responsáveis.
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2><i class="fa-solid fa-key"></i> Operadores e Senhas</h2>
+
+      <div class="filters">
+        <button class="btn primary" type="button" id="btnExportar">
+          <i class="fa-solid fa-file-csv"></i>
+          Exportar CSV
+        </button>
+
+        <button class="btn" type="button" id="btnAtualizar">
+          <i class="fa-solid fa-rotate"></i>
+          Atualizar
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="label">Operadores</div>
+          <div class="value" id="stOperadores">0</div>
+          <div class="sub">Perfil OPERADOR</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">Ativos</div>
+          <div class="value" id="stAtivos">0</div>
+          <div class="sub">Liberados para login</div>
+        </div>
+
+        <div class="stat">
+          <div class="label">Senha Temporária</div>
+          <div class="value" id="stTemporarias">0</div>
+          <div class="sub">Precisam alterar depois</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="statusLinha">Carregando dados.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Listagem para Envio</h2>
+
+      <div class="filters">
+        <div class="field">
+          <label for="busca">Buscar</label>
+          <input id="busca" type="text" placeholder="Nome ou e-mail">
+        </div>
+
+        <div class="field">
+          <label for="statusFiltro">Status</label>
+          <select id="statusFiltro">
+            <option value="">Todos</option>
+            <option value="ATIVO">Ativos</option>
+            <option value="INATIVO">Inativos</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Senha</th>
+              <th>Perfil</th>
+              <th>Status</th>
+              <th>Senha Temporária</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAcessos">
+            <tr>
+              <td colspan="6" class="empty">Carregando...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="assinatura">Delta Cuiabá • Controle de Frota</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const STORAGE_KEY = "delta_auth_firebase_v1";
+const STORAGE_KEY_LEGADO = "delta_auth_v1";
+
+let OPERADORES = [];
+
+function getAuth(){
+  try{
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(STORAGE_KEY_LEGADO) ||
+      "null"
+    );
+  }catch(_){
+    return null;
+  }
+}
+
+function clearAuth(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+}
+
+function nomeAuth(auth){
+  return auth?.Nome || auth?.nome || auth?.seguranca || auth?.usuario || "";
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || "").trim().toUpperCase();
+}
+
+function sessaoValidaLocal(auth){
+  if(!auth) return false;
+  if(!nomeAuth(auth)) return false;
+  if(!perfilAuth(auth)) return false;
+  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return true;
+}
+
+function validarSessaoOuRedirecionar(){
+  const auth = getAuth();
+
+  if(!sessaoValidaLocal(auth)){
+    clearAuth();
+    location.href = "../index.html";
+    return null;
+  }
+
+  if(perfilAuth(auth) !== "ADMIN"){
+    location.href = "../index.html";
+    return null;
+  }
+
+  return auth;
+}
+
+window.logoutSistema = function(){
+  clearAuth();
+  location.href = "../index.html";
+};
+
+function esc(v){
+  return String(v == null ? "" : v)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function upper(v){
+  return String(v || "").trim().toUpperCase();
+}
+
+function senhaTemporaria(s){
+  if(s.SenhaTemporaria === false || s.senhaTemporaria === false) return false;
+  return true;
+}
+
+function ativoSeg(s){
+  return s.Ativo === true || s.ativo === true;
+}
+
+function render(lista){
+  const tbody = document.getElementById("tbodyAcessos");
+
+  if(!lista.length){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Nenhum operador encontrado.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista.map(s => {
+    const nome = s.Nome || s.nome || "-";
+    const email = s.Email || s.email || "-";
+    const senha = s.Sen_Segura || s.Senha || s.senha || "-";
+    const ativo = ativoSeg(s);
+    const temp = senhaTemporaria(s);
+
+    return `
+      <tr>
+        <td>${esc(nome)}</td>
+        <td>${esc(email)}</td>
+        <td class="senha">${esc(senha)}</td>
+        <td><span class="pill operador">OPERADOR</span></td>
+        <td><span class="pill ${ativo ? "ok" : "danger"}">${ativo ? "ATIVO" : "INATIVO"}</span></td>
+        <td><span class="pill ${temp ? "warn" : "ok"}">${temp ? "SIM" : "NÃO"}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function aplicarFiltros(){
+  const busca = String(document.getElementById("busca").value || "").trim().toLowerCase();
+  const statusFiltro = upper(document.getElementById("statusFiltro").value);
+
+  const filtrados = OPERADORES.filter(s => {
+    const nome = String(s.Nome || s.nome || "").toLowerCase();
+    const email = String(s.Email || s.email || "").toLowerCase();
+    const ativo = ativoSeg(s);
+
+    const okBusca = !busca || nome.includes(busca) || email.includes(busca);
+    const okStatus =
+      !statusFiltro ||
+      (statusFiltro === "ATIVO" && ativo) ||
+      (statusFiltro === "INATIVO" && !ativo);
+
+    return okBusca && okStatus;
+  });
+
+  render(filtrados);
+}
+
+function atualizarCards(){
+  document.getElementById("stOperadores").textContent = OPERADORES.length;
+  document.getElementById("stAtivos").textContent = OPERADORES.filter(ativoSeg).length;
+  document.getElementById("stTemporarias").textContent = OPERADORES.filter(senhaTemporaria).length;
+}
+
+function csvEscape(v){
+  const s = String(v == null ? "" : v);
+  return /[;"\n\r]/.test(s) ? '"' + s.replaceAll('"','""') + '"' : s;
+}
+
+function exportarCSV(){
+  const linhas = [];
+  linhas.push(["Nome","E-mail","Senha","Perfil","Status","Senha Temporaria"].join(";"));
+
+  OPERADORES.forEach(s => {
+    const nome = s.Nome || s.nome || "";
+    const email = s.Email || s.email || "";
+    const senha = s.Sen_Segura || s.Senha || s.senha || "";
+    const ativo = ativoSeg(s) ? "ATIVO" : "INATIVO";
+    const temp = senhaTemporaria(s) ? "SIM" : "NAO";
+
+    linhas.push([nome,email,senha,"OPERADOR",ativo,temp].map(csvEscape).join(";"));
+  });
+
+  const blob = new Blob(["\uFEFF" + linhas.join("\n")], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "lista_acessos_operadores.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function carregar(){
+  const status = document.getElementById("statusLinha");
+  const tbody = document.getElementById("tbodyAcessos");
+
+  status.textContent = "Buscando operadores no Firebase...";
+  tbody.innerHTML = '<tr><td colspan="6" class="empty">Carregando...</td></tr>';
+
+  try{
+    let snap;
+
+    try{
+      snap = await getDocs(query(collection(db,"segurancas"), orderBy("NomeBusca")));
+    }catch(_){
+      snap = await getDocs(collection(db,"segurancas"));
+    }
+
+    const todos = snap.docs
+      .map(d => ({ id:d.id, ...d.data() }))
+      .filter(s => s && s.Modelo !== true);
+
+    OPERADORES = todos.filter(s => upper(s.Perfil || s.perfil) === "OPERADOR");
+
+    atualizarCards();
+    aplicarFiltros();
+
+    status.textContent = "Dados carregados com sucesso. Operadores encontrados: " + OPERADORES.length + ".";
+  }catch(e){
+    console.error(e);
+    status.textContent = "Erro ao carregar lista de acessos: " + (e && e.message ? e.message : "erro desconhecido");
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Erro ao carregar dados do Firebase.</td></tr>';
+  }
+}
+
+document.getElementById("btnAtualizar").addEventListener("click", carregar);
+document.getElementById("btnExportar").addEventListener("click", exportarCSV);
+document.getElementById("busca").addEventListener("input", aplicarFiltros);
+document.getElementById("statusFiltro").addEventListener("change", aplicarFiltros);
+
+const AUTH = validarSessaoOuRedirecionar();
+if(AUTH){
+  carregar();
+}
+</script>
+
+</body>
+</html>

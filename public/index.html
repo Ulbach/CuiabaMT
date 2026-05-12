@@ -359,7 +359,11 @@ import {
   getDocs,
   query,
   where,
-  limit
+  limit,
+  addDoc,
+  doc,
+  updateDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -376,6 +380,8 @@ const db = getFirestore(app);
 
 const STORAGE_KEY = 'delta_auth_firebase_v1';
 const STORAGE_KEY_LEGADO = 'delta_auth_v1';
+const LOG_ID_KEY = 'delta_log_acesso_id_v1';
+const LOG_INICIO_KEY = 'delta_log_acesso_inicio_v1';
 
 function setChip(text, color){
   const el = document.getElementById('chipStatus');
@@ -417,6 +423,86 @@ function setAuth(data){
 function clearAuth(){
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(STORAGE_KEY_LEGADO);
+  localStorage.removeItem(LOG_ID_KEY);
+  localStorage.removeItem(LOG_INICIO_KEY);
+}
+
+function nomeLog(auth){
+  return auth?.Nome || auth?.nome || auth?.seguranca || auth?.usuario || '';
+}
+
+function emailLog(auth){
+  return auth?.Email || auth?.email || '';
+}
+
+function perfilLog(auth){
+  return String(auth?.Perfil || auth?.perfil || '').trim().toUpperCase();
+}
+
+async function registrarLogin(auth, origem='index.html'){
+  try{
+    if(!auth) return null;
+
+    const inicioMs = Date.now();
+
+    const ref = await addDoc(collection(db,'logs_acesso'), {
+      segurancaId: auth.id || auth.uid || auth.docId || '',
+      nome: nomeLog(auth),
+      email: emailLog(auth),
+      perfil: perfilLog(auth),
+      loginEm: serverTimestamp(),
+      loginMs: inicioMs,
+      logoutEm: null,
+      logoutMs: null,
+      tempoConectadoMin: null,
+      status: 'ABERTA',
+      origem: origem,
+      userAgent: navigator.userAgent || '',
+      criadoEm: serverTimestamp(),
+      atualizadoEm: null
+    });
+
+    localStorage.setItem(LOG_ID_KEY, ref.id);
+    localStorage.setItem(LOG_INICIO_KEY, String(inicioMs));
+
+    const sessaoAtual = getAuth();
+    if(sessaoAtual){
+      sessaoAtual.logAcessoId = ref.id;
+      sessaoAtual.logAcessoInicioMs = inicioMs;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessaoAtual));
+    }
+
+    return ref.id;
+  }catch(e){
+    console.error('Erro ao registrar log de login:', e);
+    return null;
+  }
+}
+
+async function registrarLogout(statusFinal='FINALIZADA'){
+  try{
+    const logId = localStorage.getItem(LOG_ID_KEY);
+    const inicioMs = Number(localStorage.getItem(LOG_INICIO_KEY) || 0);
+
+    if(!logId) return;
+
+    const fimMs = Date.now();
+    const tempoMin = inicioMs ? Math.max(0, Math.round((fimMs - inicioMs) / 60000)) : null;
+
+    await updateDoc(doc(db,'logs_acesso',logId), {
+      logoutEm: serverTimestamp(),
+      logoutMs: fimMs,
+      tempoConectadoMin: tempoMin,
+      status: statusFinal,
+      atualizadoEm: serverTimestamp()
+    });
+
+    localStorage.removeItem(LOG_ID_KEY);
+    localStorage.removeItem(LOG_INICIO_KEY);
+
+  }catch(e){
+    console.error('Erro ao registrar log de logout:', e);
+  }
 }
 
 function setLoading(show){
@@ -590,6 +676,7 @@ async function fazerLogin(){
     };
 
     setAuth(sessao);
+    await registrarLogin(sessao, 'index.html');
 
     showWelcome('Olá, ' + (sessao.Nome || 'Segurança') + '!');
     setMsg('Acesso liberado.', true);
@@ -606,7 +693,8 @@ async function fazerLogin(){
   }
 }
 
-function trocarUsuario(){
+async function trocarUsuario(){
+  await registrarLogout('FINALIZADA');
   clearAuth();
   openLogin();
 }

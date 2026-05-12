@@ -1,0 +1,11 @@
+Adicionar este card em public/relatorios/central_relatorios.html, dentro da seção Relatórios Administrativos:
+
+<a href="relatorio_log_acessos.html" class="menu-card">
+  <div class="menu-icon" style="color:var(--purple)">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+  </div>
+  <div>
+    <div class="menu-title">Log de Acessos</div>
+    <div class="menu-desc">Auditoria de login, logout, tempo conectado e último acesso.</div>
+  </div>
+</a>

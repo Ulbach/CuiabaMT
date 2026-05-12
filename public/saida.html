@@ -8,189 +8,34 @@
 
   <style>
     :root{
-      --bg1:#061427;
-      --bg2:#0b1b33;
-      --card:rgba(255,255,255,0.06);
-      --border:rgba(255,255,255,0.12);
-      --shadow:0 16px 40px rgba(0,0,0,.45);
-      --radius:20px;
-      --text-main:#e6edf7;
-      --text-soft:#9fb4d3;
-      --text-muted:#7b8ca7;
-      --green:#22c55e;
-      --red:#ef4444;
-      --blue:#3b82f6;
-      --yellow:#f59e0b;
+      --bg1:#061427;--bg2:#0b1b33;--card:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.12);
+      --shadow:0 16px 40px rgba(0,0,0,.45);--radius:20px;--text-main:#e6edf7;--text-soft:#9fb4d3;
+      --text-muted:#7b8ca7;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--yellow:#f59e0b;
     }
-
     *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
-      background:linear-gradient(180deg,var(--bg1),var(--bg2));
-      color:var(--text-main);
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-    }
-
-    .card{
-      width:100%;
-      max-width:440px;
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:30px;
-      backdrop-filter:blur(10px);
-      box-shadow:var(--shadow);
-      position:relative;
-      overflow:hidden;
-    }
-
-    .session-box{
-      margin:-6px 0 18px 0;
-      padding:12px 14px;
-      border-radius:14px;
-      background:rgba(34,197,94,0.08);
-      border:1px solid rgba(34,197,94,0.18);
-      text-align:center;
-      font-size:13px;
-      color:#9fb4d3;
-    }
-
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text-main);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:30px;backdrop-filter:blur(10px);box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .session-box{margin:-6px 0 18px 0;padding:12px 14px;border-radius:14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.18);text-align:center;font-size:13px;color:#9fb4d3}
     .session-box strong{color:#e6edf7}
-
-    .header{
-      text-align:center;
-      margin-bottom:25px;
-    }
-
-    .header h2{
-      margin:0;
-      font-size:24px;
-      font-weight:800;
-      letter-spacing:-0.5px;
-      color:var(--red);
-    }
-
-    .header p{
-      margin:5px 0 0;
-      font-size:11px;
-      color:var(--text-soft);
-      text-transform:uppercase;
-      letter-spacing:2px;
-      font-weight:600;
-    }
-
+    .header{text-align:center;margin-bottom:25px}
+    .header h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-0.5px;color:var(--red)}
+    .header p{margin:5px 0 0;font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:2px;font-weight:600}
     .field{margin-bottom:18px}
-
-    label{
-      display:block;
-      font-size:11px;
-      font-weight:700;
-      color:var(--text-muted);
-      margin-bottom:8px;
-      text-transform:uppercase;
-      letter-spacing:0.5px;
-    }
-
+    label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
     .input-group{position:relative}
-
-    .input-group i{
-      position:absolute;
-      left:14px;
-      top:50%;
-      transform:translateY(-50%);
-      color:var(--red);
-      font-size:14px;
-      pointer-events:none;
-      z-index:1;
-    }
-
-    select,input{
-      width:100%;
-      background:rgba(0,0,0,0.2);
-      border:1px solid var(--border);
-      padding:13px 13px 13px 40px;
-      border-radius:12px;
-      color:#fff;
-      font-size:15px;
-      outline:none;
-      transition:0.2s;
-    }
-
-    select option{
-      background:#0b1b33;
-      color:#fff;
-    }
-
-    select:focus,input:focus{
-      border-color:var(--red);
-      background:rgba(255,255,255,0.05);
-    }
-
-    input[readonly]{
-      opacity:.9;
-      cursor:not-allowed;
-    }
-
-    .hint{
-      margin-top:7px;
-      font-size:12px;
-      color:var(--text-soft);
-      min-height:16px;
-    }
-
-    .btn-save{
-      width:100%;
-      padding:16px;
-      background:var(--green);
-      color:#fff;
-      border:none;
-      border-radius:14px;
-      font-size:15px;
-      font-weight:800;
-      cursor:pointer;
-      margin-top:10px;
-      transition:0.25s;
-      box-shadow:0 10px 24px rgba(34,197,94,.18);
-    }
-
-    .btn-save:active{
-      transform:scale(.98);
-    }
-
-    .btn-save:disabled{
-      opacity:0.18;
-      cursor:not-allowed;
-      filter:grayscale(1);
-      box-shadow:none;
-    }
-
-    .btn-back{
-      display:block;
-      text-align:center;
-      margin-top:20px;
-      color:var(--text-soft);
-      text-decoration:none;
-      font-size:13px;
-      font-weight:600;
-      transition:0.2s;
-    }
-
+    .input-group i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--red);font-size:14px;pointer-events:none;z-index:1}
+    select,input{width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border);padding:13px 13px 13px 40px;border-radius:12px;color:#fff;font-size:15px;outline:none;transition:0.2s}
+    select option{background:#0b1b33;color:#fff}
+    select:focus,input:focus{border-color:var(--red);background:rgba(255,255,255,0.05)}
+    input[readonly]{opacity:.9;cursor:not-allowed}
+    select:disabled,input:disabled{opacity:.45;cursor:not-allowed}
+    .hint{margin-top:7px;font-size:12px;color:var(--text-soft);min-height:16px;line-height:1.4}
+    .btn-save{width:100%;padding:16px;background:var(--green);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-top:10px;transition:0.25s;box-shadow:0 10px 24px rgba(34,197,94,.18)}
+    .btn-save:active{transform:scale(.98)}
+    .btn-save:disabled{opacity:0.18;cursor:not-allowed;filter:grayscale(1);box-shadow:none}
+    .btn-back{display:block;text-align:center;margin-top:20px;color:var(--text-soft);text-decoration:none;font-size:13px;font-weight:600;transition:0.2s}
     .btn-back:hover{color:#fff}
-
-    #msg{
-      text-align:center;
-      margin-top:15px;
-      font-size:13px;
-      font-weight:700;
-      min-height:1.5em;
-      line-height:1.4;
-    }
+    #msg{text-align:center;margin-top:15px;font-size:13px;font-weight:700;min-height:1.5em;line-height:1.4}
   </style>
 </head>
 
@@ -207,17 +52,6 @@
     </div>
 
     <div class="field">
-      <label>Veículo</label>
-      <div class="input-group">
-        <i class="fa-solid fa-car-side"></i>
-        <select id="veiculo">
-          <option value="">Carregando...</option>
-        </select>
-      </div>
-      <div id="hintKm" class="hint">Selecione o veículo</div>
-    </div>
-
-    <div class="field">
       <label>Motorista</label>
       <div class="input-group">
         <i class="fa-solid fa-user-tie"></i>
@@ -225,6 +59,18 @@
           <option value="">Carregando...</option>
         </select>
       </div>
+      <div id="hintMotorista" class="hint">Selecione o motorista para liberar os veículos.</div>
+    </div>
+
+    <div class="field">
+      <label>Veículo</label>
+      <div class="input-group">
+        <i class="fa-solid fa-car-side"></i>
+        <select id="veiculo" disabled>
+          <option value="">Selecione o motorista primeiro</option>
+        </select>
+      </div>
+      <div id="hintKm" class="hint">Selecione o veículo</div>
     </div>
 
     <div class="field">
@@ -289,6 +135,7 @@ const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 
 let AUTH = null;
 let inFlight = false;
+let TODOS_VEICULOS = [];
 let VEICULOS = [];
 let MOTORISTAS = [];
 let KM_ANTERIOR = 0;
@@ -336,6 +183,13 @@ function setHint(texto, corVar){
   hint.innerHTML = texto || '';
 }
 
+function setHintMotorista(texto, corVar){
+  const hint = document.getElementById('hintMotorista');
+  if(!hint) return;
+  hint.style.color = corVar ? `var(${corVar})` : 'var(--text-soft)';
+  hint.innerHTML = texto || '';
+}
+
 function textoVeiculo(v){
   const nome = v.Nome || v.nome || v.Veiculo || v.veiculo || 'Veículo';
   const placa = v.Placa || v.placa || '';
@@ -350,16 +204,24 @@ function kmAtualVeiculo(v){
   return Number(String(v.KmAtualCadastro ?? v.KmAtual ?? v.kmAtual ?? v.Km ?? v.km ?? 0).replace(',','.')) || 0;
 }
 
-function preencherVeiculos(){
-  const el = document.getElementById('veiculo');
-  if(!VEICULOS.length){
-    el.innerHTML = '<option value="">Nenhum veículo disponível</option>';
-    return;
-  }
-  el.innerHTML = '<option value="">Selecione...</option>' + VEICULOS
-    .sort((a,b)=>textoVeiculo(a).localeCompare(textoVeiculo(b),'pt-BR'))
-    .map(v=>`<option value="${esc(v.id)}">${esc(textoVeiculo(v))}</option>`)
-    .join('');
+function veiculoRestrito(v){
+  return v.Restrito === true || v.restrito === true || v.Restrito === 'true' || v.restrito === 'true';
+}
+
+function motoristaTemAcessoRestrito(m){
+  return m && (
+    m.AcessoRestrito === true ||
+    m.acessoRestrito === true ||
+    m.AcessoRestrito === 'true' ||
+    m.acessoRestrito === 'true' ||
+    m.AcessoVeiculoRestrito === true ||
+    m.AcessoVeiculosRestritos === true
+  );
+}
+
+function motoristaSelecionado(){
+  const id = document.getElementById('motorista').value;
+  return MOTORISTAS.find(m=>m.id === id) || null;
 }
 
 function preencherMotoristas(){
@@ -368,18 +230,76 @@ function preencherMotoristas(){
     el.innerHTML = '<option value="">Nenhum motorista ativo</option>';
     return;
   }
+
   el.innerHTML = '<option value="">Selecione...</option>' + MOTORISTAS
     .sort((a,b)=>textoMotorista(a).localeCompare(textoMotorista(b),'pt-BR'))
-    .map(m=>`<option value="${esc(m.id)}">${esc(textoMotorista(m))}</option>`)
+    .map(m=>{
+      const tag = motoristaTemAcessoRestrito(m) ? ' 🔒' : '';
+      return `<option value="${esc(m.id)}">${esc(textoMotorista(m) + tag)}</option>`;
+    })
     .join('');
+}
+
+function preencherVeiculos(){
+  const el = document.getElementById('veiculo');
+
+  if(!VEICULOS.length){
+    el.disabled = true;
+    el.innerHTML = '<option value="">Nenhum veículo disponível para este motorista</option>';
+    return;
+  }
+
+  el.disabled = false;
+  el.innerHTML = '<option value="">Selecione...</option>' + VEICULOS
+    .sort((a,b)=>textoVeiculo(a).localeCompare(textoVeiculo(b),'pt-BR'))
+    .map(v=>{
+      const tag = veiculoRestrito(v) ? ' 🔒' : '';
+      return `<option value="${esc(v.id)}">${esc(textoVeiculo(v) + tag)}</option>`;
+    })
+    .join('');
+}
+
+function filtrarVeiculosPorMotorista(){
+  const motorista = motoristaSelecionado();
+  const veiculoEl = document.getElementById('veiculo');
+  const kmInput = document.getElementById('kmSaida');
+
+  VEICULOS = [];
+  veiculoEl.value = '';
+  kmInput.value = '';
+  KM_ANTERIOR = 0;
+  setHint('Selecione o veículo');
+
+  if(!motorista){
+    veiculoEl.disabled = true;
+    veiculoEl.innerHTML = '<option value="">Selecione o motorista primeiro</option>';
+    setHintMotorista('Selecione o motorista para liberar os veículos.');
+    validateForm();
+    return;
+  }
+
+  const acessoRestrito = motoristaTemAcessoRestrito(motorista);
+
+  VEICULOS = TODOS_VEICULOS.filter(v => {
+    if(v.EmTransito === true) return false;
+    if(veiculoRestrito(v)) return acessoRestrito;
+    return true;
+  });
+
+  setHintMotorista(
+    acessoRestrito
+      ? 'Motorista com acesso a veículos restritos. Veículos restritos aparecem com 🔒.'
+      : 'Motorista sem acesso restrito. Apenas veículos normais serão exibidos.',
+    acessoRestrito ? '--green' : null
+  );
+
+  preencherVeiculos();
+  validateForm();
 }
 
 async function carregarVeiculos(){
   const snap = await getDocs(query(collection(db,'veiculos'), where('Ativo','==',true)));
-  VEICULOS = snap.docs
-    .map(d=>({ id:d.id, ...d.data() }))
-    .filter(v => v.EmTransito !== true && v.Restrito !== true);
-  preencherVeiculos();
+  TODOS_VEICULOS = snap.docs.map(d=>({ id:d.id, ...d.data() }));
 }
 
 async function carregarMotoristas(){
@@ -403,7 +323,15 @@ function onChangeVeiculo(){
 
   KM_ANTERIOR = kmAtualVeiculo(veiculo);
   kmInput.value = KM_ANTERIOR > 0 ? KM_ANTERIOR : '';
-  setHint(KM_ANTERIOR > 0 ? `Último KM registrado: <b>${esc(KM_ANTERIOR)}</b>` : 'Sem KM anterior encontrado.', KM_ANTERIOR > 0 ? null : '--yellow');
+
+  const restritoTxt = veiculoRestrito(veiculo) ? ' <b>Veículo restrito.</b>' : '';
+  setHint(
+    KM_ANTERIOR > 0
+      ? `Último KM registrado: <b>${esc(KM_ANTERIOR)}</b>.${restritoTxt}`
+      : `Sem KM anterior encontrado.${restritoTxt}`,
+    KM_ANTERIOR > 0 ? null : '--yellow'
+  );
+
   validateForm();
 }
 
@@ -423,6 +351,7 @@ function validateForm(){
 
   const atual = document.getElementById('msg').innerText || '';
   if(atual.startsWith('KM inferior')) setMsg('');
+
   btn.disabled = !(veiculoId && motoristaId && seguranca && km && destino) || inFlight;
 }
 
@@ -441,6 +370,12 @@ async function doEnviar(){
     validateForm();
     return;
   }
+
+  if(veiculoRestrito(veiculo) && !motoristaTemAcessoRestrito(motorista)){
+    setMsg('Motorista sem autorização para veículo restrito.', '--red');
+    return;
+  }
+
   if(KmSaida < KM_ANTERIOR){
     setMsg(`KM inferior ao último registrado (${KM_ANTERIOR}).`, '--red');
     return;
@@ -458,9 +393,11 @@ async function doEnviar(){
       veiculo: textoVeiculo(veiculo),
       Veiculo: textoVeiculo(veiculo),
       placa: veiculo.Placa || veiculo.placa || '',
+      veiculoRestrito: veiculoRestrito(veiculo),
       motoristaId: motorista.id,
       motorista: textoMotorista(motorista),
       Motorista: textoMotorista(motorista),
+      motoristaAcessoRestrito: motoristaTemAcessoRestrito(motorista),
       segurancaSaida: seguranca,
       SegurancaSaida: seguranca,
       KmSaida: KmSaida,
@@ -502,8 +439,8 @@ async function init(){
   document.getElementById('sessaoSegurancaTopo').textContent = nome;
   document.getElementById('seguranca').value = nome;
 
+  document.getElementById('motorista').addEventListener('change', filtrarVeiculosPorMotorista);
   document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
-  document.getElementById('motorista').addEventListener('change', validateForm);
   document.getElementById('kmSaida').addEventListener('input', validateForm);
   document.getElementById('destino').addEventListener('input', validateForm);
   document.getElementById('btnSalvar').addEventListener('click', doEnviar);
@@ -512,6 +449,7 @@ async function init(){
   try{
     setMsg('Carregando dados do Firebase...', '--text-soft');
     await Promise.all([carregarVeiculos(), carregarMotoristas()]);
+    filtrarVeiculosPorMotorista();
     setMsg('');
   }catch(e){
     console.error(e);

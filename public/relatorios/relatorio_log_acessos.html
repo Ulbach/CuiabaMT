@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log de Acessos - Delta Cuiabá</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{--bg1:#061427;--bg2:#0b1b33;--card:rgba(255,255,255,.06);--border:rgba(255,255,255,.12);--text:#e6edf7;--muted:#9fb4d3;--green:#22c55e;--red:#ef4444;--warn:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6;--shadow:0 12px 28px rgba(0,0,0,.35)}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text);min-height:100vh;position:relative;overflow-x:hidden}
+body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;pointer-events:none;background:linear-gradient(to top,rgba(34,197,94,.42),rgba(34,197,94,0));z-index:-1}
+.hero{height:180px;background:linear-gradient(180deg,rgba(6,20,39,.18),rgba(6,20,39,.65)),url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600') center/cover no-repeat;display:flex;align-items:center;justify-content:center;text-align:center}
+.brand-title{font-size:28px;font-weight:900;letter-spacing:4px;color:#fff;text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);text-transform:uppercase}
+.brand-sub{margin-top:10px;font-size:18px;font-weight:800;color:#dbeafe}
+.wrap{max-width:1280px;margin:auto;padding:24px 16px 44px}
+.top-actions,.card-head,.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.top-actions{justify-content:space-between;margin-bottom:18px}.card-head{justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 16px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);text-decoration:none;font-weight:800;cursor:pointer}
+.btn.primary{background:var(--green);color:#031022;border:none}.btn.danger{background:rgba(239,68,68,.14);color:#fecaca}
+.card{background:var(--card);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}.card-body{padding:16px 18px}.card-head h2{margin:0;font-size:18px}
+.alerta{background:rgba(245,158,11,.13);border:1px solid rgba(245,158,11,.35);color:#fbbf24;padding:14px 16px;border-radius:16px;font-weight:800;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.stat{background:rgba(255,255,255,.055);border:1px solid var(--border);border-radius:18px;padding:16px;min-height:108px}.stat .label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase}.stat .value{font-size:30px;font-weight:900;margin-top:8px}.stat .sub{font-size:12px;color:var(--muted);margin-top:4px}
+.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase}.field input,.field select{min-height:42px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#09172b;color:#fff;min-width:180px}
+.table-wrap{overflow:auto;max-height:650px;border:1px solid var(--border);border-radius:16px;background:#061226}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;white-space:nowrap}th{background:#09172b;color:#9ed7b0;text-transform:uppercase;font-size:12px;position:sticky;top:0}.empty{text-align:center;color:var(--muted);padding:20px}
+.pill{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900;background:#0b1a30;color:var(--green);border:1px solid #12314d}.admin{color:#60a5fa}.operador{color:#22c55e}.consulta{color:#f59e0b}.ok{color:#22c55e}.warn{color:#f59e0b}.danger2{color:#ef4444}
+.status{padding:13px 18px;color:var(--muted);font-size:14px;border-top:1px solid var(--border);background:rgba(255,255,255,.035)}.assinatura{text-align:center;margin-top:24px;color:var(--muted);font-size:13px}
+@media(max-width:1080px){.stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:720px){.hero{height:150px}.brand-title{font-size:22px}.wrap{padding:18px 10px 34px}.stats{grid-template-columns:1fr}.filters{flex-direction:column;align-items:stretch}.field input,.field select,.btn{width:100%;min-width:100%}table{min-width:1050px}}
+</style>
+</head>
+<body>
+<div class="hero"><div><div class="brand-title">Delta Cuiabá</div><div class="brand-sub">Log de Acessos</div></div></div>
+<div class="wrap">
+  <div class="top-actions"><a class="btn" href="central_relatorios.html"><i class="fa-solid fa-chevron-left"></i> Voltar aos Relatórios</a><button class="btn danger" type="button" onclick="logoutSistema()"><i class="fa-solid fa-right-from-bracket"></i> Sair</button></div>
+  <div class="alerta"><i class="fa-solid fa-shield-halved"></i> Relatório administrativo. Exibe auditoria de login/logout de todos os perfis. Acesso permitido somente para ADMIN.</div>
+  <div class="card">
+    <div class="card-head"><h2><i class="fa-solid fa-clock-rotate-left"></i> Resumo de Acessos</h2><div class="filters"><button class="btn primary" id="btnExportar"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button><button class="btn" id="btnAtualizar"><i class="fa-solid fa-rotate"></i> Atualizar</button></div></div>
+    <div class="card-body"><div class="stats"><div class="stat"><div class="label">Total</div><div class="value" id="stTotal">0</div><div class="sub">Logs filtrados</div></div><div class="stat"><div class="label">Abertas</div><div class="value" id="stAbertas">0</div><div class="sub">Sem logout</div></div><div class="stat"><div class="label">Finalizadas</div><div class="value" id="stFinalizadas">0</div><div class="sub">Com logout</div></div><div class="stat"><div class="label">Usuários</div><div class="value" id="stUsuarios">0</div><div class="sub">Distintos</div></div><div class="stat"><div class="label">Tempo Médio</div><div class="value" id="stTempoMedio">0</div><div class="sub">Minutos</div></div></div></div>
+    <div class="status" id="statusLinha">Carregando dados.</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Filtros</h2><div class="filters"><div class="field"><label>Data Inicial</label><input id="dataIni" type="date"></div><div class="field"><label>Data Final</label><input id="dataFim" type="date"></div><div class="field"><label>Buscar</label><input id="busca" type="text" placeholder="Nome ou e-mail"></div><div class="field"><label>Perfil</label><select id="perfilFiltro"><option value="">Todos</option><option value="ADMIN">ADMIN</option><option value="OPERADOR">OPERADOR</option><option value="CONSULTA">CONSULTA</option></select></div><div class="field"><label>Status</label><select id="statusFiltro"><option value="">Todos</option><option value="ABERTA">Aberta</option><option value="FINALIZADA">Finalizada</option><option value="EXPIRADA">Expirada</option></select></div></div></div>
+    <div class="card-body"><div class="table-wrap"><table><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Login</th><th>Logout</th><th>Tempo</th><th>Status</th><th>Origem</th></tr></thead><tbody id="tbodyLogs"><tr><td colspan="8" class="empty">Carregando...</td></tr></tbody></table></div></div>
+  </div>
+  <div class="assinatura">Delta Cuiabá • Controle de Frota</div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",authDomain:"cuiaba-01617931-f126e.firebaseapp.com",projectId:"cuiaba-01617931-f126e",storageBucket:"cuiaba-01617931-f126e.firebasestorage.app",messagingSenderId:"797115279316",appId:"1:797115279316:web:f229366de16d4e066e1841"};
+const app=initializeApp(firebaseConfig),db=getFirestore(app),STORAGE_KEY="delta_auth_firebase_v1",STORAGE_KEY_LEGADO="delta_auth_v1";
+const LOG_ID_KEY="delta_log_acesso_id_v1";
+const LOG_INICIO_KEY="delta_log_acesso_inicio_v1";
+let LOGS=[],FILTRADOS=[];
+function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||localStorage.getItem(STORAGE_KEY_LEGADO)||"null")}catch(_){return null}}
+function clearAuth(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+  localStorage.removeItem(LOG_ID_KEY);
+  localStorage.removeItem(LOG_INICIO_KEY);
+}
+function nomeAuth(a){return a?.Nome||a?.nome||a?.seguranca||a?.usuario||""}
+function perfilAuth(a){return String(a?.Perfil||a?.perfil||"").trim().toUpperCase()}
+function sessaoValidaLocal(a){if(!a||!nomeAuth(a)||!perfilAuth(a))return false;if(a.expiraEm&&Number(a.expiraEm)<=Date.now())return false;return true}
+function validar(){const a=getAuth();if(!sessaoValidaLocal(a)){clearAuth();location.href="../index.html";return null}if(perfilAuth(a)!=="ADMIN"){location.href="../index.html";return null}return a}
+async function registrarLogout(statusFinal='FINALIZADA'){
+  try{
+    const logId=localStorage.getItem(LOG_ID_KEY);
+    const inicioMs=Number(localStorage.getItem(LOG_INICIO_KEY)||0);
+
+    if(!logId) return;
+
+    const fimMs=Date.now();
+    const tempoMin=inicioMs ? Math.max(0, Math.round((fimMs-inicioMs)/60000)) : null;
+
+    const { doc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+
+    await updateDoc(doc(db,'logs_acesso',logId),{
+      logoutEm:serverTimestamp(),
+      logoutMs:fimMs,
+      tempoConectadoMin:tempoMin,
+      status:statusFinal,
+      atualizadoEm:serverTimestamp()
+    });
+
+  }catch(e){
+    console.error('Erro ao registrar logout:', e);
+  }
+}
+
+window.logoutSistema=async function(){
+  await registrarLogout('FINALIZADA');
+  clearAuth();
+  location.href="../index.html";
+}
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function upper(v){return String(v||"").trim().toUpperCase()}
+function toDate(v){if(!v)return null;if(v.toDate){try{return v.toDate()}catch(_){return null}}const d=new Date(v);return isNaN(d)?null:d}
+function fmt(v){const d=toDate(v);return d?d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"-"}
+function inputDate(v,end=false){if(!v)return null;const p=v.split("-");return new Date(Number(p[0]),Number(p[1])-1,Number(p[2]),end?23:0,end?59:0,end?59:0)}
+function tempoMin(l){if(typeof l.tempoConectadoMin==="number")return l.tempoConectadoMin;const i=toDate(l.loginEm),f=toDate(l.logoutEm);return i&&f?Math.max(0,Math.round((f-i)/60000)):null}
+function tempoTexto(m){if(m==null)return "-";const h=Math.floor(m/60),r=m%60;return h?`${h}h ${String(r).padStart(2,"0")}min`:`${r}min`}
+function perfilClasse(p){p=upper(p);return p==="ADMIN"?"admin":p==="OPERADOR"?"operador":p==="CONSULTA"?"consulta":""}
+function statusClasse(s){s=upper(s);return s==="FINALIZADA"?"ok":s==="ABERTA"?"warn":"danger2"}
+function setDefaultDates(){const fim=new Date(),ini=new Date();ini.setDate(fim.getDate()-30);dataIni.value=ini.toISOString().slice(0,10);dataFim.value=fim.toISOString().slice(0,10)}
+function aplicarFiltros(){const busca=String(buscaEl.value||"").toLowerCase().trim(),perfil=upper(perfilFiltro.value),status=upper(statusFiltro.value),ini=inputDate(dataIni.value),fim=inputDate(dataFim.value,true);FILTRADOS=LOGS.filter(l=>{const nome=String(l.nome||l.Nome||"").toLowerCase(),email=String(l.email||l.Email||"").toLowerCase(),p=upper(l.perfil||l.Perfil),st=upper(l.status||"ABERTA"),dt=toDate(l.loginEm);return(!busca||nome.includes(busca)||email.includes(busca))&&(!perfil||p===perfil)&&(!status||st===status)&&(!ini||dt>=ini)&&(!fim||dt<=fim)});render(FILTRADOS);cards(FILTRADOS)}
+function cards(lista){const tempos=lista.map(tempoMin).filter(v=>typeof v==="number"),medio=tempos.length?Math.round(tempos.reduce((a,b)=>a+b,0)/tempos.length):0;stTotal.textContent=lista.length;stAbertas.textContent=lista.filter(l=>upper(l.status||"ABERTA")==="ABERTA").length;stFinalizadas.textContent=lista.filter(l=>upper(l.status||"")==="FINALIZADA").length;stUsuarios.textContent=new Set(lista.map(l=>upper(l.email||l.nome||l.Nome)).filter(Boolean)).size;stTempoMedio.textContent=medio}
+function render(lista){tbodyLogs.innerHTML=lista.length?lista.map(l=>{const nome=l.nome||l.Nome||"-",email=l.email||l.Email||"-",perfil=upper(l.perfil||l.Perfil||"-"),status=upper(l.status||"ABERTA"),min=tempoMin(l);return `<tr><td>${esc(nome)}</td><td>${esc(email)}</td><td><span class="pill ${perfilClasse(perfil)}">${esc(perfil)}</span></td><td>${esc(fmt(l.loginEm))}</td><td>${esc(fmt(l.logoutEm))}</td><td>${esc(tempoTexto(min))}</td><td><span class="pill ${statusClasse(status)}">${esc(status)}</span></td><td>${esc(l.origem||"-")}</td></tr>`}).join(""):'<tr><td colspan="8" class="empty">Nenhum log encontrado.</td></tr>'}
+function csvEsc(v){const s=String(v??"");return /[;"\n\r]/.test(s)?'"'+s.replaceAll('"','""')+'"':s}
+function exportar(){const linhas=[["Usuario","Email","Perfil","Login","Logout","Tempo Min","Status","Origem"].join(";")];FILTRADOS.forEach(l=>linhas.push([l.nome||l.Nome||"",l.email||l.Email||"",upper(l.perfil||l.Perfil),fmt(l.loginEm),fmt(l.logoutEm),tempoMin(l)??"",upper(l.status||"ABERTA"),l.origem||""].map(csvEsc).join(";")));const blob=new Blob(["\uFEFF"+linhas.join("\n")],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="log_acessos.csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
+async function carregar(){statusLinha.textContent="Buscando logs no Firebase...";tbodyLogs.innerHTML='<tr><td colspan="8" class="empty">Carregando...</td></tr>';try{let snap;try{snap=await getDocs(query(collection(db,"logs_acesso"),orderBy("loginEm","desc"),limit(2000)))}catch(_){snap=await getDocs(query(collection(db,"logs_acesso"),limit(2000)))}LOGS=snap.docs.map(d=>({id:d.id,...d.data()}));aplicarFiltros();statusLinha.textContent="Dados carregados com sucesso. Logs encontrados: "+LOGS.length+"."}catch(e){console.error(e);statusLinha.textContent="Erro ao carregar logs: "+(e?.message||"erro desconhecido");tbodyLogs.innerHTML='<tr><td colspan="8" class="empty">Erro ao carregar dados do Firebase.</td></tr>'}}
+const buscaEl=document.getElementById("busca");["dataIni","dataFim","busca","perfilFiltro","statusFiltro"].forEach(id=>document.getElementById(id).addEventListener("input",aplicarFiltros));btnAtualizar.addEventListener("click",carregar);btnExportar.addEventListener("click",exportar);setDefaultDates();if(validar())carregar();
+</script>
+</body>
+</html>
