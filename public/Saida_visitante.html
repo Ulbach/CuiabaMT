@@ -1,328 +1,603 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Saída Visitante — Delta</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/styles.css">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Saída Visitante - Delta Cuiabá</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --bg1:#061427;
+  --bg2:#0b1b33;
+  --card:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.12);
+  --text-main:#e6edf7;
+  --text-soft:#9fb4d3;
+  --accent:#22c55e;
+  --alert:#ef4444;
+  --warn:#ffb020;
+  --blue:#3b82f6;
+  --shadow:0 12px 28px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text-main);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  overflow-x:hidden;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:220px;
+  pointer-events:none;
+  background:linear-gradient(
+    to top,
+    rgba(34,197,94,.42) 0%,
+    rgba(34,197,94,.20) 35%,
+    rgba(34,197,94,.08) 58%,
+    rgba(34,197,94,0) 100%
+  );
+  z-index:-1;
+}
+
+.hero-header{
+  width:100%;
+  height:180px;
+  background:
+    linear-gradient(180deg,rgba(6,20,39,.18),rgba(6,20,39,.65)),
+    url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
+    center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.hero-content{
+  width:100%;
+  max-width:520px;
+  margin-top:-16px;
+}
+
+.hero-content i{
+  font-size:26px;
+  color:var(--alert);
+  margin-bottom:8px;
+}
+
+.hero-content h2{
+  margin:0;
+  font-size:27px;
+  font-weight:900;
+  letter-spacing:.4px;
+  color:#fff;
+  text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);
+}
+
+.hero-content p{
+  margin:8px 0 0;
+  font-size:14px;
+  color:#dbeafe;
+  font-weight:800;
+}
+
+.session-wrap{
+  width:100%;
+  max-width:620px;
+  padding:0 20px;
+  margin-top:-14px;
+  margin-bottom:18px;
+  z-index:2;
+}
+
+.session-box{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:12px 14px;
+  box-shadow:var(--shadow);
+  font-size:13px;
+  color:var(--text-soft);
+  text-align:center;
+}
+
+.session-box strong{
+  color:var(--text-main);
+}
+
+.container{
+  width:100%;
+  max-width:620px;
+  padding:0 20px 12px;
+}
+
+.panel{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:18px;
+  box-shadow:var(--shadow);
+  min-height:130px;
+}
+
+.visitante-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:15px;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:rgba(255,255,255,.04);
+  margin-bottom:12px;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.visitante-item:hover{
+  transform:translateY(-2px);
+  border-color:rgba(239,68,68,.45);
+  box-shadow:0 0 18px rgba(239,68,68,.12);
+}
+
+.visitante-item.leaving{
+  opacity:.45;
+  transform:scale(.98);
+}
+
+.info{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-width:0;
+}
+
+.info b{
+  font-size:15px;
+  font-weight:900;
+  color:#fff;
+}
+
+.info span{
+  font-size:12px;
+  color:var(--text-soft);
+  line-height:1.35;
+}
+
+.info i{
+  width:16px;
+  color:var(--accent);
+}
+
+.btn-out-circle{
+  width:50px;
+  min-width:50px;
+  height:50px;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(239,68,68,.12);
+  border:1px solid rgba(239,68,68,.28);
+  color:var(--alert);
+  font-size:22px;
+}
+
+.empty-box{
+  text-align:center;
+  padding:50px 20px;
+  color:var(--text-soft);
+  font-size:14px;
+}
+
+.empty-box i{
+  font-size:34px;
+  margin-bottom:10px;
+  opacity:.4;
+  color:var(--accent);
+}
+
+.loading-box{
+  text-align:center;
+  padding:40px;
+  color:var(--text-soft);
+}
+
+.loading-box i{
+  font-size:24px;
+  margin-bottom:10px;
+}
+
+#msg_status{
+  min-height:24px;
+  margin-top:14px;
+  text-align:center;
+  font-size:13px;
+  font-weight:900;
+  color:var(--text-soft);
+}
+
+.footer-action{
+  width:100%;
+  max-width:620px;
+  padding:0 20px 36px;
+}
+
+.btn-back{
+  width:100%;
+  min-height:56px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  color:var(--text-soft);
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font-weight:900;
+  box-shadow:var(--shadow);
+  transition:.25s;
+}
+
+.btn-back:hover{
+  transform:translateY(-2px);
+  border-color:rgba(34,197,94,.45);
+  color:#fff;
+}
+
+@media(max-width:560px){
+  .hero-header{height:160px}
+  .hero-content h2{font-size:23px}
+  .panel{padding:14px}
+  .visitante-item{align-items:flex-start}
+}
+</style>
 </head>
+
 <body>
-  <div class="header-top">
+
+<div class="hero-header">
+  <div class="hero-content">
     <i class="fa-solid fa-person-walking-arrow-right"></i>
     <h2>Saída de Visitantes</h2>
-    <p>DELTA BIOCOMBUSTIVEIS</p>
+    <p>DELTA BIOCOMBUSTÍVEIS</p>
   </div>
+</div>
 
-  <div class="sessao">
-    <div class="sessao-box">Segurança logado: <strong id="sessaoSegurancaTopo" style="color:#e6edf7;">...</strong></div>
+<div class="session-wrap">
+  <div class="session-box">
+    Segurança logado: <strong id="sessaoSegurancaTopo">...</strong>
   </div>
+</div>
 
-  <div class="container">
+<div class="container">
+  <div class="panel">
     <div id="lista_ativos">
-      <div style="text-align:center; padding:40px; opacity:0.5;">
+      <div class="loading-box">
         <i class="fa-solid fa-circle-notch fa-spin"></i>
-        <span style="display:block; margin-top:10px; font-size:12px">Sincronizando com a portaria...</span>
+        <span style="display:block;margin-top:10px;font-size:12px">Buscando visitantes no Firebase...</span>
       </div>
     </div>
     <div id="msg_status"></div>
   </div>
+</div>
 
-  <div class="footer-action">
-    <a href="visitantes.html" class="btn-back" id="btnVoltarMenu">
-      <i class="fa-solid fa-chevron-left"></i>
-      Voltar ao Menu Principal
-    </a>
-  </div>
+<div class="footer-action">
+  <a href="visitantes.html" class="btn-back" id="btnVoltarMenu">
+    <i class="fa-solid fa-chevron-left"></i>
+    Voltar ao Menu Principal
+  </a>
+</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      query,
-      where,
-      orderBy,
-      doc,
-      updateDoc,
-      serverTimestamp,
-      Timestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
-      authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
-      projectId: "cuiaba-01617931-f126e",
-      storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
-      messagingSenderId: "797115279316",
-      appId: "1:797115279316:web:f229366de16d4e066e1841"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    const STORAGE_KEY = 'delta_auth_firebase_v1';
-    const STORAGE_KEY_LEGADO = 'delta_auth_v1';
+const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 
-    let cacheVisitantes = [];
-    let AUTH = null;
-    let inFlight = false;
+let cacheVisitantes = [];
+let AUTH = null;
+let inFlight = false;
 
-    function getAuth() {
-      try {
-        return JSON.parse(
-          localStorage.getItem(STORAGE_KEY) ||
-          localStorage.getItem(STORAGE_KEY_LEGADO) ||
-          'null'
-        );
-      } catch(_) {
-        return null;
-      }
+function getAuth() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(STORAGE_KEY_LEGADO) ||
+      'null'
+    );
+  } catch(_) {
+    return null;
+  }
+}
+
+function clearAuth() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+}
+
+function nomeAuth(auth){
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || 'OPERADOR').trim().toUpperCase();
+}
+
+function tokenAuth(auth){
+  return auth?.token || auth?.id || auth?.Sen_Segura || '';
+}
+
+function sessaoValidaLocal(auth){
+  if(!auth) return false;
+  if(!nomeAuth(auth)) return false;
+  if(!(tokenAuth(auth) || auth.Perfil || auth.perfil)) return false;
+  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return true;
+}
+
+async function validarSessaoOuRedirecionar() {
+  const auth = getAuth();
+
+  if(!sessaoValidaLocal(auth)){
+    clearAuth();
+    location.href='index.html';
+    return null;
+  }
+
+  return {
+    ...auth,
+    seguranca: nomeAuth(auth),
+    Perfil: perfilAuth(auth)
+  };
+}
+
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function toDate(v){
+  if(!v) return null;
+  if(v.toDate){
+    try { return v.toDate(); } catch(_) { return null; }
+  }
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+
+function formatarDataHora(v){
+  const d = toDate(v);
+  if(!d) return '-';
+  return d.toLocaleString('pt-BR', {
+    day:'2-digit',
+    month:'2-digit',
+    year:'numeric',
+    hour:'2-digit',
+    minute:'2-digit'
+  });
+}
+
+function calcularTempoMin(dataEntrada, dataSaida){
+  const entrada = toDate(dataEntrada);
+  const saida = dataSaida ? toDate(dataSaida) : new Date();
+
+  if(!entrada || !saida) return 0;
+
+  return Math.max(0, Math.round((saida - entrada) / 60000));
+}
+
+function tempoTexto(min){
+  min = Number(min || 0);
+
+  if(min < 60) return min + ' min';
+
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+
+  return `${h}h ${String(m).padStart(2,'0')}min`;
+}
+
+function setMsg(texto, cor){
+  const msg = document.getElementById('msg_status');
+  msg.style.color = cor || 'var(--text-soft)';
+  msg.innerText = texto || '';
+}
+
+async function carregarAtivos() {
+  const container = document.getElementById('lista_ativos');
+  container.innerHTML = `
+    <div class="loading-box">
+      <i class="fa-solid fa-circle-notch fa-spin"></i>
+      <span style="display:block;margin-top:10px;font-size:12px">Buscando visitantes no Firebase...</span>
+    </div>
+  `;
+
+  try {
+    const qAtivos = query(
+      collection(db,'visitantes'),
+      where('status','==','EM_VISITA'),
+      orderBy('dataEntrada','desc')
+    );
+
+    const snap = await getDocs(qAtivos);
+
+    cacheVisitantes = snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+
+    renderizarLista();
+
+  } catch (e) {
+    console.error(e);
+
+    try {
+      const snap = await getDocs(collection(db,'visitantes'));
+
+      cacheVisitantes = snap.docs
+        .map(d => ({ id:d.id, ...d.data() }))
+        .filter(v => v.status === 'EM_VISITA')
+        .sort((a,b) => {
+          const da = toDate(a.dataEntrada);
+          const dbb = toDate(b.dataEntrada);
+          return (dbb ? dbb.getTime() : 0) - (da ? da.getTime() : 0);
+        });
+
+      renderizarLista();
+
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `<div class="empty-box" style="color:var(--alert);">Falha ao carregar visitantes do Firebase.</div>`;
     }
+  }
+}
 
-    function clearAuth() {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_KEY_LEGADO);
-    }
+function renderizarLista() {
+  const container = document.getElementById('lista_ativos');
 
-    function nomeAuth(auth){
-      return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
-    }
+  if (cacheVisitantes.length === 0) {
+    container.innerHTML = `
+      <div class="empty-box">
+        <i class="fa-solid fa-check-circle"></i><br>
+        Nenhum visitante ativo.
+      </div>
+    `;
+    return;
+  }
 
-    function perfilAuth(auth){
-      return String(auth?.Perfil || auth?.perfil || '').trim().toUpperCase();
-    }
+  container.innerHTML = cacheVisitantes.map(v => {
+    const tempoAtual = calcularTempoMin(v.dataEntrada, null);
 
-    function sessaoValidaLocal(auth){
-      if(!auth) return false;
-      if(!nomeAuth(auth)) return false;
-      if(!perfilAuth(auth)) return false;
-      if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
-      return true;
-    }
-
-    async function validarSessaoOuRedirecionar() {
-      const auth = getAuth();
-
-      if(!sessaoValidaLocal(auth)){
-        clearAuth();
-        location.href='index.html';
-        return null;
-      }
-
-      return {
-        ...auth,
-        seguranca: nomeAuth(auth),
-        Perfil: perfilAuth(auth)
-      };
-    }
-
-    function esc(v){
-      return String(v == null ? '' : v)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#39;');
-    }
-
-    function toDate(v){
-      if(!v) return null;
-      if(v.toDate){
-        try { return v.toDate(); } catch(_) { return null; }
-      }
-      const d = new Date(v);
-      return isNaN(d) ? null : d;
-    }
-
-    function formatarDataHora(v){
-      const d = toDate(v);
-      if(!d) return '-';
-      return d.toLocaleString('pt-BR', {
-        day:'2-digit',
-        month:'2-digit',
-        year:'numeric',
-        hour:'2-digit',
-        minute:'2-digit'
-      });
-    }
-
-    function calcularTempoMin(dataEntrada, dataSaida){
-      const entrada = toDate(dataEntrada);
-      const saida = dataSaida ? toDate(dataSaida) : new Date();
-
-      if(!entrada || !saida) return 0;
-
-      return Math.max(0, Math.round((saida - entrada) / 60000));
-    }
-
-    function tempoTexto(min){
-      min = Number(min || 0);
-
-      if(min < 60) return min + ' min';
-
-      const h = Math.floor(min / 60);
-      const m = min % 60;
-
-      return `${h}h ${String(m).padStart(2,'0')}min`;
-    }
-
-    function setMsg(texto, cor){
-      const msg = document.getElementById('msg_status');
-      msg.style.color = cor || 'var(--text-soft)';
-      msg.innerText = texto || '';
-    }
-
-    async function carregarAtivos() {
-      const container = document.getElementById('lista_ativos');
-      container.innerHTML = `
-        <div style="text-align:center; padding:40px; opacity:0.5;">
-          <i class="fa-solid fa-circle-notch fa-spin"></i>
-          <span style="display:block; margin-top:10px; font-size:12px">Buscando visitantes no Firebase...</span>
+    return `
+      <div class="visitante-item" id="item-${esc(v.id)}" onclick="darBaixa('${esc(v.id)}')">
+        <div class="info">
+          <b>${esc(v.nome || '-')}</b>
+          <span><i class="fa-solid fa-id-card"></i> CPF: ${esc(v.cpf || '-')}</span>
+          <span><i class="fa-solid fa-user-group"></i> Responsável: ${esc(v.responsavel || '-')}</span>
+          <span><i class="fa-solid fa-clock"></i> Entrada: ${esc(formatarDataHora(v.dataEntrada))} • ${esc(tempoTexto(tempoAtual))}</span>
         </div>
-      `;
+        <div class="btn-out-circle"><i class="fa-solid fa-door-open"></i></div>
+      </div>
+    `;
+  }).join('');
+}
 
-      try {
-        const qAtivos = query(
-          collection(db,'visitantes'),
-          where('status','==','EM_VISITA'),
-          orderBy('dataEntrada','desc')
-        );
+async function darBaixa(id) {
+  if(inFlight) return;
 
-        const snap = await getDocs(qAtivos);
+  const visitante = cacheVisitantes.find(v => v.id === id);
+  if(!visitante) return;
 
-        cacheVisitantes = snap.docs.map(d => ({
-          id: d.id,
-          ...d.data()
-        }));
+  const nome = visitante.nome || 'visitante';
 
-        renderizarLista();
+  if(!confirm(`Registrar saída definitiva de ${nome}?`)) return;
 
-      } catch (e) {
-        console.error(e);
+  inFlight = true;
 
-        try {
-          const snap = await getDocs(collection(db,'visitantes'));
-          cacheVisitantes = snap.docs
-            .map(d => ({ id:d.id, ...d.data() }))
-            .filter(v => v.status === 'EM_VISITA')
-            .sort((a,b) => {
-              const da = toDate(a.dataEntrada);
-              const db = toDate(b.dataEntrada);
-              return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
-            });
+  const item = document.getElementById(`item-${id}`);
 
-          renderizarLista();
+  if (item) item.classList.add('leaving');
 
-        } catch (err) {
-          console.error(err);
-          container.innerHTML = `<div style="color:var(--red); text-align:center; padding:20px;">Falha ao carregar visitantes do Firebase.</div>`;
-        }
-      }
-    }
+  setMsg('Registrando saída no Firebase...', 'var(--accent)');
 
-    function renderizarLista() {
-      const container = document.getElementById('lista_ativos');
+  try {
+    const agora = new Date();
+    const tempoMin = calcularTempoMin(visitante.dataEntrada, agora);
 
-      if (cacheVisitantes.length === 0) {
-        container.innerHTML = `
-          <div style="text-align:center; padding:60px; color:var(--text-muted); font-size:14px;">
-            <i class="fa-solid fa-check-circle" style="font-size:30px; margin-bottom:10px; opacity:0.3"></i><br>
-            Nenhum visitante ativo.
-          </div>
-        `;
-        return;
-      }
+    await updateDoc(doc(db,'visitantes',id), {
+      status: 'FINALIZADO',
+      dataSaida: Timestamp.fromDate(agora),
+      tempoPermanenciaMin: tempoMin,
+      segurancaSaida: AUTH.seguranca || AUTH.Nome || '---',
+      atualizadoEm: serverTimestamp()
+    });
 
-      container.innerHTML = cacheVisitantes.map(v => {
-        const tempoAtual = calcularTempoMin(v.dataEntrada, null);
+    setMsg(`Saída confirmada com sucesso! Permanência: ${tempoTexto(tempoMin)}.`, 'var(--accent)');
 
-        return `
-          <div class="visitante-item" id="item-${esc(v.id)}" onclick="darBaixa('${esc(v.id)}')">
-            <div class="info">
-              <b>${esc(v.nome || '-')}</b>
-              <span><i class="fa-solid fa-id-card"></i> CPF: ${esc(v.cpf || '-')}</span>
-              <span><i class="fa-solid fa-user-group"></i> Responsável: ${esc(v.responsavel || '-')}</span>
-              <span><i class="fa-solid fa-clock"></i> Entrada: ${esc(formatarDataHora(v.dataEntrada))} • ${esc(tempoTexto(tempoAtual))}</span>
-            </div>
-            <div class="btn-out-circle"><i class="fa-solid fa-door-open"></i></div>
-          </div>
-        `;
-      }).join('');
-    }
+    cacheVisitantes = cacheVisitantes.filter(v => v.id !== id);
 
-    async function darBaixa(id) {
-      if(inFlight) return;
+    setTimeout(() => {
+      if(item) item.remove();
+      if(cacheVisitantes.length === 0) renderizarLista();
+      setMsg('');
+      inFlight = false;
+    }, 650);
 
-      const visitante = cacheVisitantes.find(v => v.id === id);
-      if(!visitante) return;
+  } catch(e) {
+    console.error(e);
 
-      const nome = visitante.nome || 'visitante';
+    if(item) item.classList.remove('leaving');
 
-      if(!confirm(`Registrar saída definitiva de ${nome}?`)) return;
+    setMsg('Erro ao processar saída. Tente novamente.', 'var(--alert)');
+    inFlight = false;
+  }
+}
 
-      inFlight = true;
+window.darBaixa = darBaixa;
 
-      const item = document.getElementById(`item-${id}`);
+window.onload = async function() {
+  AUTH = await validarSessaoOuRedirecionar();
 
-      if (item) item.classList.add('leaving');
+  if (!AUTH) return;
 
-      setMsg('Registrando saída no Firebase...', 'var(--green)');
+  document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || '---';
 
-      try {
-        const agora = new Date();
-        const tempoMin = calcularTempoMin(visitante.dataEntrada, agora);
+  const btn = document.getElementById('btnVoltarMenu');
 
-        await updateDoc(doc(db,'visitantes',id), {
-          status: 'FINALIZADO',
-          dataSaida: Timestamp.fromDate(agora),
-          tempoPermanenciaMin: tempoMin,
-          segurancaSaida: AUTH.seguranca || AUTH.Nome || '---',
-          atualizadoEm: serverTimestamp()
-        });
+  if (btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      location.href = 'visitantes.html';
+    });
+  }
 
-        setMsg(`Saída confirmada com sucesso! Permanência: ${tempoTexto(tempoMin)}.`, 'var(--green)');
+  carregarAtivos();
+};
+</script>
 
-        cacheVisitantes = cacheVisitantes.filter(v => v.id !== id);
-
-        setTimeout(() => {
-          if(item) item.remove();
-          if(cacheVisitantes.length === 0) renderizarLista();
-          setMsg('');
-          inFlight = false;
-        }, 550);
-
-      } catch(e) {
-        console.error(e);
-
-        if(item) item.classList.remove('leaving');
-
-        setMsg('Erro ao processar saída. Tente novamente.', 'var(--red)');
-        inFlight = false;
-      }
-    }
-
-    window.darBaixa = darBaixa;
-
-    window.onload = async function() {
-      AUTH = await validarSessaoOuRedirecionar();
-
-      if (!AUTH) return;
-
-      document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || '---';
-
-      const btn = document.getElementById('btnVoltarMenu');
-
-      if (btn) {
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          location.href = 'visitantes.html';
-        });
-      }
-
-      carregarAtivos();
-    };
-  </script>
 </body>
 </html>

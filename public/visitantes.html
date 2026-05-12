@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Gestão de Visitantes - Delta Cuiabá</title>
+<title>Gestão de Visitantes - Delta Cuiabá MT</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -17,6 +17,7 @@
   --accent:#22c55e;
   --alert:#ef4444;
   --blue:#3b82f6;
+  --warn:#f59e0b;
   --shadow:0 12px 28px rgba(0,0,0,.35);
 }
 
@@ -68,7 +69,7 @@ body::after{
 
 .hero-content{
   width:100%;
-  max-width:500px;
+  max-width:520px;
   margin-top:-20px;
 }
 
@@ -97,12 +98,12 @@ body::after{
   margin:8px 0 0;
   font-size:14px;
   color:#e6edf7;
-  font-weight:700;
+  font-weight:800;
 }
 
 .session-wrap{
   width:100%;
-  max-width:500px;
+  max-width:520px;
   padding:0 20px;
   margin-top:-14px;
   margin-bottom:18px;
@@ -140,19 +141,17 @@ body::after{
   cursor:pointer;
 }
 
-.card{
+.main{
   width:100%;
-  max-width:500px;
-  background:transparent;
-  border:none;
-  padding:0 20px;
+  max-width:520px;
+  padding:0 20px 38px;
 }
 
 .menu-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:15px;
-  margin-bottom:24px;
+  margin-bottom:18px;
 }
 
 .btn-nav{
@@ -185,15 +184,10 @@ body::after{
   font-size:34px;
 }
 
-.btn-entrada i{
-  color:var(--accent);
-}
+.btn-entrada i{color:var(--accent)}
+.btn-saida i{color:var(--alert)}
 
-.btn-saida i{
-  color:var(--alert);
-}
-
-.btn-back{
+.btn-report,.btn-back{
   width:100%;
   min-height:58px;
   background:var(--card);
@@ -205,19 +199,161 @@ body::after{
   align-items:center;
   justify-content:center;
   gap:10px;
-  font-weight:800;
+  font-weight:900;
   box-shadow:var(--shadow);
   transition:.25s;
+  margin-bottom:14px;
 }
 
-.btn-back:hover{
+.btn-report{
+  color:#e6edf7;
+}
+
+.btn-report i{
+  color:var(--blue);
+}
+
+.btn-back{
+  margin-bottom:0;
+}
+
+.btn-report:hover,.btn-back:hover{
   transform:translateY(-2px);
   border-color:rgba(34,197,94,.45);
   color:#fff;
 }
 
+.section-title{
+  font-size:13px;
+  font-weight:900;
+  color:var(--text-soft);
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin:22px 0 12px;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+  margin-bottom:18px;
+}
+
+.stat{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:13px;
+  box-shadow:var(--shadow);
+  min-height:82px;
+}
+
+.stat .label{
+  font-size:10px;
+  text-transform:uppercase;
+  color:var(--text-soft);
+  font-weight:900;
+}
+
+.stat .value{
+  margin-top:6px;
+  font-size:24px;
+  font-weight:900;
+}
+
+.stat .sub{
+  margin-top:2px;
+  font-size:11px;
+  color:var(--text-soft);
+}
+
+.list-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.item{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  box-shadow:var(--shadow);
+}
+
+.item-ico{
+  width:44px;
+  min-width:44px;
+  height:44px;
+  border-radius:14px;
+  background:rgba(255,255,255,.05);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--blue);
+  font-size:18px;
+}
+
+.item-main{
+  flex:1;
+  min-width:0;
+}
+
+.item-title{
+  font-weight:900;
+  font-size:14px;
+  color:#fff;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.item-sub{
+  margin-top:3px;
+  font-size:12px;
+  color:var(--text-soft);
+  line-height:1.35;
+}
+
+.tag{
+  font-size:10px;
+  font-weight:900;
+  padding:5px 8px;
+  border-radius:999px;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+
+.tag-ativo{
+  background:rgba(245,158,11,.13);
+  color:var(--warn);
+  border:1px solid rgba(245,158,11,.30);
+}
+
+.tag-final{
+  background:rgba(34,197,94,.13);
+  color:var(--accent);
+  border:1px solid rgba(34,197,94,.30);
+}
+
+.loading{
+  text-align:center;
+  padding:26px;
+  color:var(--text-soft);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+}
+
 @media(max-width:560px){
   .menu-grid{
+    grid-template-columns:1fr;
+  }
+
+  .stats-grid{
     grid-template-columns:1fr;
   }
 
@@ -238,7 +374,7 @@ body::after{
   <div class="hero-content">
     <span class="badge">Acesso Controlado</span>
     <h2>Portaria Visitantes</h2>
-    <p>Delta Biocombustíveis</p>
+    <p>Delta Cuiabá MT</p>
   </div>
 </div>
 
@@ -251,7 +387,7 @@ body::after{
   </div>
 </div>
 
-<div class="card">
+<div class="main">
   <div class="menu-grid">
     <a href="Entrada_visitante.html" class="btn-nav btn-entrada">
       <i class="fa-solid fa-user-plus"></i>
@@ -264,16 +400,57 @@ body::after{
     </a>
   </div>
 
+  <a href="relatorio_visitantes.html" class="btn-report" id="btnRelatorioVisitas">
+    <i class="fa-solid fa-chart-column"></i>
+    Relatório de Visitas
+  </a>
+
   <a href="index.html" class="btn-back" id="btnMenuPrincipal">
     <i class="fa-solid fa-house"></i>
     Menu Principal
   </a>
+
+  <div class="section-title">Resumo de Visitantes</div>
+
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="label">Hoje</div>
+      <div class="value" id="stHoje">0</div>
+      <div class="sub">Entradas</div>
+    </div>
+
+    <div class="stat">
+      <div class="label">Ativos</div>
+      <div class="value" id="stAtivos">0</div>
+      <div class="sub">Em visita</div>
+    </div>
+
+    <div class="stat">
+      <div class="label">Finalizados</div>
+      <div class="value" id="stFinalizados">0</div>
+      <div class="sub">Saídas hoje</div>
+    </div>
+  </div>
+
+  <div class="section-title">Últimas 10 visitas</div>
+
+  <div id="listaRecentes" class="list-wrap">
+    <div class="loading">
+      <i class="fa-solid fa-circle-notch fa-spin"></i><br>
+      Carregando registros...
+    </div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
   doc,
   updateDoc,
   serverTimestamp
@@ -329,11 +506,9 @@ function tokenAuth(auth){
 
 function sessaoValidaLocal(auth){
   if(!auth) return false;
-
   const temNome = !!nomeAuth(auth);
   const temTokenOuPerfil = !!(tokenAuth(auth) || auth.Perfil || auth.perfil);
   const validadeOk = !auth.expiraEm || Number(auth.expiraEm) > Date.now();
-
   return !!(temNome && temTokenOuPerfil && validadeOk);
 }
 
@@ -341,7 +516,6 @@ async function validarSessaoOuRedirecionar(){
   const auth = getAuth();
 
   if(!sessaoValidaLocal(auth)){
-    console.warn('Sessão inválida em visitantes.html:', auth);
     clearAuth();
     location.href = 'index.html';
     return null;
@@ -385,6 +559,103 @@ window.logoutSistema = async function(){
   location.href = 'index.html';
 };
 
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function toDate(v){
+  if(!v) return null;
+  if(v.toDate){
+    try { return v.toDate(); } catch(_) { return null; }
+  }
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+
+function fmt(v){
+  const d = toDate(v);
+  if(!d) return '-';
+  return d.toLocaleString('pt-BR',{
+    day:'2-digit',
+    month:'2-digit',
+    year:'numeric',
+    hour:'2-digit',
+    minute:'2-digit'
+  });
+}
+
+function isHoje(v){
+  const d = toDate(v);
+  if(!d) return false;
+  const h = new Date();
+  return d.getFullYear() === h.getFullYear() &&
+         d.getMonth() === h.getMonth() &&
+         d.getDate() === h.getDate();
+}
+
+function renderRecentes(lista){
+  const wrap = document.getElementById('listaRecentes');
+
+  const recentes = lista.slice(0,10);
+
+  if(!recentes.length){
+    wrap.innerHTML = '<div class="loading">Nenhuma visita encontrada.</div>';
+    return;
+  }
+
+  wrap.innerHTML = recentes.map(v => {
+    const ativo = v.status === 'EM_VISITA';
+    return `
+      <div class="item">
+        <div class="item-ico"><i class="fa-solid fa-user"></i></div>
+        <div class="item-main">
+          <div class="item-title">${esc(v.nome || '-')}</div>
+          <div class="item-sub">
+            ${esc(v.responsavel || '-')}<br>
+            Entrada: ${esc(fmt(v.dataEntrada))}
+          </div>
+        </div>
+        <div class="tag ${ativo ? 'tag-ativo' : 'tag-final'}">${ativo ? 'EM VISITA' : 'FINALIZADO'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function carregarResumo(){
+  try{
+    let snap;
+
+    try{
+      snap = await getDocs(query(collection(db,'visitantes'), orderBy('dataEntrada','desc'), limit(80)));
+    }catch(_){
+      snap = await getDocs(collection(db,'visitantes'));
+    }
+
+    const lista = snap.docs
+      .map(d => ({id:d.id,...d.data()}))
+      .filter(v => v && v.Modelo !== true);
+
+    const hoje = lista.filter(v => isHoje(v.dataEntrada)).length;
+    const ativos = lista.filter(v => v.status === 'EM_VISITA').length;
+    const finalizadosHoje = lista.filter(v => v.status === 'FINALIZADO' && isHoje(v.dataSaida)).length;
+
+    document.getElementById('stHoje').textContent = hoje;
+    document.getElementById('stAtivos').textContent = ativos;
+    document.getElementById('stFinalizados').textContent = finalizadosHoje;
+
+    renderRecentes(lista);
+
+  }catch(e){
+    console.error(e);
+    document.getElementById('listaRecentes').innerHTML = '<div class="loading">Erro ao carregar resumo de visitantes.</div>';
+  }
+}
+
 window.onload = async function(){
   const auth = await validarSessaoOuRedirecionar();
   if(!auth) return;
@@ -399,6 +670,8 @@ window.onload = async function(){
       location.href = 'index.html';
     });
   }
+
+  carregarResumo();
 };
 </script>
 

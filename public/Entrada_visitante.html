@@ -1,366 +1,702 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Entrada Visitante — Delta</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/styles.css">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Entrada Visitante - Delta Cuiabá</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --bg1:#061427;
+  --bg2:#0b1b33;
+  --card:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.12);
+  --text-main:#e6edf7;
+  --text-soft:#9fb4d3;
+  --accent:#22c55e;
+  --alert:#ef4444;
+  --warn:#ffb020;
+  --blue:#3b82f6;
+  --shadow:0 12px 28px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text-main);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  overflow-x:hidden;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:220px;
+  pointer-events:none;
+  background:linear-gradient(
+    to top,
+    rgba(34,197,94,.42) 0%,
+    rgba(34,197,94,.20) 35%,
+    rgba(34,197,94,.08) 58%,
+    rgba(34,197,94,0) 100%
+  );
+  z-index:-1;
+}
+
+.hero-header{
+  width:100%;
+  height:180px;
+  background:
+    linear-gradient(180deg,rgba(6,20,39,.18),rgba(6,20,39,.65)),
+    url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
+    center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.hero-content{
+  width:100%;
+  max-width:520px;
+  margin-top:-16px;
+}
+
+.hero-content i{
+  font-size:26px;
+  color:var(--accent);
+  margin-bottom:8px;
+}
+
+.hero-content h2{
+  margin:0;
+  font-size:27px;
+  font-weight:900;
+  letter-spacing:.4px;
+  color:#fff;
+  text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);
+}
+
+.hero-content p{
+  margin:8px 0 0;
+  font-size:14px;
+  color:#dbeafe;
+  font-weight:800;
+}
+
+.session-wrap{
+  width:100%;
+  max-width:520px;
+  padding:0 20px;
+  margin-top:-14px;
+  margin-bottom:18px;
+  z-index:2;
+}
+
+.session-box{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:12px 14px;
+  box-shadow:var(--shadow);
+  font-size:13px;
+  color:var(--text-soft);
+  text-align:center;
+}
+
+.session-box strong{
+  color:var(--text-main);
+}
+
+.form-container{
+  width:100%;
+  max-width:520px;
+  padding:0 20px 12px;
+}
+
+.card-form{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:22px;
+  box-shadow:var(--shadow);
+}
+
+.field{
+  margin-bottom:15px;
+  position:relative;
+}
+
+label{
+  display:block;
+  margin-bottom:7px;
+  font-size:12px;
+  font-weight:900;
+  color:var(--text-soft);
+  text-transform:uppercase;
+  letter-spacing:.7px;
+}
+
+.input-group{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:0 13px;
+}
+
+.input-group i{
+  color:var(--text-soft);
+  width:18px;
+  text-align:center;
+}
+
+.input-group input{
+  flex:1;
+  min-width:0;
+  border:none;
+  background:transparent;
+  color:#fff;
+  padding:15px 0;
+  font-size:16px;
+  outline:none;
+  text-transform:uppercase;
+}
+
+.input-group input::placeholder{
+  color:#6f83a3;
+  text-transform:none;
+}
+
+.input-group:focus-within{
+  border-color:#2a9d63;
+  box-shadow:0 0 0 3px rgba(34,197,94,.10);
+}
+
+.sugestoes{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  z-index:20;
+  margin-top:6px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:#071426;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+
+.sugestao-item{
+  padding:12px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  color:var(--text-main);
+  cursor:pointer;
+  font-weight:800;
+  font-size:13px;
+}
+
+.sugestao-item:last-child{
+  border-bottom:none;
+}
+
+.sugestao-item:hover{
+  background:rgba(34,197,94,.12);
+}
+
+.btn-save{
+  width:100%;
+  min-height:56px;
+  border:none;
+  border-radius:18px;
+  padding:16px 18px;
+  background:rgba(255,255,255,.08);
+  color:#7388a8;
+  font-size:16px;
+  font-weight:900;
+  cursor:not-allowed;
+  transition:.25s;
+}
+
+.btn-save.ready{
+  background:var(--accent);
+  color:#061427;
+  cursor:pointer;
+}
+
+.btn-save.ready:hover{
+  transform:translateY(-2px);
+  box-shadow:0 0 18px rgba(34,197,94,.20);
+}
+
+#msg{
+  min-height:22px;
+  margin-top:14px;
+  font-size:13px;
+  font-weight:900;
+  text-align:center;
+  color:var(--text-soft);
+}
+
+.footer-action{
+  width:100%;
+  max-width:520px;
+  padding:0 20px 36px;
+}
+
+.btn-back{
+  width:100%;
+  min-height:56px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  color:var(--text-soft);
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font-weight:900;
+  box-shadow:var(--shadow);
+  transition:.25s;
+}
+
+.btn-back:hover{
+  transform:translateY(-2px);
+  border-color:rgba(34,197,94,.45);
+  color:#fff;
+}
+
+@media(max-width:560px){
+  .hero-header{height:160px}
+  .hero-content h2{font-size:23px}
+  .card-form{padding:18px}
+}
+</style>
 </head>
+
 <body>
-  <div class="header-top">
+
+<div class="hero-header">
+  <div class="hero-content">
     <i class="fa-solid fa-person-walking-luggage"></i>
     <h2>Entrada de Visitantes</h2>
-    <p>DELTA BIOCOMBUSTIVEIS</p>
+    <p>DELTA BIOCOMBUSTÍVEIS</p>
   </div>
+</div>
 
-  <div class="sessao">
-    <div class="sessao-box">Segurança logado: <strong id="sessaoSegurancaTopo" style="color:#e6edf7;">...</strong></div>
+<div class="session-wrap">
+  <div class="session-box">
+    Segurança logado: <strong id="sessaoSegurancaTopo">...</strong>
   </div>
+</div>
 
-  <div class="form-container">
+<div class="form-container">
+  <div class="card-form">
+
     <div class="field">
-      <label for="cpf">CPF (apenas números)</label>
-      <div class="input-group"><i class="fa-solid fa-id-card"></i><input type="text" id="cpf" maxlength="14" placeholder="000.000.000-00" oninput="onCpfInput()"></div>
+      <label for="cpf">CPF</label>
+      <div class="input-group">
+        <i class="fa-solid fa-id-card"></i>
+        <input type="text" id="cpf" maxlength="14" placeholder="000.000.000-00" oninput="onCpfInput()">
+      </div>
       <div class="sugestoes" id="sugestoes_cpf" style="display:none;"></div>
     </div>
+
     <div class="field">
-      <label for="nome">Nome Completo</label>
-      <div class="input-group"><i class="fa-solid fa-user"></i><input type="text" id="nome" placeholder="Nome do visitante" oninput="onAnyInput()"></div>
+      <label for="nome">Nome Completo *</label>
+      <div class="input-group">
+        <i class="fa-solid fa-user"></i>
+        <input type="text" id="nome" placeholder="Nome do visitante" oninput="onAnyInput()">
+      </div>
     </div>
+
     <div class="field">
-      <label for="telefone">Telefone/Contato</label>
-      <div class="input-group"><i class="fa-solid fa-phone"></i><input type="text" id="telefone" maxlength="15" placeholder="(67) 99999-9999" oninput="onTelefoneInput()"></div>
+      <label for="telefone">Telefone / Contato</label>
+      <div class="input-group">
+        <i class="fa-solid fa-phone"></i>
+        <input type="text" id="telefone" maxlength="15" placeholder="(67) 99999-9999" oninput="onTelefoneInput()">
+      </div>
     </div>
+
     <div class="field">
-      <label for="responsavel">Responsável na Empresa</label>
-      <div class="input-group"><i class="fa-solid fa-user-group"></i><input type="text" id="responsavel" placeholder="Quem irá receber?" list="lista_responsaveis" oninput="onAnyInput()"></div>
+      <label for="responsavel">Responsável na Empresa *</label>
+      <div class="input-group">
+        <i class="fa-solid fa-user-group"></i>
+        <input type="text" id="responsavel" placeholder="Selecione ou digite o responsável" list="lista_responsaveis" oninput="onAnyInput()">
+      </div>
       <datalist id="lista_responsaveis"></datalist>
     </div>
+
     <button class="btn-save" id="btnSalvar" onclick="salvarEntrada()">Registrar Entrada</button>
-    <div id="msg"></div>
+    <div id="msg">Preencha nome e responsável para liberar o registro.</div>
+
   </div>
+</div>
 
-  <div class="footer-action">
-    <a href="visitantes.html" class="btn-back" id="btnVoltarMenu"><i class="fa-solid fa-chevron-left"></i> Voltar ao Menu Principal</a>
-  </div>
+<div class="footer-action">
+  <a href="visitantes.html" class="btn-back" id="btnVoltarMenu">
+    <i class="fa-solid fa-chevron-left"></i>
+    Voltar ao Menu Principal
+  </a>
+</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      query,
-      where,
-      orderBy,
-      limit,
-      addDoc,
-      serverTimestamp,
-      Timestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  addDoc,
+  serverTimestamp,
+  Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
-      authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
-      projectId: "cuiaba-01617931-f126e",
-      storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
-      messagingSenderId: "797115279316",
-      appId: "1:797115279316:web:f229366de16d4e066e1841"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    const STORAGE_KEY = 'delta_auth_firebase_v1';
-    const STORAGE_KEY_LEGADO = 'delta_auth_v1';
+const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 
-    let inFlight = false;
-    let cacheVisitantes = [];
-    let cacheResponsaveis = [];
-    let AUTH = null;
+let inFlight = false;
+let cacheVisitantes = [];
+let cacheResponsaveis = [];
+let AUTH = null;
 
-    function getAuth() {
-      try {
-        return JSON.parse(
-          localStorage.getItem(STORAGE_KEY) ||
-          localStorage.getItem(STORAGE_KEY_LEGADO) ||
-          'null'
-        );
-      } catch(_) {
-        return null;
-      }
+function getAuth() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(STORAGE_KEY_LEGADO) ||
+      'null'
+    );
+  } catch(_) {
+    return null;
+  }
+}
+
+function clearAuth() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+}
+
+function nomeAuth(auth){
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || 'OPERADOR').trim().toUpperCase();
+}
+
+function tokenAuth(auth){
+  return auth?.token || auth?.id || auth?.Sen_Segura || '';
+}
+
+function sessaoValidaLocal(auth){
+  if(!auth) return false;
+  if(!nomeAuth(auth)) return false;
+  if(!(tokenAuth(auth) || auth.Perfil || auth.perfil)) return false;
+  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return true;
+}
+
+async function validarSessaoOuRedirecionar() {
+  const auth = getAuth();
+
+  if(!sessaoValidaLocal(auth)){
+    clearAuth();
+    location.href='index.html';
+    return null;
+  }
+
+  return {
+    ...auth,
+    seguranca: nomeAuth(auth),
+    Perfil: perfilAuth(auth)
+  };
+}
+
+function somenteNumeros(v){
+  return String(v || '').replace(/\D/g,'');
+}
+
+function mascaraCPF(v){
+  v = somenteNumeros(v).slice(0,11);
+  v = v.replace(/(\d{3})(\d)/,'$1.$2');
+  v = v.replace(/(\d{3})(\d)/,'$1.$2');
+  v = v.replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  return v;
+}
+
+function mascaraTelefone(v){
+  v = somenteNumeros(v).slice(0,11);
+  if(v.length <= 10){
+    v = v.replace(/(\d{2})(\d)/,'($1) $2');
+    v = v.replace(/(\d{4})(\d)/,'$1-$2');
+  }else{
+    v = v.replace(/(\d{2})(\d)/,'($1) $2');
+    v = v.replace(/(\d{5})(\d)/,'$1-$2');
+  }
+  return v;
+}
+
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function setMsg(texto, cor){
+  const msg = document.getElementById('msg');
+  msg.style.color = cor || 'var(--text-soft)';
+  msg.innerText = texto || '';
+}
+
+function onTelefoneInput(){
+  const el = document.getElementById('telefone');
+  el.value = mascaraTelefone(el.value);
+  onAnyInput();
+}
+
+function onAnyInput() {
+  const btn = document.getElementById('btnSalvar');
+  const nome = document.getElementById('nome').value.trim();
+  const responsavel = document.getElementById('responsavel').value.trim();
+  btn.classList.toggle('ready', nome.length > 2 && responsavel.length > 1 && !inFlight);
+}
+
+function onCpfInput() {
+  const cpfEl = document.getElementById('cpf');
+  cpfEl.value = mascaraCPF(cpfEl.value);
+
+  const cpfLimpo = somenteNumeros(cpfEl.value);
+  const container = document.getElementById('sugestoes_cpf');
+
+  if (cpfLimpo.length < 3) {
+    container.style.display = 'none';
+    onAnyInput();
+    return;
+  }
+
+  const sugestoes = cacheVisitantes.filter(v => somenteNumeros(v.cpf).includes(cpfLimpo));
+
+  if (sugestoes.length === 0) {
+    container.style.display = 'none';
+    onAnyInput();
+    return;
+  }
+
+  const lista = sugestoes.slice(0,8);
+  window.__sugestoesAtuais = lista;
+
+  container.innerHTML = lista.map((s,idx) => `
+    <div class="sugestao-item" onclick="preencherForm(${idx})">
+      ${esc(s.nome)} (${esc(s.cpf || '-')})
+    </div>
+  `).join('');
+
+  container.style.display = 'block';
+  onAnyInput();
+}
+
+function preencherForm(idx) {
+  const visitante = (window.__sugestoesAtuais || [])[idx];
+  if (!visitante) return;
+
+  document.getElementById('cpf').value = mascaraCPF(visitante.cpf || '');
+  document.getElementById('nome').value = visitante.nome || '';
+  document.getElementById('telefone').value = mascaraTelefone(visitante.telefone || '');
+  document.getElementById('sugestoes_cpf').style.display = 'none';
+
+  onAnyInput();
+}
+
+async function visitanteEmAberto(cpf){
+  const cpfFormatado = mascaraCPF(cpf);
+
+  if(!cpfFormatado || somenteNumeros(cpfFormatado).length !== 11){
+    return false;
+  }
+
+  const qAberto = query(
+    collection(db,'visitantes'),
+    where('cpf','==',cpfFormatado),
+    where('status','==','EM_VISITA'),
+    limit(1)
+  );
+
+  const snap = await getDocs(qAberto);
+  return !snap.empty;
+}
+
+async function salvarEntrada() {
+  if (inFlight) return;
+
+  const btn = document.getElementById('btnSalvar');
+  if (!btn.classList.contains('ready')) return;
+
+  const cpf = mascaraCPF(document.getElementById('cpf').value);
+  const telefone = mascaraTelefone(document.getElementById('telefone').value);
+  const nome = document.getElementById('nome').value.trim().toUpperCase();
+  const responsavel = document.getElementById('responsavel').value.trim().toUpperCase();
+
+  if(!nome || nome.length < 3){
+    setMsg('Informe o nome do visitante.', 'var(--alert)');
+    return;
+  }
+
+  if(!responsavel || responsavel.length < 2){
+    setMsg('Informe o responsável na empresa.', 'var(--alert)');
+    return;
+  }
+
+  inFlight = true;
+  btn.classList.remove('ready');
+  setMsg('Registrando entrada no Firebase...', 'var(--text-soft)');
+
+  try {
+    const aberto = await visitanteEmAberto(cpf);
+    if(aberto){
+      throw new Error('Este CPF já possui visita em aberto. Registre a saída antes de nova entrada.');
     }
 
-    function clearAuth() {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_KEY_LEGADO);
-    }
+    const agora = new Date();
 
-    function nomeAuth(auth){
-      return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
-    }
+    await addDoc(collection(db,'visitantes'), {
+      cpf: cpf,
+      nome: nome,
+      telefone: telefone,
+      responsavel: responsavel,
+      status: 'EM_VISITA',
+      dataEntrada: Timestamp.fromDate(agora),
+      dataSaida: null,
+      dataReferencia: Timestamp.fromDate(new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 12, 0, 0)),
+      tempoPermanenciaMin: 0,
+      segurancaEntrada: AUTH.seguranca || AUTH.Nome || '---',
+      segurancaSaida: '',
+      criadoEm: serverTimestamp(),
+      atualizadoEm: null,
+      origem: 'Entrada_visitante.html'
+    });
 
-    function perfilAuth(auth){
-      return String(auth?.Perfil || auth?.perfil || '').trim().toUpperCase();
-    }
+    setMsg('Entrada registrada com sucesso!', 'var(--accent)');
 
-    function sessaoValidaLocal(auth){
-      if(!auth) return false;
-      if(!nomeAuth(auth)) return false;
-      if(!perfilAuth(auth)) return false;
-      if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
-      return true;
-    }
+    setTimeout(() => {
+      location.href = 'visitantes.html';
+    }, 1200);
 
-    async function validarSessaoOuRedirecionar() {
-      const auth = getAuth();
+  } catch (e) {
+    console.error(e);
+    setMsg(e.message || 'Falha ao salvar no Firebase.', 'var(--alert)');
+    inFlight = false;
+    onAnyInput();
+  }
+}
 
-      if(!sessaoValidaLocal(auth)){
-        clearAuth();
-        location.href='index.html';
-        return null;
-      }
+async function carregarVisitantesHistorico(){
+  try{
+    const snap = await getDocs(query(collection(db,'visitantes'), orderBy('dataEntrada','desc'), limit(300)));
+    const todos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
 
-      return {
-        ...auth,
-        seguranca: nomeAuth(auth),
-        Perfil: perfilAuth(auth)
-      };
-    }
+    const mapaCpf = new Map();
 
-    function somenteNumeros(v){
-      return String(v || '').replace(/\D/g,'');
-    }
-
-    function mascaraCPF(v){
-      v = somenteNumeros(v).slice(0,11);
-      v = v.replace(/(\d{3})(\d)/,'$1.$2');
-      v = v.replace(/(\d{3})(\d)/,'$1.$2');
-      v = v.replace(/(\d{3})(\d{1,2})$/,'$1-$2');
-      return v;
-    }
-
-    function mascaraTelefone(v){
-      v = somenteNumeros(v).slice(0,11);
-      if(v.length <= 10){
-        v = v.replace(/(\d{2})(\d)/,'($1) $2');
-        v = v.replace(/(\d{4})(\d)/,'$1-$2');
-      }else{
-        v = v.replace(/(\d{2})(\d)/,'($1) $2');
-        v = v.replace(/(\d{5})(\d)/,'$1-$2');
-      }
-      return v;
-    }
-
-    function esc(v){
-      return String(v == null ? '' : v)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#39;');
-    }
-
-    function setMsg(texto, cor){
-      const msg = document.getElementById('msg');
-      msg.style.color = cor || 'var(--text-soft)';
-      msg.innerText = texto || '';
-    }
-
-    function onTelefoneInput(){
-      const el = document.getElementById('telefone');
-      el.value = mascaraTelefone(el.value);
-      onAnyInput();
-    }
-
-    function onAnyInput() {
-      const btn = document.getElementById('btnSalvar');
-      const nome = document.getElementById('nome').value.trim();
-      const responsavel = document.getElementById('responsavel').value.trim();
-      btn.classList.toggle('ready', nome.length > 2 && responsavel.length > 1 && !inFlight);
-    }
-
-    function onCpfInput() {
-      const cpfEl = document.getElementById('cpf');
-      cpfEl.value = mascaraCPF(cpfEl.value);
-
-      const cpfLimpo = somenteNumeros(cpfEl.value);
-      const container = document.getElementById('sugestoes_cpf');
-
-      if (cpfLimpo.length < 3) {
-        container.style.display = 'none';
-        onAnyInput();
-        return;
-      }
-
-      const sugestoes = cacheVisitantes.filter(v => somenteNumeros(v.cpf).includes(cpfLimpo));
-
-      if (sugestoes.length === 0) {
-        container.style.display = 'none';
-        onAnyInput();
-        return;
-      }
-
-      container.innerHTML = sugestoes
-        .slice(0,8)
-        .map((s,idx) => `
-          <div class="sugestao-item" onclick="preencherForm(${idx})">
-            ${esc(s.nome)} (${esc(s.cpf || '-')})
-          </div>
-        `).join('');
-
-      window.__sugestoesAtuais = sugestoes.slice(0,8);
-      container.style.display = 'block';
-      onAnyInput();
-    }
-
-    function preencherForm(idx) {
-      const visitante = (window.__sugestoesAtuais || [])[idx];
-      if (!visitante) return;
-
-      document.getElementById('cpf').value = mascaraCPF(visitante.cpf || '');
-      document.getElementById('nome').value = visitante.nome || '';
-      document.getElementById('telefone').value = mascaraTelefone(visitante.telefone || '');
-      document.getElementById('sugestoes_cpf').style.display = 'none';
-
-      onAnyInput();
-    }
-
-    async function visitanteEmAberto(cpf){
-      const cpfFormatado = mascaraCPF(cpf);
-      const qAberto = query(
-        collection(db,'visitantes'),
-        where('cpf','==',cpfFormatado),
-        where('status','==','EM_VISITA'),
-        limit(1)
-      );
-
-      const snap = await getDocs(qAberto);
-      return !snap.empty;
-    }
-
-    async function salvarEntrada() {
-      if (inFlight) return;
-
-      const btn = document.getElementById('btnSalvar');
-      if (!btn.classList.contains('ready')) return;
-
-      const cpf = mascaraCPF(document.getElementById('cpf').value);
-      const telefone = mascaraTelefone(document.getElementById('telefone').value);
-      const nome = document.getElementById('nome').value.trim().toUpperCase();
-      const responsavel = document.getElementById('responsavel').value.trim().toUpperCase();
-
-      if(!nome || nome.length < 3){
-        setMsg('Informe o nome do visitante.', 'var(--red)');
-        return;
-      }
-
-      if(!responsavel || responsavel.length < 2){
-        setMsg('Informe o responsável na empresa.', 'var(--red)');
-        return;
-      }
-
-      inFlight = true;
-      btn.classList.remove('ready');
-      setMsg('Registrando entrada no Firebase...', 'var(--text-soft)');
-
-      try {
-        if(cpf && somenteNumeros(cpf).length === 11){
-          const aberto = await visitanteEmAberto(cpf);
-          if(aberto){
-            throw new Error('Este CPF já possui visita em aberto. Registre a saída antes de nova entrada.');
-          }
-        }
-
-        const agora = new Date();
-
-        await addDoc(collection(db,'visitantes'), {
-          cpf: cpf,
-          nome: nome,
-          telefone: telefone,
-          responsavel: responsavel,
-          status: 'EM_VISITA',
-          dataEntrada: Timestamp.fromDate(agora),
-          dataSaida: null,
-          dataReferencia: Timestamp.fromDate(new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 12, 0, 0)),
-          tempoPermanenciaMin: 0,
-          segurancaEntrada: AUTH.seguranca || AUTH.Nome || '---',
-          segurancaSaida: '',
-          criadoEm: serverTimestamp(),
-          atualizadoEm: null,
-          origem: 'Entrada_visitante.html'
+    todos.forEach(v => {
+      if(v.cpf && !mapaCpf.has(v.cpf)){
+        mapaCpf.set(v.cpf, {
+          cpf: v.cpf || '',
+          nome: v.nome || '',
+          telefone: v.telefone || ''
         });
-
-        setMsg('Entrada registrada com sucesso!', 'var(--green)');
-
-        setTimeout(() => {
-          location.href = 'visitantes.html';
-        }, 1200);
-
-      } catch (e) {
-        console.error(e);
-        setMsg(e.message || 'Falha ao salvar no Firebase.', 'var(--red)');
-        inFlight = false;
-        onAnyInput();
       }
+    });
+
+    cacheVisitantes = Array.from(mapaCpf.values());
+
+  }catch(e){
+    console.error(e);
+    setMsg('Falha ao carregar histórico de visitantes.', 'var(--alert)');
+  }
+}
+
+async function carregarResponsaveis(){
+  try{
+    let snap;
+
+    try{
+      snap = await getDocs(query(collection(db,'responsaveis'), where('ativo','==',true), orderBy('nome')));
+    }catch(_){
+      snap = await getDocs(collection(db,'responsaveis'));
     }
 
-    async function carregarDadosIniciais(){
-      try{
-        const snap = await getDocs(query(collection(db,'visitantes'), orderBy('dataEntrada','desc'), limit(300)));
+    cacheResponsaveis = snap.docs
+      .map(d => ({ id:d.id, ...d.data() }))
+      .filter(r => r && r.ativo === true && r.nome)
+      .map(r => r.nome)
+      .sort((a,b)=>a.localeCompare(b,'pt-BR'));
 
-        const todos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    const datalist = document.getElementById('lista_responsaveis');
+    datalist.innerHTML = cacheResponsaveis.map(r => `<option value="${esc(r)}"></option>`).join('');
 
-        const mapaCpf = new Map();
-        const setResponsaveis = new Set();
+  }catch(e){
+    console.error(e);
+    setMsg('Falha ao carregar responsáveis ativos.', 'var(--alert)');
+  }
+}
 
-        todos.forEach(v => {
-          if(v.cpf && !mapaCpf.has(v.cpf)){
-            mapaCpf.set(v.cpf, {
-              cpf: v.cpf || '',
-              nome: v.nome || '',
-              telefone: v.telefone || ''
-            });
-          }
+window.onAnyInput = onAnyInput;
+window.onCpfInput = onCpfInput;
+window.onTelefoneInput = onTelefoneInput;
+window.preencherForm = preencherForm;
+window.salvarEntrada = salvarEntrada;
 
-          if(v.responsavel){
-            setResponsaveis.add(v.responsavel);
-          }
-        });
+window.onload = async function() {
+  AUTH = await validarSessaoOuRedirecionar();
+  if (!AUTH) return;
 
-        cacheVisitantes = Array.from(mapaCpf.values());
-        cacheResponsaveis = Array.from(setResponsaveis).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || '---';
 
-        const datalist = document.getElementById('lista_responsaveis');
-        datalist.innerHTML = cacheResponsaveis.map(r => `<option value="${esc(r)}"></option>`).join('');
+  document.getElementById('btnVoltarMenu').addEventListener('click', e => {
+    e.preventDefault();
+    location.href = 'visitantes.html';
+  });
 
-      }catch(e){
-        console.error(e);
-        setMsg('Falha ao carregar histórico de visitantes.', 'var(--red)');
-      }
-    }
+  await Promise.all([
+    carregarVisitantesHistorico(),
+    carregarResponsaveis()
+  ]);
 
-    window.onAnyInput = onAnyInput;
-    window.onCpfInput = onCpfInput;
-    window.onTelefoneInput = onTelefoneInput;
-    window.preencherForm = preencherForm;
-    window.salvarEntrada = salvarEntrada;
+  onAnyInput();
+};
+</script>
 
-    window.onload = async function() {
-      AUTH = await validarSessaoOuRedirecionar();
-      if (!AUTH) return;
-
-      document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || '---';
-
-      document.getElementById('btnVoltarMenu').addEventListener('click', e => {
-        e.preventDefault();
-        location.href = 'visitantes.html';
-      });
-
-      await carregarDadosIniciais();
-      onAnyInput();
-    };
-  </script>
 </body>
 </html>

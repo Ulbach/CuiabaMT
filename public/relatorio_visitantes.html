@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Relatório de Visitas - Delta Cuiabá MT</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --bg1:#061427;
+  --bg2:#0b1b33;
+  --card:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.12);
+  --text-main:#e6edf7;
+  --text-soft:#9fb4d3;
+  --accent:#22c55e;
+  --alert:#ef4444;
+  --warn:#f59e0b;
+  --blue:#3b82f6;
+  --shadow:0 12px 28px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text-main);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:220px;
+  pointer-events:none;
+  background:linear-gradient(to top,rgba(34,197,94,.42),rgba(34,197,94,0));
+  z-index:-1;
+}
+
+.hero{
+  height:180px;
+  background:
+    linear-gradient(180deg,rgba(6,20,39,.18),rgba(6,20,39,.65)),
+    url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
+    center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.brand-title{
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:4px;
+  color:#fff;
+  text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);
+  text-transform:uppercase;
+}
+
+.brand-sub{
+  margin-top:10px;
+  font-size:18px;
+  font-weight:800;
+  color:#dbeafe;
+}
+
+.wrap{
+  width:100%;
+  max-width:1240px;
+  margin:0 auto;
+  padding:24px 16px 44px;
+}
+
+.top-actions,.card-head,.filters{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.top-actions{
+  justify-content:space-between;
+  margin-bottom:18px;
+}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:44px;
+  padding:10px 16px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.06);
+  color:var(--text-main);
+  text-decoration:none;
+  font-weight:900;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.btn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(34,197,94,.45);
+  box-shadow:0 0 18px rgba(34,197,94,.12);
+}
+
+.btn.primary{
+  background:var(--accent);
+  color:#031022;
+  border:none;
+}
+
+.btn.danger{
+  background:rgba(239,68,68,.14);
+  color:#fecaca;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  margin-bottom:18px;
+}
+
+.card-head{
+  justify-content:space-between;
+  padding:16px 18px;
+  border-bottom:1px solid var(--border);
+}
+
+.card-head h2{
+  margin:0;
+  font-size:18px;
+}
+
+.card-body{
+  padding:16px 18px;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+}
+
+.stat{
+  background:rgba(255,255,255,.055);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:16px;
+  min-height:108px;
+}
+
+.stat .label{
+  font-size:12px;
+  font-weight:900;
+  color:var(--text-soft);
+  text-transform:uppercase;
+}
+
+.stat .value{
+  font-size:30px;
+  font-weight:900;
+  margin-top:8px;
+}
+
+.stat .sub{
+  font-size:12px;
+  color:var(--text-soft);
+  margin-top:4px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.field label{
+  font-size:12px;
+  color:var(--text-soft);
+  font-weight:900;
+  text-transform:uppercase;
+}
+
+.field input,.field select{
+  min-height:42px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:#09172b;
+  color:#fff;
+  min-width:180px;
+}
+
+.table-wrap{
+  overflow:auto;
+  max-height:650px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:#061226;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+th,td{
+  padding:11px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  text-align:left;
+  white-space:nowrap;
+}
+
+th{
+  background:#09172b;
+  color:#9ed7b0;
+  text-transform:uppercase;
+  font-size:12px;
+  position:sticky;
+  top:0;
+}
+
+.empty{
+  text-align:center;
+  color:var(--text-soft);
+  padding:20px;
+}
+
+.pill{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  background:#0b1a30;
+  border:1px solid #12314d;
+}
+
+.ok{color:var(--accent)}
+.warn{color:var(--warn)}
+.danger2{color:var(--alert)}
+
+.status{
+  padding:13px 18px;
+  color:var(--text-soft);
+  font-size:14px;
+  border-top:1px solid var(--border);
+  background:rgba(255,255,255,.035);
+}
+
+.assinatura{
+  text-align:center;
+  margin-top:24px;
+  color:var(--text-soft);
+  font-size:13px;
+}
+
+@media(max-width:1080px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:720px){
+  .hero{height:150px}
+  .brand-title{font-size:22px}
+  .wrap{padding:18px 10px 34px}
+  .stats{grid-template-columns:1fr}
+  .filters{flex-direction:column;align-items:stretch}
+  .field input,.field select,.btn{width:100%;min-width:100%}
+  table{min-width:1100px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="hero">
+  <div>
+    <div class="brand-title">Delta Cuiabá MT</div>
+    <div class="brand-sub">Relatório de Visitas</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="top-actions">
+    <a class="btn" href="visitantes.html">
+      <i class="fa-solid fa-chevron-left"></i>
+      Voltar à Portaria
+    </a>
+
+    <button class="btn danger" type="button" onclick="logoutSistema()">
+      <i class="fa-solid fa-right-from-bracket"></i>
+      Sair
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2><i class="fa-solid fa-chart-column"></i> Resumo de Visitas</h2>
+
+      <div class="filters">
+        <button class="btn primary" id="btnExportar">
+          <i class="fa-solid fa-file-csv"></i>
+          Exportar CSV
+        </button>
+        <button class="btn" id="btnAtualizar">
+          <i class="fa-solid fa-rotate"></i>
+          Atualizar
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="stats">
+        <div class="stat"><div class="label">Total</div><div class="value" id="stTotal">0</div><div class="sub">No filtro</div></div>
+        <div class="stat"><div class="label">Hoje</div><div class="value" id="stHoje">0</div><div class="sub">Entradas hoje</div></div>
+        <div class="stat"><div class="label">Em Visita</div><div class="value" id="stAtivos">0</div><div class="sub">Ainda no local</div></div>
+        <div class="stat"><div class="label">Finalizados</div><div class="value" id="stFinalizados">0</div><div class="sub">Com saída</div></div>
+        <div class="stat"><div class="label">Tempo Médio</div><div class="value" id="stTempo">0</div><div class="sub">Minutos</div></div>
+      </div>
+    </div>
+
+    <div class="status" id="statusLinha">Carregando dados.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Filtros</h2>
+
+      <div class="filters">
+        <div class="field"><label>Data Inicial</label><input id="dataIni" type="date"></div>
+        <div class="field"><label>Data Final</label><input id="dataFim" type="date"></div>
+        <div class="field"><label>Buscar</label><input id="busca" type="text" placeholder="Nome, CPF ou responsável"></div>
+        <div class="field"><label>Status</label><select id="statusFiltro"><option value="">Todos</option><option value="EM_VISITA">Em visita</option><option value="FINALIZADO">Finalizado</option></select></div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Visitante</th>
+              <th>CPF</th>
+              <th>Telefone</th>
+              <th>Responsável</th>
+              <th>Entrada</th>
+              <th>Saída</th>
+              <th>Tempo</th>
+              <th>Status</th>
+              <th>Seg. Entrada</th>
+              <th>Seg. Saída</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyVisitas">
+            <tr><td colspan="10" class="empty">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="assinatura">Delta Cuiabá MT • Controle de Visitantes</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  doc,
+  updateDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
+const LOG_ID_KEY = 'delta_log_acesso_id_v1';
+const LOG_INICIO_KEY = 'delta_log_acesso_inicio_v1';
+
+let VISITAS = [];
+let FILTRADAS = [];
+
+function getAuth(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)||localStorage.getItem(STORAGE_KEY_LEGADO)||'null');
+  }catch(_){
+    return null;
+  }
+}
+
+function clearAuth(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+  localStorage.removeItem(LOG_ID_KEY);
+  localStorage.removeItem(LOG_INICIO_KEY);
+}
+
+function nomeAuth(a){return a?.Nome||a?.seguranca||a?.nome||a?.usuario||''}
+function perfilAuth(a){return String(a?.Perfil||a?.perfil||'OPERADOR').trim().toUpperCase()}
+function tokenAuth(a){return a?.token||a?.id||a?.Sen_Segura||''}
+
+function sessaoValidaLocal(a){
+  if(!a) return false;
+  if(!nomeAuth(a)) return false;
+  if(!(tokenAuth(a)||a.Perfil||a.perfil)) return false;
+  if(a.expiraEm && Number(a.expiraEm)<=Date.now()) return false;
+  return true;
+}
+
+function validar(){
+  const a=getAuth();
+
+  if(!sessaoValidaLocal(a)){
+    clearAuth();
+    location.href='index.html';
+    return null;
+  }
+
+  return a;
+}
+
+async function registrarLogout(statusFinal='FINALIZADA'){
+  try{
+    const logId=localStorage.getItem(LOG_ID_KEY);
+    const inicioMs=Number(localStorage.getItem(LOG_INICIO_KEY)||0);
+
+    if(!logId) return;
+
+    const fimMs=Date.now();
+    const tempoMin=inicioMs ? Math.max(0,Math.round((fimMs-inicioMs)/60000)) : null;
+
+    await updateDoc(doc(db,'logs_acesso',logId),{
+      logoutEm:serverTimestamp(),
+      logoutMs:fimMs,
+      tempoConectadoMin:tempoMin,
+      status:statusFinal,
+      atualizadoEm:serverTimestamp()
+    });
+  }catch(e){
+    console.error('Erro ao registrar logout:', e);
+  }
+}
+
+window.logoutSistema=async function(){
+  await registrarLogout('FINALIZADA');
+  clearAuth();
+  location.href='index.html';
+};
+
+function esc(v){
+  return String(v==null?'':v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function upper(v){return String(v||'').trim().toUpperCase()}
+
+function toDate(v){
+  if(!v) return null;
+  if(v.toDate){
+    try{return v.toDate()}catch(_){return null}
+  }
+  const d=new Date(v);
+  return isNaN(d)?null:d;
+}
+
+function fmt(v){
+  const d=toDate(v);
+  if(!d) return '-';
+  return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function inputDate(v,end=false){
+  if(!v) return null;
+  const p=v.split('-');
+  return new Date(Number(p[0]),Number(p[1])-1,Number(p[2]),end?23:0,end?59:0,end?59:0);
+}
+
+function setDefaultDates(){
+  const hoje=new Date();
+  const ini=new Date();
+  ini.setDate(hoje.getDate()-30);
+  dataIni.value=ini.toISOString().slice(0,10);
+  dataFim.value=hoje.toISOString().slice(0,10);
+}
+
+function isHoje(v){
+  const d=toDate(v);
+  if(!d) return false;
+  const h=new Date();
+  return d.getFullYear()===h.getFullYear() && d.getMonth()===h.getMonth() && d.getDate()===h.getDate();
+}
+
+function tempoMin(v){
+  if(typeof v.tempoPermanenciaMin === 'number') return v.tempoPermanenciaMin;
+  const entrada=toDate(v.dataEntrada);
+  const saida=toDate(v.dataSaida);
+  if(!entrada || !saida) return null;
+  return Math.max(0,Math.round((saida-entrada)/60000));
+}
+
+function tempoTexto(min){
+  if(min==null) return '-';
+  min=Number(min||0);
+  if(min<60) return min+' min';
+  const h=Math.floor(min/60);
+  const m=min%60;
+  return `${h}h ${String(m).padStart(2,'0')}min`;
+}
+
+function aplicarFiltros(){
+  const busca=upper(document.getElementById('busca').value);
+  const status=upper(document.getElementById('statusFiltro').value);
+  const ini=inputDate(document.getElementById('dataIni').value,false);
+  const fim=inputDate(document.getElementById('dataFim').value,true);
+
+  FILTRADAS = VISITAS.filter(v => {
+    const texto=upper(`${v.nome||''} ${v.cpf||''} ${v.responsavel||''}`);
+    const dt=toDate(v.dataEntrada);
+    return (!busca || texto.includes(busca)) &&
+           (!status || upper(v.status) === status) &&
+           (!ini || dt >= ini) &&
+           (!fim || dt <= fim);
+  });
+
+  renderTabela(FILTRADAS);
+  renderCards(FILTRADAS);
+}
+
+function renderCards(lista){
+  const tempos=lista.map(tempoMin).filter(v=>typeof v === 'number' && v > 0);
+  const media=tempos.length ? Math.round(tempos.reduce((a,b)=>a+b,0)/tempos.length) : 0;
+
+  stTotal.textContent=lista.length;
+  stHoje.textContent=lista.filter(v=>isHoje(v.dataEntrada)).length;
+  stAtivos.textContent=lista.filter(v=>v.status==='EM_VISITA').length;
+  stFinalizados.textContent=lista.filter(v=>v.status==='FINALIZADO').length;
+  stTempo.textContent=media;
+}
+
+function renderTabela(lista){
+  if(!lista.length){
+    tbodyVisitas.innerHTML='<tr><td colspan="10" class="empty">Nenhuma visita encontrada.</td></tr>';
+    return;
+  }
+
+  tbodyVisitas.innerHTML=lista.map(v=>{
+    const min=tempoMin(v);
+    const ativo=v.status==='EM_VISITA';
+
+    return `<tr>
+      <td>${esc(v.nome||'-')}</td>
+      <td>${esc(v.cpf||'-')}</td>
+      <td>${esc(v.telefone||'-')}</td>
+      <td>${esc(v.responsavel||'-')}</td>
+      <td>${esc(fmt(v.dataEntrada))}</td>
+      <td>${esc(fmt(v.dataSaida))}</td>
+      <td>${esc(tempoTexto(min))}</td>
+      <td><span class="pill ${ativo?'warn':'ok'}">${esc(ativo?'EM VISITA':'FINALIZADO')}</span></td>
+      <td>${esc(v.segurancaEntrada||'-')}</td>
+      <td>${esc(v.segurancaSaida||'-')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function csvEsc(v){
+  const s=String(v==null?'':v);
+  return /[;"\n\r]/.test(s) ? '"' + s.replaceAll('"','""') + '"' : s;
+}
+
+function exportarCSV(){
+  const linhas=[['Visitante','CPF','Telefone','Responsavel','Entrada','Saida','Tempo Min','Status','Seg Entrada','Seg Saida'].join(';')];
+
+  FILTRADAS.forEach(v=>{
+    linhas.push([
+      v.nome||'',
+      v.cpf||'',
+      v.telefone||'',
+      v.responsavel||'',
+      fmt(v.dataEntrada),
+      fmt(v.dataSaida),
+      tempoMin(v) ?? '',
+      v.status||'',
+      v.segurancaEntrada||'',
+      v.segurancaSaida||''
+    ].map(csvEsc).join(';'));
+  });
+
+  const blob=new Blob(['\uFEFF'+linhas.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='relatorio_visitantes.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function carregar(){
+  statusLinha.textContent='Buscando visitas no Firebase...';
+  tbodyVisitas.innerHTML='<tr><td colspan="10" class="empty">Carregando...</td></tr>';
+
+  try{
+    let snap;
+
+    try{
+      snap=await getDocs(query(collection(db,'visitantes'),orderBy('dataEntrada','desc'),limit(2000)));
+    }catch(_){
+      snap=await getDocs(query(collection(db,'visitantes'),limit(2000)));
+    }
+
+    VISITAS=snap.docs
+      .map(d=>({id:d.id,...d.data()}))
+      .filter(v=>v && v.Modelo !== true);
+
+    aplicarFiltros();
+
+    statusLinha.textContent='Dados carregados com sucesso. Registros encontrados: '+VISITAS.length+'.';
+
+  }catch(e){
+    console.error(e);
+    statusLinha.textContent='Erro ao carregar visitas: '+(e?.message||'erro desconhecido');
+    tbodyVisitas.innerHTML='<tr><td colspan="10" class="empty">Erro ao carregar dados do Firebase.</td></tr>';
+  }
+}
+
+document.getElementById('btnAtualizar').addEventListener('click',carregar);
+document.getElementById('btnExportar').addEventListener('click',exportarCSV);
+['dataIni','dataFim','busca','statusFiltro'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',aplicarFiltros);
+});
+
+setDefaultDates();
+
+if(validar()){
+  carregar();
+}
+</script>
+
+</body>
+</html>
