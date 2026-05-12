@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<title>Relatório CNH - Delta Cuiabá</title>
+<title>Relatório Operacional - Delta Cuiabá</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -66,7 +66,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 </head>
 <body>
 <div id="loadingOverlay" class="loading"><div class="loading-box"><div class="spinner"></div><strong>Carregando dados...</strong><p style="color:var(--text-soft);margin-bottom:0">Aguarde enquanto o relatório é atualizado.</p></div></div>
-<div class="hero"><div><div class="brand-title">Delta Cuiabá</div><div class="brand-sub">Relatório CNH</div></div></div>
+<div class="hero"><div><div class="brand-title">Delta Cuiabá</div><div class="brand-sub">Relatório Operacional</div></div></div>
 <div class="wrap">
   <div class="top-actions">
     <a class="btn" href="central_relatorios.html"><i class="fa-solid fa-chevron-left"></i> Voltar aos Relatórios</a>
@@ -74,23 +74,11 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
   </div>
 
 <div class="card">
-  <div class="card-head"><h2><i class="fa-solid fa-id-card"></i> Controle de Validade de CNH</h2><button class="btn primary" id="btnAtualizar"><i class="fa-solid fa-rotate"></i> Atualizar</button></div>
-  <div class="card-body">
-    <div class="stats-grid">
-      <div class="stat"><div class="label">Total de Motoristas</div><div class="value" id="stTotal">0</div><div class="sub">Base carregada do Firebase</div></div>
-      <div class="stat"><div class="label">Aptos para Dirigir</div><div class="value" id="stAptos">0</div><div class="sub">CNH válida na data atual</div></div>
-      <div class="stat"><div class="label">Vencidas</div><div class="value" id="stVencidas">0</div><div class="sub">Não podem dirigir</div></div>
-      <div class="stat"><div class="label">Vencem em 30 dias</div><div class="value" id="stAlertas">0</div><div class="sub">Atenção operacional</div></div>
-    </div>
-  </div>
+  <div class="card-head"><h2><i class="fa-solid fa-truck-moving"></i> Relatório Operacional</h2><div class="filters"><div class="field"><label>Data Inicial</label><input type="date" id="dataIni"></div><div class="field"><label>Data Final</label><input type="date" id="dataFim"></div><button class="btn primary" id="btnFiltrar"><i class="fa-solid fa-filter"></i> Filtrar</button></div></div>
+  <div class="card-body"><div class="stats-grid"><div class="stat"><div class="label">Registros</div><div class="value" id="stTotal">0</div><div class="sub">No período</div></div><div class="stat"><div class="label">Em Trânsito</div><div class="value" id="stTransito">0</div><div class="sub">Operações abertas</div></div><div class="stat"><div class="label">Concluídos</div><div class="value" id="stConcluidos">0</div><div class="sub">Com retorno</div></div><div class="stat"><div class="label">Veículos Usados</div><div class="value" id="stVeiculos">0</div><div class="sub">Distintos</div></div></div></div>
   <div class="status" id="statusLinha">Carregando relatório.</div>
 </div>
-<div class="card">
-  <div class="card-head"><h2>Listagem de CNHs</h2><button class="btn" id="btnCsv"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button></div>
-  <div class="card-body">
-    <div class="table-wrap"><table><thead><tr><th>Motorista</th><th>CNH</th><th>Validade</th><th>Dias Restantes</th><th>Status</th><th>Ativo</th></tr></thead><tbody id="tbodyRelatorio"></tbody></table></div>
-  </div>
-</div>
+<div class="card"><div class="card-head"><h2>Movimentações Operacionais</h2><button class="btn" id="btnCsv"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Veículo</th><th>Motorista</th><th>Saída</th><th>Retorno</th><th>Duração</th><th>Destino</th><th>Status</th></tr></thead><tbody id="tbodyRelatorio"></tbody></table></div></div></div>
 
   <div class="assinatura">Delta Cuiabá • Controle de Frota</div>
 </div>
@@ -256,40 +244,26 @@ window.DeltaReport={db,esc,norm,upper,getField,toDate,fmtDate,fmtDateTime,inputT
 
 
 <script type="module">
-const R=window.DeltaReport;
-let BASE=[];
-function statusCNH(validade){
-  const d=R.toDate(validade);
-  if(!d)return {texto:"SEM DATA",classe:"danger",dias:"-"};
-  const hoje=new Date(); hoje.setHours(0,0,0,0); d.setHours(0,0,0,0);
-  const dias=Math.ceil((d-hoje)/86400000);
-  if(dias<0)return {texto:"VENCIDA",classe:"danger",dias};
-  if(dias<=30)return {texto:"VENCE EM 30 DIAS",classe:"warn",dias};
-  return {texto:"VÁLIDA",classe:"ok",dias};
-}
+const R=window.DeltaReport; let BASE=[];
 function render(rows){
-  const total=rows.length;
-  const vencidas=rows.filter(r=>r.status.texto==="VENCIDA").length;
-  const alertas=rows.filter(r=>r.status.texto==="VENCE EM 30 DIAS").length;
-  const aptos=rows.filter(r=>r.status.texto==="VÁLIDA" || r.status.texto==="VENCE EM 30 DIAS").length;
-  stTotal.textContent=total; stAptos.textContent=aptos; stVencidas.textContent=vencidas; stAlertas.textContent=alertas;
-  tbodyRelatorio.innerHTML=rows.length?rows.map(r=>`<tr><td>${R.esc(r.nome)}</td><td>${R.esc(r.cnh)}</td><td>${R.esc(R.fmtDate(r.validade))}</td><td>${R.esc(r.status.dias)}</td><td><span class="pill ${r.status.classe}">${R.esc(r.status.texto)}</span></td><td>${R.esc(r.ativo||"-")}</td></tr>`).join(""):'<tr><td colspan="6" class="empty">Nenhum motorista encontrado.</td></tr>';
+  stTotal.textContent=rows.length;
+  stTransito.textContent=rows.filter(r=>R.upper(r.status).includes("TRANS")).length;
+  stConcluidos.textContent=rows.filter(r=>R.pillClass(r.status)==="ok").length;
+  stVeiculos.textContent=new Set(rows.map(r=>R.upper(r.veiculo)).filter(Boolean)).size;
+  tbodyRelatorio.innerHTML=rows.length?rows.map(r=>`<tr><td>${R.esc(r.veiculo)}</td><td>${R.esc(r.motorista)}</td><td>${R.esc(R.fmtDateTime(r.dataSaida))}</td><td>${R.esc(R.fmtDateTime(r.dataRetorno))}</td><td>${R.esc(R.durationText(r.dataSaida,r.dataRetorno,r.status))}</td><td class="wrap-text">${R.esc(r.destino)}</td><td><span class="pill ${R.pillClass(r.status)}">${R.esc(r.status)}</span></td></tr>`).join(""):'<tr><td colspan="7" class="empty">Nenhuma movimentação encontrada no período.</td></tr>';
 }
 async function carregar(){
   if(!R.validarSessaoOuRedirecionar())return;
-  R.showLoading(true); R.setStatus("Buscando motoristas no Firebase.");
+  R.showLoading(true); R.setStatus("Buscando dados operacionais no Firebase.");
   try{
-    const motoristas=await R.getMotoristas();
-    BASE=motoristas.map(m=>({...m,status:statusCNH(m.validade)})).sort((a,b)=>{
-      const ad=R.toDate(a.validade), bd=R.toDate(b.validade);
-      if(ad&&bd)return ad-bd; if(ad)return -1; if(bd)return 1; return String(a.nome).localeCompare(String(b.nome),"pt-BR");
-    });
+    const movs=await R.getMovimentacoes(1000);
+    BASE=movs.filter(r=>R.inPeriod(r.dataSaida,dataIni.value,dataFim.value));
     render(BASE); R.setStatus("Dados carregados com sucesso. Registros encontrados: "+BASE.length+".");
-  }catch(e){console.error(e); render([]); R.setStatus("Erro ao carregar CNH: "+e.message);}
+  }catch(e){console.error(e); render([]); R.setStatus("Erro ao carregar relatório operacional: "+e.message);}
   finally{R.showLoading(false);}
 }
-btnAtualizar.onclick=carregar;
-btnCsv.onclick=()=>R.exportCSV("relatorio_cnh.csv",["Motorista","CNH","Validade","Dias Restantes","Status","Ativo"],BASE.map(r=>[r.nome,r.cnh,R.fmtDate(r.validade),r.status.dias,r.status.texto,r.ativo]));
+R.setDefaultPeriod(30); btnFiltrar.onclick=carregar;
+btnCsv.onclick=()=>R.exportCSV("relatorio_operacional.csv",["Veículo","Motorista","Saída","Retorno","Duração","Destino","Status"],BASE.map(r=>[r.veiculo,r.motorista,R.fmtDateTime(r.dataSaida),R.fmtDateTime(r.dataRetorno),R.durationText(r.dataSaida,r.dataRetorno,r.status),r.destino,r.status]));
 carregar();
 </script>
 

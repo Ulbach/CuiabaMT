@@ -1,316 +1,261 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<title>Central de Relatórios - Delta Cuiabá</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Central de Relatórios - Delta Cuiabá</title>
-
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <style>
-
 :root{
---bg1:#061427;
---bg2:#0b1b33;
---card:rgba(255,255,255,0.06);
---border:rgba(255,255,255,0.12);
---text-main:#e6edf7;
---text-soft:#9fb4d3;
---accent:#22c55e;
+  --bg1:#061427;--bg2:#0b1b33;--card:rgba(255,255,255,.06);--card2:rgba(255,255,255,.09);
+  --border:rgba(255,255,255,.12);--text-main:#e6edf7;--text-soft:#9fb4d3;
+  --accent:#22c55e;--accent2:#16a34a;--alert:#ef4444;--warn:#f59e0b;--blue:#3b82f6;
+  --purple:#8b5cf6;--shadow:0 12px 28px rgba(0,0,0,.35);--radius:20px;
 }
-
-*{
-box-sizing:border-box;
-}
-
-body{
-margin:0;
-font-family:system-ui,-apple-system,sans-serif;
-background:linear-gradient(180deg,var(--bg1),var(--bg2));
-color:var(--text-main);
-min-height:100vh;
-overflow-x:hidden;
-position:relative;
-}
-
-body::after{
-content:"";
-position:fixed;
-left:0;
-right:0;
-bottom:0;
-height:220px;
-pointer-events:none;
-background:
-linear-gradient(
-to top,
-rgba(34,197,94,0.42) 0%,
-rgba(34,197,94,0.20) 35%,
-rgba(34,197,94,0.08) 58%,
-rgba(34,197,94,0) 100%
-);
-}
-
-.hero{
-width:100%;
-height:180px;
-
-background:
-linear-gradient(
-180deg,
-rgba(6,20,39,0.18) 0%,
-rgba(6,20,39,0.65) 100%
-),
-url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
-center/cover no-repeat;
-
-display:flex;
-align-items:center;
-justify-content:center;
-text-align:center;
-}
-
-.brand-title{
-font-size:28px;
-font-weight:900;
-letter-spacing:4px;
-color:#fff;
-
-text-shadow:
-0 0 8px rgba(34,197,94,0.5),
-0 0 18px rgba(34,197,94,0.25);
-}
-
-.brand-sub{
-margin-top:10px;
-font-size:18px;
-font-weight:700;
-color:#dbeafe;
-}
-
-.container{
-width:100%;
-max-width:520px;
-margin:auto;
-padding:24px 20px 40px;
-}
-
-.section-title{
-font-size:13px;
-text-transform:uppercase;
-letter-spacing:1px;
-color:var(--text-soft);
-margin-bottom:18px;
-font-weight:700;
-}
-
-.menu{
-display:flex;
-flex-direction:column;
-gap:16px;
-}
-
-.card{
-background:var(--card);
-border:1px solid var(--border);
-border-radius:22px;
-padding:22px 18px;
-text-decoration:none;
-color:var(--text-main);
-
-display:flex;
-align-items:center;
-gap:18px;
-
-transition:0.25s;
-}
-
-.card:hover{
-transform:translateY(-2px);
-border-color:rgba(34,197,94,0.45);
-box-shadow:0 0 18px rgba(34,197,94,0.12);
-}
-
-.icon{
-width:58px;
-height:58px;
-border-radius:18px;
-display:flex;
-align-items:center;
-justify-content:center;
-background:rgba(255,255,255,0.05);
-font-size:24px;
-color:var(--accent);
-}
-
-.card-content{
-flex:1;
-}
-
-.card-title{
-font-size:17px;
-font-weight:800;
-}
-
-.card-desc{
-margin-top:6px;
-font-size:13px;
-color:var(--text-soft);
-line-height:1.4;
-}
-
-.footer-btn{
-width:100%;
-margin-top:30px;
-background:var(--card);
-border:1px solid var(--border);
-padding:18px;
-border-radius:20px;
-display:flex;
-align-items:center;
-justify-content:center;
-gap:10px;
-color:var(--text-soft);
-text-decoration:none;
-font-weight:700;
-transition:0.25s;
-}
-
-.footer-btn:hover{
-border-color:rgba(34,197,94,0.35);
-}
-
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text-main);min-height:100vh;overflow-x:hidden;position:relative}
+body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;pointer-events:none;background:linear-gradient(to top,rgba(34,197,94,.42) 0%,rgba(34,197,94,.20) 35%,rgba(34,197,94,.08) 58%,rgba(34,197,94,0) 100%);z-index:-1}
+.hero{width:100%;height:180px;background:linear-gradient(180deg,rgba(6,20,39,.18),rgba(6,20,39,.65)),url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600') center/cover no-repeat;display:flex;align-items:center;justify-content:center;text-align:center}
+.brand-title{font-size:28px;font-weight:900;letter-spacing:4px;color:#fff;text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);text-transform:uppercase}
+.brand-sub{margin-top:10px;font-size:18px;font-weight:800;color:#dbeafe}
+.wrap{width:100%;max-width:1220px;margin:0 auto;padding:24px 16px 44px}
+.top-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:10px 16px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text-main);text-decoration:none;font-weight:800;cursor:pointer;transition:.25s}
+.btn:hover{transform:translateY(-1px);border-color:rgba(34,197,94,.45);box-shadow:0 0 18px rgba(34,197,94,.12)}
+.btn.primary{background:var(--accent);color:#031022;border:none}
+.btn.danger{background:rgba(239,68,68,.14);color:#fecaca}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
+.card-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.card-head h2{margin:0;font-size:18px}
+.card-body{padding:16px 18px}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--text-soft);font-weight:800;margin-bottom:14px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stat{background:rgba(255,255,255,.055);border:1px solid var(--border);border-radius:18px;padding:16px;min-height:112px}
+.stat .label{font-size:12px;font-weight:800;color:var(--text-soft);text-transform:uppercase;letter-spacing:.35px}
+.stat .value{font-size:30px;font-weight:900;margin-top:8px}
+.stat .sub{font-size:12px;color:var(--text-soft);margin-top:4px}
+.filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;color:var(--text-soft);font-weight:800;text-transform:uppercase;letter-spacing:.35px}
+.field input,.field select{min-height:42px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#09172b;color:#fff}
+.table-wrap{overflow:auto;max-height:620px;border:1px solid var(--border);border-radius:16px;background:#061226}
+table{width:100%;border-collapse:collapse;font-size:13px;color:var(--text-main)}
+th,td{padding:11px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:top;white-space:nowrap}
+td.wrap-text{white-space:normal}
+th{background:#09172b;color:#9ed7b0;text-transform:uppercase;font-size:12px;letter-spacing:.35px;position:sticky;top:0;z-index:1}
+tbody tr:hover{background:rgba(255,255,255,.04)}
+.empty{text-align:center;color:var(--text-soft);padding:20px}
+.pill{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900;background:#0b1a30;color:var(--accent);border:1px solid #12314d}
+.pill.ok{background:rgba(34,197,94,.12);color:#22c55e;border-color:rgba(34,197,94,.35)}
+.pill.warn{background:rgba(245,158,11,.13);color:#f59e0b;border-color:rgba(245,158,11,.35)}
+.pill.danger{background:rgba(239,68,68,.13);color:#ef4444;border-color:rgba(239,68,68,.35)}
+.status{padding:13px 18px;color:var(--text-soft);font-size:14px;border-top:1px solid var(--border);background:rgba(255,255,255,.035)}
+.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.menu-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:22px 18px;text-decoration:none;color:var(--text-main);display:flex;align-items:center;gap:18px;transition:.25s}
+.menu-card:hover{transform:translateY(-2px);border-color:rgba(34,197,94,.45);box-shadow:0 0 18px rgba(34,197,94,.12)}
+.menu-icon{width:58px;height:58px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);font-size:24px;color:var(--accent)}
+.menu-title{font-size:17px;font-weight:900}.menu-desc{margin-top:6px;font-size:13px;color:var(--text-soft);line-height:1.4}
+.loading{position:fixed;inset:0;background:rgba(2,8,23,.72);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(2px)}
+.loading.show{display:flex}.loading-box{min-width:300px;max-width:90vw;padding:28px;border-radius:22px;border:1px solid #12314d;background:linear-gradient(180deg,#061226,#04101f);box-shadow:0 20px 50px rgba(0,0,0,.45);text-align:center}
+.spinner{width:54px;height:54px;margin:0 auto 14px;border:4px solid rgba(255,255,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.assinatura{text-align:center;margin-top:24px;color:var(--text-soft);font-size:13px}
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.menu-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.hero{height:150px}.brand-title{font-size:22px}.brand-sub{font-size:16px}.wrap{padding:18px 10px 34px}.stats-grid{grid-template-columns:1fr}.filters{flex-direction:column;align-items:stretch}.btn{width:100%}table{min-width:860px}}
 </style>
+
 </head>
-
 <body>
+<div class="hero"><div><div class="brand-title">Delta Cuiabá</div><div class="brand-sub">Central de Relatórios</div></div></div>
+<div class="wrap" style="max-width:760px">
+  <div class="top-actions">
+    <a class="btn" href="../veiculos.html"><i class="fa-solid fa-chevron-left"></i> Voltar ao Controle de Frota</a>
+    <button class="btn danger" onclick="logoutSistema()"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+  </div>
 
-<div class="hero">
+  <div class="section-title">Relatórios Disponíveis</div>
+  <div class="menu-grid">
+    <a href="relatorio_cnh.html" class="menu-card">
+      <div class="menu-icon" style="color:var(--warn)"><i class="fa-solid fa-id-card"></i></div>
+      <div><div class="menu-title">Relatório CNH</div><div class="menu-desc">Controle de validade, vencidas e alertas de CNH.</div></div>
+    </a>
+    <a href="relatorio_noturno.html" class="menu-card">
+      <div class="menu-icon" style="color:var(--purple)"><i class="fa-solid fa-moon"></i></div>
+      <div><div class="menu-title">Relatório Noturno</div><div class="menu-desc">Movimentações após 18h e durante a madrugada.</div></div>
+    </a>
+    <a href="relatorio_operacional.html" class="menu-card">
+      <div class="menu-icon" style="color:var(--accent)"><i class="fa-solid fa-truck-moving"></i></div>
+      <div><div class="menu-title">Relatório Operacional</div><div class="menu-desc">Veículos em trânsito, concluídos e tempo de utilização.</div></div>
+    </a>
+    <a href="relatorio_resumo.html" class="menu-card">
+      <div class="menu-icon" style="color:var(--blue)"><i class="fa-solid fa-chart-column"></i></div>
+      <div><div class="menu-title">Relatório Resumo</div><div class="menu-desc">Visão consolidada das operações da frota.</div></div>
+    </a>
+  </div>
 
-<div>
-
-<div class="brand-title">
-DELTA CUIABÁ
+  <div class="assinatura">Delta Cuiabá • Controle de Frota</div>
 </div>
 
-<div class="brand-sub">
-Central de Relatórios
-</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-</div>
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
 
-</div>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const STORAGE_KEY = "delta_auth_firebase_v1";
 
-<div class="container">
+function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");}catch(_){return null;}}
+function clearAuth(){localStorage.removeItem(STORAGE_KEY);}
+function sessaoValidaLocal(auth){return !!(auth && auth.Nome && auth.Perfil && auth.expiraEm && Number(auth.expiraEm)>Date.now());}
+function validarSessaoOuRedirecionar(){
+  const auth=getAuth();
+  if(!sessaoValidaLocal(auth)){clearAuth();location.href="../index.html";return null;}
+  return auth;
+}
+window.logoutSistema=function(){clearAuth();location.href="../index.html";};
 
-<div class="section-title">
-Relatórios Disponíveis
-</div>
+function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function norm(v){return String(v==null?"":v).trim();}
+function upper(v){return norm(v).toUpperCase();}
+function getField(obj, names, fallback=""){
+  for(const n of names){ if(obj && obj[n] !== undefined && obj[n] !== null && obj[n] !== "") return obj[n]; }
+  return fallback;
+}
+function toDate(v){
+  if(!v)return null;
+  if(v instanceof Date)return isNaN(v) ? null : v;
+  if(v.toDate){try{return v.toDate();}catch(_){return null;}}
+  if(typeof v==="number"){const d=new Date(v);return isNaN(d)?null:d;}
+  const s=String(v).trim();
+  if(!s)return null;
+  let m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if(m)return new Date(Number(m[3]),Number(m[2])-1,Number(m[1]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0));
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m)return new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),Number(m[4]||0),Number(m[5]||0),Number(m[6]||0));
+  const d=new Date(s);
+  return isNaN(d)?null:d;
+}
+function fmtDate(v){
+  const d=toDate(v);
+  if(!d)return norm(v)||"-";
+  return d.toLocaleDateString("pt-BR");
+}
+function fmtDateTime(v){
+  const d=toDate(v);
+  if(!d)return norm(v)||"-";
+  return d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+}
+function inputToDate(v,end=false){
+  if(!v)return null;
+  const p=v.split("-");
+  if(p.length!==3)return null;
+  return new Date(Number(p[0]),Number(p[1])-1,Number(p[2]),end?23:0,end?59:0,end?59:0);
+}
+function setDefaultPeriod(days=30){
+  const ini=document.getElementById("dataIni"), fim=document.getElementById("dataFim");
+  if(!ini || !fim)return;
+  const hoje=new Date();
+  const inicio=new Date();
+  inicio.setDate(hoje.getDate()-days);
+  ini.value=inicio.toISOString().slice(0,10);
+  fim.value=hoje.toISOString().slice(0,10);
+}
+function inPeriod(dt, ini, fim){
+  const d=toDate(dt); if(!d)return false;
+  const di=inputToDate(ini,false), df=inputToDate(fim,true);
+  if(di && d<di)return false;
+  if(df && d>df)return false;
+  return true;
+}
+function durationText(saida, retorno, status){
+  const ds=toDate(saida), dr=toDate(retorno);
+  if(!ds || !dr)return upper(status).includes("TRANS") ? "EM TRÂNSITO" : "-";
+  let diff=Math.max(0,Math.floor((dr-ds)/1000));
+  const h=Math.floor(diff/3600); diff-=h*3600;
+  const m=Math.floor(diff/60);
+  return h+"h "+String(m).padStart(2,"0")+"min";
+}
+function pillClass(status){
+  const st=upper(status);
+  if(st.includes("CONCLU") || st.includes("PÁTIO") || st.includes("PATIO") || st.includes("ENTRADA"))return "ok";
+  if(st.includes("TRANS"))return "warn";
+  return "danger";
+}
+function showLoading(on){
+  const el=document.getElementById("loadingOverlay");
+  if(el)el.classList.toggle("show",!!on);
+}
+function setStatus(txt){
+  const el=document.getElementById("statusLinha");
+  if(el)el.textContent=txt;
+}
+async function getCollectionSafe(name, max=1000, ordered=true){
+  try{
+    const ref=collection(db,name);
+    const q=ordered ? query(ref,orderBy("dataSaida","desc"),limit(max)) : query(ref,limit(max));
+    const snap=await getDocs(q);
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  }catch(e){
+    try{
+      const snap=await getDocs(query(collection(db,name),limit(max)));
+      return snap.docs.map(d=>({id:d.id,...d.data()}));
+    }catch(_){
+      return [];
+    }
+  }
+}
+async function getMovimentacoes(max=1000){
+  const rows=await getCollectionSafe("movimentacoes_frota",max,true);
+  return rows.filter(r=>r && r.Modelo!==true).map(r=>({
+    id:r.id,
+    veiculo:getField(r,["veiculo","Veiculo","VEICULO","placa","Placa"],"-"),
+    motorista:getField(r,["motorista","Motorista","MOTORISTA","nomeMotorista"],"-"),
+    destino:getField(r,["destino","Destino","DESTINO","responsavel","Responsavel"],"-"),
+    status:getField(r,["status","Status","STATUS"],"-"),
+    dataSaida:getField(r,["dataSaida","DataSaida","DATA_SAIDA","saida","Saida"],""),
+    dataRetorno:getField(r,["dataRetorno","DataRetorno","DATA_RETORNO","entrada","Entrada"],""),
+    kmSaida:getField(r,["kmSaida","KmSaida","KM_SAIDA"],""),
+    kmRetorno:getField(r,["kmRetorno","KmRetorno","KM_RETORNO"],"")
+  }));
+}
+async function getMotoristas(){
+  const nomes=["motoristas","Motoristas","cad_motoristas","cadastro_motoristas"];
+  for(const n of nomes){
+    const rows=await getCollectionSafe(n,1000,false);
+    const valid=rows.filter(r=>r && r.Modelo!==true);
+    if(valid.length)return valid.map(r=>({
+      id:r.id,
+      nome:getField(r,["nome","Nome","NOME","motorista","Motorista"],"-"),
+      cnh:getField(r,["cnh","CNH","Cnh"],"-"),
+      validade:getField(r,["validadeCNH","ValidadeCNH","validade_cnh","Validade CNH","vencimentoCNH","VencimentoCNH"],""),
+      ativo:getField(r,["ativo","Ativo","ATIVO","status","Status"],"")
+    }));
+  }
+  return [];
+}
+function exportCSV(filename, headers, rows){
+  const safe=v=>{
+    const s=String(v??"");
+    return /[",;\n]/.test(s)?'"'+s.replaceAll('"','""')+'"':s;
+  };
+  const lines=[headers.join(";")].concat(rows.map(r=>r.map(safe).join(";")));
+  const blob=new Blob(["\uFEFF"+lines.join("\n")],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+window.DeltaReport={db,esc,norm,upper,getField,toDate,fmtDate,fmtDateTime,inputToDate,setDefaultPeriod,inPeriod,durationText,pillClass,showLoading,setStatus,getMovimentacoes,getMotoristas,exportCSV,validarSessaoOuRedirecionar};
+</script>
 
-<div class="menu">
-
-<a href="relatorio_cnh.html" class="card">
-
-<div class="icon">
-<i class="fa-solid fa-id-card"></i>
-</div>
-
-<div class="card-content">
-<div class="card-title">
-Relatório CNH
-</div>
-
-<div class="card-desc">
-Controle de vencimentos e motoristas.
-</div>
-</div>
-
-</a>
-
-<a href="relatorio_noturno.html" class="card">
-
-<div class="icon">
-<i class="fa-solid fa-moon"></i>
-</div>
-
-<div class="card-content">
-<div class="card-title">
-Relatório Noturno
-</div>
-
-<div class="card-desc">
-Movimentações realizadas fora do horário operacional.
-</div>
-</div>
-
-</a>
-
-<a href="relatorio_operacional.html" class="card">
-
-<div class="icon">
-<i class="fa-solid fa-truck-moving"></i>
-</div>
-
-<div class="card-content">
-<div class="card-title">
-Relatório Operacional
-</div>
-
-<div class="card-desc">
-Controle operacional da frota.
-</div>
-</div>
-
-</a>
-
-<a href="relatorio_resumo.html" class="card">
-
-<div class="icon">
-<i class="fa-solid fa-chart-column"></i>
-</div>
-
-<div class="card-content">
-<div class="card-title">
-Relatório Resumo
-</div>
-
-<div class="card-desc">
-Resumo geral das operações.
-</div>
-</div>
-
-</a>
-
-<a href="testes.html" class="card">
-
-<div class="icon">
-<i class="fa-solid fa-flask"></i>
-</div>
-
-<div class="card-content">
-<div class="card-title">
-Página de Testes
-</div>
-
-<div class="card-desc">
-Ferramentas e testes do sistema.
-</div>
-</div>
-
-</a>
-
-</div>
-
-<a href="../veiculos.html" class="footer-btn">
-
-<i class="fa-solid fa-chevron-left"></i>
-
-Voltar ao Controle de Frota
-
-</a>
-
-</div>
-
+<script type="module">
+const AUTH=window.DeltaReport.validarSessaoOuRedirecionar();
+</script>
 </body>
 </html>
