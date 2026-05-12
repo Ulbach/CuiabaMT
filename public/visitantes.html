@@ -1,45 +1,274 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Frota Pro — Gestão de Visitantes</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/styles.css">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Gestão de Visitantes - Delta Cuiabá</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root{
+  --bg1:#061427;
+  --bg2:#0b1b33;
+  --card:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.12);
+  --text-main:#e6edf7;
+  --text-soft:#9fb4d3;
+  --accent:#22c55e;
+  --alert:#ef4444;
+  --blue:#3b82f6;
+  --shadow:0 12px 28px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text-main);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  overflow-x:hidden;
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:220px;
+  pointer-events:none;
+  background:linear-gradient(
+    to top,
+    rgba(34,197,94,.42) 0%,
+    rgba(34,197,94,.20) 35%,
+    rgba(34,197,94,.08) 58%,
+    rgba(34,197,94,0) 100%
+  );
+  z-index:-1;
+}
+
+.hero-header{
+  width:100%;
+  height:180px;
+  background:
+    linear-gradient(180deg,rgba(6,20,39,.18),rgba(6,20,39,.65)),
+    url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
+    center/cover no-repeat;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.hero-content{
+  width:100%;
+  max-width:500px;
+  margin-top:-20px;
+}
+
+.badge{
+  display:inline-flex;
+  padding:6px 14px;
+  border-radius:99px;
+  border:1px solid rgba(255,255,255,.18);
+  color:#dbeafe;
+  font-size:12px;
+  font-weight:800;
+  background:rgba(255,255,255,.05);
+  margin-bottom:10px;
+}
+
+.hero-content h2{
+  margin:0;
+  font-size:26px;
+  font-weight:900;
+  letter-spacing:.5px;
+  color:#fff;
+  text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);
+}
+
+.hero-content p{
+  margin:8px 0 0;
+  font-size:14px;
+  color:#e6edf7;
+  font-weight:700;
+}
+
+.session-wrap{
+  width:100%;
+  max-width:500px;
+  padding:0 20px;
+  margin-top:-14px;
+  margin-bottom:18px;
+  z-index:2;
+}
+
+.session-box{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:12px 14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  box-shadow:var(--shadow);
+}
+
+.session-box .login-text{
+  font-size:13px;
+  color:var(--text-soft);
+}
+
+.session-box strong{
+  color:var(--text-main);
+}
+
+.btn-sair{
+  background:#0b1a30;
+  border:1px solid rgba(255,255,255,.12);
+  color:#e6edf7;
+  padding:10px 12px;
+  border-radius:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.card{
+  width:100%;
+  max-width:500px;
+  background:transparent;
+  border:none;
+  padding:0 20px;
+}
+
+.menu-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+  margin-bottom:24px;
+}
+
+.btn-nav{
+  min-height:118px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  color:var(--text-main);
+  text-decoration:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  font-weight:900;
+  font-size:12px;
+  text-align:center;
+  text-transform:uppercase;
+  transition:.25s;
+  box-shadow:var(--shadow);
+}
+
+.btn-nav:hover{
+  transform:translateY(-2px);
+  border-color:rgba(34,197,94,.45);
+  box-shadow:0 0 18px rgba(34,197,94,.12);
+}
+
+.btn-nav i{
+  font-size:34px;
+}
+
+.btn-entrada i{
+  color:var(--accent);
+}
+
+.btn-saida i{
+  color:var(--alert);
+}
+
+.btn-back{
+  width:100%;
+  min-height:58px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  color:var(--text-soft);
+  text-decoration:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font-weight:800;
+  box-shadow:var(--shadow);
+  transition:.25s;
+}
+
+.btn-back:hover{
+  transform:translateY(-2px);
+  border-color:rgba(34,197,94,.45);
+  color:#fff;
+}
+
+@media(max-width:560px){
+  .menu-grid{
+    grid-template-columns:1fr;
+  }
+
+  .hero-header{
+    height:160px;
+  }
+
+  .hero-content h2{
+    font-size:23px;
+  }
+}
+</style>
 </head>
+
 <body>
 
-  <div class="hero-header">
-    <div class="hero-content">
-      <span class="badge">Acesso Controlado</span>
-      <h2>Portaria Visitantes</h2>
-      <p>Delta Biocombustíveis</p>
-    </div>
+<div class="hero-header">
+  <div class="hero-content">
+    <span class="badge">Acesso Controlado</span>
+    <h2>Portaria Visitantes</h2>
+    <p>Delta Biocombustíveis</p>
   </div>
+</div>
 
-  <div style="width:90%;max-width:400px;margin:-18px 0 18px 0;">
-    <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-      <div style="font-size:13px;color:#9fb4d3;">
-        Logado como: <strong id="sessaoSeguranca" style="color:#e6edf7;">...</strong>
-      </div>
-      <button onclick="logoutSistema()" style="background:#0b1a30;border:1px solid rgba(255,255,255,0.12);color:#e6edf7;padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer;">Sair</button>
+<div class="session-wrap">
+  <div class="session-box">
+    <div class="login-text">
+      Logado como: <strong id="sessaoSeguranca">...</strong>
     </div>
+    <button class="btn-sair" onclick="logoutSistema()">Sair</button>
   </div>
+</div>
 
-  <div class="card">
-    <div class="menu-grid">
-      <a href="Entrada_visitante.html" class="btn-nav btn-entrada">
-        <i class="fa-solid fa-user-plus"></i> REGISTRAR ENTRADA
-      </a>
-      <a href="Saida_visitante.html" class="btn-nav btn-saida">
-        <i class="fa-solid fa-user-minus"></i> REGISTRAR SAÍDA
-      </a>
-    </div>
+<div class="card">
+  <div class="menu-grid">
+    <a href="Entrada_visitante.html" class="btn-nav btn-entrada">
+      <i class="fa-solid fa-user-plus"></i>
+      <span>Registrar Entrada</span>
+    </a>
 
-    <a href="index.html" class="btn-back" id="btnMenuPrincipal">
-      <i class="fa-solid fa-house"></i> Menu Principal
+    <a href="Saida_visitante.html" class="btn-nav btn-saida">
+      <i class="fa-solid fa-user-minus"></i>
+      <span>Registrar Saída</span>
     </a>
   </div>
+
+  <a href="index.html" class="btn-back" id="btnMenuPrincipal">
+    <i class="fa-solid fa-house"></i>
+    Menu Principal
+  </a>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -91,21 +320,28 @@ function nomeAuth(auth){
 }
 
 function perfilAuth(auth){
-  return String(auth?.Perfil || auth?.perfil || '').trim().toUpperCase();
+  return String(auth?.Perfil || auth?.perfil || 'OPERADOR').trim().toUpperCase();
+}
+
+function tokenAuth(auth){
+  return auth?.token || auth?.id || auth?.Sen_Segura || '';
 }
 
 function sessaoValidaLocal(auth){
   if(!auth) return false;
-  if(!nomeAuth(auth)) return false;
-  if(!perfilAuth(auth)) return false;
-  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
-  return true;
+
+  const temNome = !!nomeAuth(auth);
+  const temTokenOuPerfil = !!(tokenAuth(auth) || auth.Perfil || auth.perfil);
+  const validadeOk = !auth.expiraEm || Number(auth.expiraEm) > Date.now();
+
+  return !!(temNome && temTokenOuPerfil && validadeOk);
 }
 
 async function validarSessaoOuRedirecionar(){
   const auth = getAuth();
 
   if(!sessaoValidaLocal(auth)){
+    console.warn('Sessão inválida em visitantes.html:', auth);
     clearAuth();
     location.href = 'index.html';
     return null;
@@ -114,7 +350,9 @@ async function validarSessaoOuRedirecionar(){
   return {
     ...auth,
     seguranca: nomeAuth(auth),
-    Perfil: perfilAuth(auth)
+    Nome: nomeAuth(auth),
+    Perfil: perfilAuth(auth),
+    token: tokenAuth(auth)
   };
 }
 
@@ -152,7 +390,7 @@ window.onload = async function(){
   if(!auth) return;
 
   const el = document.getElementById('sessaoSeguranca');
-  if(el) el.textContent = (auth.seguranca || '---') + ' - ' + (auth.Perfil || '');
+  if(el) el.textContent = (auth.seguranca || '---') + ' - ' + (auth.Perfil || 'OPERADOR');
 
   const btn = document.getElementById('btnMenuPrincipal');
   if(btn){
