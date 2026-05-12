@@ -35,129 +35,285 @@
     </a>
   </div>
 
-  <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxo8EEnDKeZrd6EszuumEqnEV0TUtnB6gUqa1DnVGr_XbLtNXIkIjM5UicqakEF8RO7rA/exec';
-    const STORAGE_KEY = 'delta_auth_v1';
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      query,
+      where,
+      orderBy,
+      doc,
+      updateDoc,
+      serverTimestamp,
+      Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+      authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+      projectId: "cuiaba-01617931-f126e",
+      storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+      messagingSenderId: "797115279316",
+      appId: "1:797115279316:web:f229366de16d4e066e1841"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const STORAGE_KEY = 'delta_auth_firebase_v1';
+    const STORAGE_KEY_LEGADO = 'delta_auth_v1';
+
     let cacheVisitantes = [];
     let AUTH = null;
+    let inFlight = false;
 
     function getAuth() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
-      catch(_) { return null; }
+      try {
+        return JSON.parse(
+          localStorage.getItem(STORAGE_KEY) ||
+          localStorage.getItem(STORAGE_KEY_LEGADO) ||
+          'null'
+        );
+      } catch(_) {
+        return null;
+      }
     }
-    function clearAuth() { localStorage.removeItem(STORAGE_KEY); }
 
-    function jsonp(url) {
-      return new Promise((resolve, reject) => {
-        const cb = 'cb_' + Math.round(100000 * Math.random());
-        const script = document.createElement('script');
-        script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
-        window[cb] = (data) => {
-          try { resolve(data); }
-          finally {
-            delete window[cb];
-            if (script.parentNode) document.body.removeChild(script);
-          }
-        };
-        script.onerror = () => {
-          try { delete window[cb]; } catch(_) {}
-          if (script.parentNode) document.body.removeChild(script);
-          reject(new Error('Erro de conexão'));
-        };
-        document.body.appendChild(script);
-      });
+    function clearAuth() {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY_LEGADO);
+    }
+
+    function nomeAuth(auth){
+      return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
+    }
+
+    function perfilAuth(auth){
+      return String(auth?.Perfil || auth?.perfil || '').trim().toUpperCase();
+    }
+
+    function sessaoValidaLocal(auth){
+      if(!auth) return false;
+      if(!nomeAuth(auth)) return false;
+      if(!perfilAuth(auth)) return false;
+      if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+      return true;
     }
 
     async function validarSessaoOuRedirecionar() {
       const auth = getAuth();
-      if(!auth || !auth.token) {
+
+      if(!sessaoValidaLocal(auth)){
+        clearAuth();
         location.href='index.html';
         return null;
       }
-      try {
-        const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
-        if(res && res.ok && res.autenticado){
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm }));
-          return { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm };
-        }
-      } catch(_) {}
-      clearAuth();
-      location.href='index.html';
-      return null;
+
+      return {
+        ...auth,
+        seguranca: nomeAuth(auth),
+        Perfil: perfilAuth(auth)
+      };
+    }
+
+    function esc(v){
+      return String(v == null ? '' : v)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+    }
+
+    function toDate(v){
+      if(!v) return null;
+      if(v.toDate){
+        try { return v.toDate(); } catch(_) { return null; }
+      }
+      const d = new Date(v);
+      return isNaN(d) ? null : d;
+    }
+
+    function formatarDataHora(v){
+      const d = toDate(v);
+      if(!d) return '-';
+      return d.toLocaleString('pt-BR', {
+        day:'2-digit',
+        month:'2-digit',
+        year:'numeric',
+        hour:'2-digit',
+        minute:'2-digit'
+      });
+    }
+
+    function calcularTempoMin(dataEntrada, dataSaida){
+      const entrada = toDate(dataEntrada);
+      const saida = dataSaida ? toDate(dataSaida) : new Date();
+
+      if(!entrada || !saida) return 0;
+
+      return Math.max(0, Math.round((saida - entrada) / 60000));
+    }
+
+    function tempoTexto(min){
+      min = Number(min || 0);
+
+      if(min < 60) return min + ' min';
+
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+
+      return `${h}h ${String(m).padStart(2,'0')}min`;
+    }
+
+    function setMsg(texto, cor){
+      const msg = document.getElementById('msg_status');
+      msg.style.color = cor || 'var(--text-soft)';
+      msg.innerText = texto || '';
     }
 
     async function carregarAtivos() {
       const container = document.getElementById('lista_ativos');
+      container.innerHTML = `
+        <div style="text-align:center; padding:40px; opacity:0.5;">
+          <i class="fa-solid fa-circle-notch fa-spin"></i>
+          <span style="display:block; margin-top:10px; font-size:12px">Buscando visitantes no Firebase...</span>
+        </div>
+      `;
+
       try {
-        const res = await jsonp(API_URL + '?route=getVisitantesData');
-        cacheVisitantes = (res.visitantes || []).filter(v => v.status === "EM VISITA");
+        const qAtivos = query(
+          collection(db,'visitantes'),
+          where('status','==','EM_VISITA'),
+          orderBy('dataEntrada','desc')
+        );
+
+        const snap = await getDocs(qAtivos);
+
+        cacheVisitantes = snap.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        }));
+
         renderizarLista();
+
       } catch (e) {
-        container.innerHTML = `<div style="color:var(--red); text-align:center; padding:20px;">Falha na conexão com o servidor.</div>`;
+        console.error(e);
+
+        try {
+          const snap = await getDocs(collection(db,'visitantes'));
+          cacheVisitantes = snap.docs
+            .map(d => ({ id:d.id, ...d.data() }))
+            .filter(v => v.status === 'EM_VISITA')
+            .sort((a,b) => {
+              const da = toDate(a.dataEntrada);
+              const db = toDate(b.dataEntrada);
+              return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+            });
+
+          renderizarLista();
+
+        } catch (err) {
+          console.error(err);
+          container.innerHTML = `<div style="color:var(--red); text-align:center; padding:20px;">Falha ao carregar visitantes do Firebase.</div>`;
+        }
       }
     }
 
     function renderizarLista() {
       const container = document.getElementById('lista_ativos');
+
       if (cacheVisitantes.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:60px; color:var(--text-muted); font-size:14px;">
-          <i class="fa-solid fa-check-circle" style="font-size:30px; margin-bottom:10px; opacity:0.3"></i><br>
-          Nenhum visitante ativo.
-        </div>`;
+        container.innerHTML = `
+          <div style="text-align:center; padding:60px; color:var(--text-muted); font-size:14px;">
+            <i class="fa-solid fa-check-circle" style="font-size:30px; margin-bottom:10px; opacity:0.3"></i><br>
+            Nenhum visitante ativo.
+          </div>
+        `;
         return;
       }
-      // ***** ALTERADO PARA USAR documentId *****
-      container.innerHTML = cacheVisitantes.map(v => `
-        <div class="visitante-item" id="item-${v.documentId}" onclick="darBaixa('${v.documentId}', '${String(v.nome).replace(/'/g, "\\'")}')">
-          <div class="info">
-            <b>${v.nome}</b>
-            <span><i class="fa-solid fa-id-card"></i> CPF: ${v.cpf}</span>
+
+      container.innerHTML = cacheVisitantes.map(v => {
+        const tempoAtual = calcularTempoMin(v.dataEntrada, null);
+
+        return `
+          <div class="visitante-item" id="item-${esc(v.id)}" onclick="darBaixa('${esc(v.id)}')">
+            <div class="info">
+              <b>${esc(v.nome || '-')}</b>
+              <span><i class="fa-solid fa-id-card"></i> CPF: ${esc(v.cpf || '-')}</span>
+              <span><i class="fa-solid fa-user-group"></i> Responsável: ${esc(v.responsavel || '-')}</span>
+              <span><i class="fa-solid fa-clock"></i> Entrada: ${esc(formatarDataHora(v.dataEntrada))} • ${esc(tempoTexto(tempoAtual))}</span>
+            </div>
+            <div class="btn-out-circle"><i class="fa-solid fa-door-open"></i></div>
           </div>
-          <div class="btn-out-circle"><i class="fa-solid fa-door-open"></i></div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    async function darBaixa(documentId, nome) {
-      if(!AUTH || !AUTH.token) return;
+    async function darBaixa(id) {
+      if(inFlight) return;
+
+      const visitante = cacheVisitantes.find(v => v.id === id);
+      if(!visitante) return;
+
+      const nome = visitante.nome || 'visitante';
+
       if(!confirm(`Registrar saída definitiva de ${nome}?`)) return;
 
-      const item = document.getElementById(`item-${documentId}`);
-      const msg = document.getElementById('msg_status');
+      inFlight = true;
+
+      const item = document.getElementById(`item-${id}`);
 
       if (item) item.classList.add('leaving');
-      msg.style.color = "var(--green)";
-      msg.innerText = `Registrando baixa no sistema...`;
+
+      setMsg('Registrando saída no Firebase...', 'var(--green)');
 
       try {
-        // ***** ALTERADO PARA ENVIAR documentId *****
-        const dados = { documentId: documentId, tipo: 'SAIDA', token: AUTH.token, seguranca: AUTH.seguranca };
-        const res = await jsonp(API_URL + '?route=salvarVisitante&data=' + encodeURIComponent(JSON.stringify(dados)));
+        const agora = new Date();
+        const tempoMin = calcularTempoMin(visitante.dataEntrada, agora);
 
-        if(res.ok) {
-          msg.innerText = `Saída confirmada com sucesso!`;
-          cacheVisitantes = cacheVisitantes.filter(v => v.documentId !== documentId);
-          setTimeout(() => {
-            if(item) item.remove();
-            if(cacheVisitantes.length === 0) renderizarLista();
-            msg.innerText = "";
-          }, 450);
-        } else {
-          throw new Error(res.message || 'Erro ao registrar saída');
-        }
+        await updateDoc(doc(db,'visitantes',id), {
+          status: 'FINALIZADO',
+          dataSaida: Timestamp.fromDate(agora),
+          tempoPermanenciaMin: tempoMin,
+          segurancaSaida: AUTH.seguranca || AUTH.Nome || '---',
+          atualizadoEm: serverTimestamp()
+        });
+
+        setMsg(`Saída confirmada com sucesso! Permanência: ${tempoTexto(tempoMin)}.`, 'var(--green)');
+
+        cacheVisitantes = cacheVisitantes.filter(v => v.id !== id);
+
+        setTimeout(() => {
+          if(item) item.remove();
+          if(cacheVisitantes.length === 0) renderizarLista();
+          setMsg('');
+          inFlight = false;
+        }, 550);
+
       } catch(e) {
+        console.error(e);
+
         if(item) item.classList.remove('leaving');
-        msg.style.color = "var(--red)";
-        msg.innerText = "Erro ao processar. Tente novamente.";
+
+        setMsg('Erro ao processar saída. Tente novamente.', 'var(--red)');
+        inFlight = false;
       }
     }
+
+    window.darBaixa = darBaixa;
 
     window.onload = async function() {
       AUTH = await validarSessaoOuRedirecionar();
+
       if (!AUTH) return;
+
       document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || '---';
 
       const btn = document.getElementById('btnVoltarMenu');
+
       if (btn) {
         btn.addEventListener('click', function(e) {
           e.preventDefault();

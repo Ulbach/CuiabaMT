@@ -17,7 +17,6 @@
     </div>
   </div>
 
-
   <div style="width:90%;max-width:400px;margin:-18px 0 18px 0;">
     <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
       <div style="font-size:13px;color:#9fb4d3;">
@@ -36,80 +35,124 @@
         <i class="fa-solid fa-user-minus"></i> REGISTRAR SAÍDA
       </a>
     </div>
-    
+
     <a href="index.html" class="btn-back" id="btnMenuPrincipal">
       <i class="fa-solid fa-house"></i> Menu Principal
     </a>
   </div>
 
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<script>
-const API_URL='https://script.google.com/macros/s/AKfycbyii2idYKWcwJkusNJyvnlUQH1zN1RhEh4gGBQmVYM8t17AYqRe9GlJ282RiEtzk_jbxQ/exec';
-const STORAGE_KEY='delta_auth_v1';
+const firebaseConfig = {
+  apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
+  authDomain: "cuiaba-01617931-f126e.firebaseapp.com",
+  projectId: "cuiaba-01617931-f126e",
+  storageBucket: "cuiaba-01617931-f126e.firebasestorage.app",
+  messagingSenderId: "797115279316",
+  appId: "1:797115279316:web:f229366de16d4e066e1841"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
+const LOG_ID_KEY = 'delta_log_acesso_id_v1';
+const LOG_INICIO_KEY = 'delta_log_acesso_inicio_v1';
 
 function getAuth() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
-  catch(_) { return null; }
+  try {
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(STORAGE_KEY_LEGADO) ||
+      'null'
+    );
+  } catch(_) {
+    return null;
+  }
 }
 
 function clearAuth() {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+  localStorage.removeItem(LOG_ID_KEY);
+  localStorage.removeItem(LOG_INICIO_KEY);
 }
 
-function jsonp(url){
-  return new Promise((resolve,reject)=>{
-    const cb='cb_'+Math.random().toString(36).slice(2);
-    const script=document.createElement('script');
-    script.src=url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_ts=' + Date.now();
-    window[cb]=(data)=>{
-      try{ resolve(data); }
-      finally {
-        try { delete window[cb]; } catch(_) { window[cb]=undefined; }
-        if(script.parentNode) script.parentNode.removeChild(script);
-      }
-    };
-    script.onerror=()=>{
-      try { delete window[cb]; } catch(_) { window[cb]=undefined; }
-      if(script.parentNode) script.parentNode.removeChild(script);
-      reject(new Error('Erro de conexão'));
-    };
-    document.head.appendChild(script);
-  });
+function nomeAuth(auth){
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || '').trim().toUpperCase();
+}
+
+function sessaoValidaLocal(auth){
+  if(!auth) return false;
+  if(!nomeAuth(auth)) return false;
+  if(!perfilAuth(auth)) return false;
+  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return true;
 }
 
 async function validarSessaoOuRedirecionar(){
   const auth = getAuth();
-  if(!auth || !auth.token){
-    location.href='index.html';
+
+  if(!sessaoValidaLocal(auth)){
+    clearAuth();
+    location.href = 'index.html';
     return null;
   }
-  try {
-    const res = await jsonp(API_URL + '?route=validarSessao&token=' + encodeURIComponent(auth.token));
-    if(res && res.ok && res.autenticado){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm }));
-      return { token: auth.token, seguranca: res.seguranca, expiraEm: res.expiraEm };
-    }
-  } catch(_) {}
-  clearAuth();
-  location.href='index.html';
-  return null;
+
+  return {
+    ...auth,
+    seguranca: nomeAuth(auth),
+    Perfil: perfilAuth(auth)
+  };
 }
 
-async function logoutSistema(){
-  const auth = getAuth();
-  try {
-    if(auth && auth.token) await jsonp(API_URL + '?route=logoutSeguranca&token=' + encodeURIComponent(auth.token));
-  } catch(_) {}
-  clearAuth();
-  location.href='index.html';
+async function registrarLogout(statusFinal='FINALIZADA'){
+  try{
+    const logId = localStorage.getItem(LOG_ID_KEY);
+    const inicioMs = Number(localStorage.getItem(LOG_INICIO_KEY) || 0);
+
+    if(!logId) return;
+
+    const fimMs = Date.now();
+    const tempoMin = inicioMs ? Math.max(0, Math.round((fimMs - inicioMs) / 60000)) : null;
+
+    await updateDoc(doc(db,'logs_acesso',logId), {
+      logoutEm: serverTimestamp(),
+      logoutMs: fimMs,
+      tempoConectadoMin: tempoMin,
+      status: statusFinal,
+      atualizadoEm: serverTimestamp()
+    });
+
+  }catch(e){
+    console.error('Erro ao registrar logout:', e);
+  }
 }
+
+window.logoutSistema = async function(){
+  await registrarLogout('FINALIZADA');
+  clearAuth();
+  location.href = 'index.html';
+};
 
 window.onload = async function(){
   const auth = await validarSessaoOuRedirecionar();
   if(!auth) return;
 
   const el = document.getElementById('sessaoSeguranca');
-  if(el) el.textContent = auth.seguranca || '---';
+  if(el) el.textContent = (auth.seguranca || '---') + ' - ' + (auth.Perfil || '');
 
   const btn = document.getElementById('btnMenuPrincipal');
   if(btn){
