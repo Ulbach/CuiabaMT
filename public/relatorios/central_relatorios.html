@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Central de Relatórios - Delta Cuiabá</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+
+:root{
+--bg1:#061427;
+--bg2:#0b1b33;
+--card:rgba(255,255,255,0.06);
+--border:rgba(255,255,255,0.12);
+--text-main:#e6edf7;
+--text-soft:#9fb4d3;
+--accent:#22c55e;
+}
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:system-ui,-apple-system,sans-serif;
+background:linear-gradient(180deg,var(--bg1),var(--bg2));
+color:var(--text-main);
+min-height:100vh;
+overflow-x:hidden;
+position:relative;
+}
+
+body::after{
+content:"";
+position:fixed;
+left:0;
+right:0;
+bottom:0;
+height:220px;
+pointer-events:none;
+background:
+linear-gradient(
+to top,
+rgba(34,197,94,0.42) 0%,
+rgba(34,197,94,0.20) 35%,
+rgba(34,197,94,0.08) 58%,
+rgba(34,197,94,0) 100%
+);
+}
+
+.hero{
+width:100%;
+height:180px;
+
+background:
+linear-gradient(
+180deg,
+rgba(6,20,39,0.18) 0%,
+rgba(6,20,39,0.65) 100%
+),
+url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600')
+center/cover no-repeat;
+
+display:flex;
+align-items:center;
+justify-content:center;
+text-align:center;
+}
+
+.brand-title{
+font-size:28px;
+font-weight:900;
+letter-spacing:4px;
+color:#fff;
+
+text-shadow:
+0 0 8px rgba(34,197,94,0.5),
+0 0 18px rgba(34,197,94,0.25);
+}
+
+.brand-sub{
+margin-top:10px;
+font-size:18px;
+font-weight:700;
+color:#dbeafe;
+}
+
+.container{
+width:100%;
+max-width:520px;
+margin:auto;
+padding:24px 20px 40px;
+}
+
+.section-title{
+font-size:13px;
+text-transform:uppercase;
+letter-spacing:1px;
+color:var(--text-soft);
+margin-bottom:18px;
+font-weight:700;
+}
+
+.menu{
+display:flex;
+flex-direction:column;
+gap:16px;
+}
+
+.card{
+background:var(--card);
+border:1px solid var(--border);
+border-radius:22px;
+padding:22px 18px;
+text-decoration:none;
+color:var(--text-main);
+
+display:flex;
+align-items:center;
+gap:18px;
+
+transition:0.25s;
+}
+
+.card:hover{
+transform:translateY(-2px);
+border-color:rgba(34,197,94,0.45);
+box-shadow:0 0 18px rgba(34,197,94,0.12);
+}
+
+.icon{
+width:58px;
+height:58px;
+border-radius:18px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:rgba(255,255,255,0.05);
+font-size:24px;
+color:var(--accent);
+}
+
+.card-content{
+flex:1;
+}
+
+.card-title{
+font-size:17px;
+font-weight:800;
+}
+
+.card-desc{
+margin-top:6px;
+font-size:13px;
+color:var(--text-soft);
+line-height:1.4;
+}
+
+.footer-btn{
+width:100%;
+margin-top:30px;
+background:var(--card);
+border:1px solid var(--border);
+padding:18px;
+border-radius:20px;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:10px;
+color:var(--text-soft);
+text-decoration:none;
+font-weight:700;
+transition:0.25s;
+}
+
+.footer-btn:hover{
+border-color:rgba(34,197,94,0.35);
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="hero">
+
+<div>
+
+<div class="brand-title">
+DELTA CUIABÁ
+</div>
+
+<div class="brand-sub">
+Central de Relatórios
+</div>
+
+</div>
+
+</div>
+
+<div class="container">
+
+<div class="section-title">
+Relatórios Disponíveis
+</div>
+
+<div class="menu">
+
+<a href="relatorio_cnh.html" class="card">
+
+<div class="icon">
+<i class="fa-solid fa-id-card"></i>
+</div>
+
+<div class="card-content">
+<div class="card-title">
+Relatório CNH
+</div>
+
+<div class="card-desc">
+Controle de vencimentos e motoristas.
+</div>
+</div>
+
+</a>
+
+<a href="relatorio_noturno.html" class="card">
+
+<div class="icon">
+<i class="fa-solid fa-moon"></i>
+</div>
+
+<div class="card-content">
+<div class="card-title">
+Relatório Noturno
+</div>
+
+<div class="card-desc">
+Movimentações realizadas fora do horário operacional.
+</div>
+</div>
+
+</a>
+
+<a href="relatorio_operacional.html" class="card">
+
+<div class="icon">
+<i class="fa-solid fa-truck-moving"></i>
+</div>
+
+<div class="card-content">
+<div class="card-title">
+Relatório Operacional
+</div>
+
+<div class="card-desc">
+Controle operacional da frota.
+</div>
+</div>
+
+</a>
+
+<a href="relatorio_resumo.html" class="card">
+
+<div class="icon">
+<i class="fa-solid fa-chart-column"></i>
+</div>
+
+<div class="card-content">
+<div class="card-title">
+Relatório Resumo
+</div>
+
+<div class="card-desc">
+Resumo geral das operações.
+</div>
+</div>
+
+</a>
+
+<a href="testes.html" class="card">
+
+<div class="icon">
+<i class="fa-solid fa-flask"></i>
+</div>
+
+<div class="card-content">
+<div class="card-title">
+Página de Testes
+</div>
+
+<div class="card-desc">
+Ferramentas e testes do sistema.
+</div>
+</div>
+
+</a>
+
+</div>
+
+<a href="../veiculos.html" class="footer-btn">
+
+<i class="fa-solid fa-chevron-left"></i>
+
+Voltar ao Controle de Frota
+
+</a>
+
+</div>
+
+</body>
+</html>
