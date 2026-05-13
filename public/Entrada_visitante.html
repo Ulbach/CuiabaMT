@@ -306,6 +306,29 @@ label{
   color:#fff;
 }
 
+.consulta-box{
+  display:none;
+  width:100%;
+  max-width:520px;
+  margin:-4px auto 18px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(59,130,246,.10);
+  border:1px solid rgba(125,211,252,.28);
+  color:#bfdbfe;
+  font-size:12px;
+  font-weight:900;
+  text-align:center;
+  line-height:1.35;
+  box-shadow:var(--shadow);
+}
+
+body.perfil-consulta .btn-save{
+  opacity:.45;
+  filter:grayscale(.6);
+  cursor:not-allowed;
+}
+
 @media(max-width:560px){
   .hero-header{
     height:160px;
@@ -336,6 +359,10 @@ label{
   <div class="session-box">
     Segurança logado: <strong id="sessaoSegurancaTopo">...</strong>
   </div>
+</div>
+
+<div class="consulta-box" id="consultaBox">
+  Perfil CONSULTA: tela liberada para visualização. Registro de entrada bloqueado.
 </div>
 
 <div class="form-container">
@@ -453,6 +480,10 @@ function nomeAuth(auth){
 
 function perfilAuth(auth){
   return String(auth?.Perfil || auth?.perfil || 'OPERADOR').trim().toUpperCase();
+}
+
+function isConsulta(){
+  return perfilAuth(AUTH) === 'CONSULTA';
 }
 
 function tokenAuth(auth){
@@ -573,6 +604,16 @@ function onAnyInput() {
   const nome = document.getElementById('nome').value.trim();
   const responsavel = document.getElementById('responsavel').value.trim();
 
+  if(isConsulta()){
+    btn.classList.remove('ready');
+    btn.disabled = true;
+    btn.innerText = 'SOMENTE CONSULTA';
+    btn.title = 'Perfil CONSULTA não possui permissão para registrar entrada.';
+    return;
+  }
+
+  btn.disabled = false;
+  btn.innerText = 'Registrar Entrada';
   btn.classList.toggle('ready', nome.length > 2 && responsavel.length > 1 && !inFlight);
 }
 
@@ -693,6 +734,12 @@ async function visitanteEmAberto(cpf){
 
 async function salvarEntrada() {
   if (inFlight) return;
+
+  if(isConsulta()){
+    setMsg('Perfil CONSULTA não possui permissão para registrar entrada de visitante.', 'var(--alert)');
+    onAnyInput();
+    return;
+  }
 
   const btn = document.getElementById('btnSalvar');
   if (!btn.classList.contains('ready')) return;
@@ -885,6 +932,22 @@ window.onload = async function() {
   if (!AUTH) return;
 
   document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || AUTH.Nome || AUTH.nome || AUTH.usuario || AUTH.email || '---';
+
+  if(isConsulta()){
+    document.body.classList.add('perfil-consulta');
+
+    const consultaBox = document.getElementById('consultaBox');
+    const btnSalvar = document.getElementById('btnSalvar');
+
+    if(consultaBox) consultaBox.style.display = 'block';
+
+    if(btnSalvar){
+      btnSalvar.disabled = true;
+      btnSalvar.classList.remove('ready');
+      btnSalvar.innerText = 'SOMENTE CONSULTA';
+      btnSalvar.title = 'Perfil CONSULTA não possui permissão para registrar entrada.';
+    }
+  }
 
   document.getElementById('btnVoltarMenu').addEventListener('click', e => {
     e.preventDefault();

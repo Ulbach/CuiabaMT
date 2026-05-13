@@ -35,6 +35,26 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;point
 .btn-report i{color:var(--accent);font-size:24px;}
 .btn-footer{width:100%;background:var(--card);border:1px solid var(--border);padding:18px;border-radius:20px;margin-top:18px;margin-bottom:40px;color:var(--text-soft);text-decoration:none;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;}
 .hidden-admin{display:none!important;}
+.consulta-info{
+  display:none;
+  margin:-12px 0 22px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(59,130,246,.10);
+  border:1px solid rgba(125,211,252,.28);
+  color:#bfdbfe;
+  font-size:12px;
+  font-weight:900;
+  text-align:center;
+  line-height:1.35;
+}
+body.perfil-consulta .btn-action{
+  border-color:rgba(125,211,252,.24);
+}
+body.perfil-consulta .btn-action:hover{
+  border-color:rgba(125,211,252,.42);
+  box-shadow:0 10px 30px rgba(0,0,0,0.35), 0 0 12px rgba(125,211,252,0.10);
+}
 </style>
 </head>
 <body>
@@ -56,6 +76,9 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;point
 <div class="action-grid">
 <a href="saida.html" class="btn-action" id="btnSaida"><i class="fa-solid fa-truck-arrow-right ico-saida"></i><span>Registro Saída</span></a>
 <a href="entrada.html" class="btn-action" id="btnEntrada"><i class="fa-solid fa-truck-ramp-box ico-entrada"></i><span>Registro Entrada</span></a>
+</div>
+<div class="consulta-info" id="consultaInfo">
+  Perfil CONSULTA: entrada, saída e relatórios podem ser abertos para visualização. A gravação permanece bloqueada dentro das telas.
 </div>
 <div class="section-title">Últimas 5 Movimentações</div>
 <div id="listaRecentes" class="list-wrap">
@@ -178,15 +201,30 @@ window.onload=async function(){
   if(el)el.textContent=(AUTH.Nome||'---')+' - '+perfil;
 
   const btnRelatorioGeral=document.getElementById('btnRelatorioGeral');
-  if(btnRelatorioGeral && perfil==='ADMIN'){
+  if(btnRelatorioGeral && (perfil==='ADMIN' || perfil==='CONSULTA')){
     btnRelatorioGeral.classList.remove('hidden-admin');
+
+    if(perfil==='CONSULTA'){
+      btnRelatorioGeral.title='Perfil CONSULTA pode acessar relatórios para visualização.';
+    }
   }
 
   if(perfil==='CONSULTA'){
+    document.body.classList.add('perfil-consulta');
+
+    const consultaInfo=document.getElementById('consultaInfo');
     const btnSaida=document.getElementById('btnSaida');
     const btnEntrada=document.getElementById('btnEntrada');
-    if(btnSaida)btnSaida.classList.add('hidden-admin');
-    if(btnEntrada)btnEntrada.classList.add('hidden-admin');
+
+    if(consultaInfo)consultaInfo.style.display='block';
+
+    if(btnSaida){
+      btnSaida.title='Perfil CONSULTA pode abrir a tela para visualização. Gravação bloqueada no formulário.';
+    }
+
+    if(btnEntrada){
+      btnEntrada.title='Perfil CONSULTA pode abrir a tela para visualização. Gravação bloqueada no formulário.';
+    }
   }
 
   const btnVoltar=document.getElementById('btnVoltarInicio');

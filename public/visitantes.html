@@ -348,6 +348,40 @@ body::after{
   border-radius:18px;
 }
 
+.consulta-info{
+  display:none;
+  margin:-4px 0 18px;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(59,130,246,.10);
+  border:1px solid rgba(125,211,252,.28);
+  color:#bfdbfe;
+  font-size:12px;
+  font-weight:900;
+  text-align:center;
+  line-height:1.35;
+  box-shadow:var(--shadow);
+}
+
+body.perfil-consulta .btn-nav{
+  border-color:rgba(125,211,252,.24);
+}
+
+body.perfil-consulta .btn-nav:hover{
+  border-color:rgba(125,211,252,.42);
+  box-shadow:0 0 18px rgba(125,211,252,.10);
+}
+
+body.perfil-consulta .btn-nav span::after{
+  content:"Somente consulta";
+  display:block;
+  margin-top:4px;
+  font-size:9px;
+  font-weight:900;
+  color:#7dd3fc;
+  letter-spacing:.4px;
+}
+
 @media(max-width:560px){
   .menu-grid{
     grid-template-columns:1fr;
@@ -398,6 +432,10 @@ body::after{
       <i class="fa-solid fa-user-minus"></i>
       <span>Registrar Saída</span>
     </a>
+  </div>
+
+  <div class="consulta-info" id="consultaInfo">
+    Perfil CONSULTA: entrada e saída podem ser abertas para visualização. A gravação permanece bloqueada dentro das telas.
   </div>
 
   <a href="relatorio_visitantes.html" class="btn-report" id="btnRelatorioVisitas">
@@ -493,7 +531,7 @@ function clearAuth() {
 }
 
 function nomeAuth(auth){
-  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '';
 }
 
 function perfilAuth(auth){
@@ -662,6 +700,24 @@ window.onload = async function(){
 
   const el = document.getElementById('sessaoSeguranca');
   if(el) el.textContent = (auth.seguranca || '---') + ' - ' + (auth.Perfil || 'OPERADOR');
+
+  if(auth.Perfil === 'CONSULTA'){
+    document.body.classList.add('perfil-consulta');
+
+    const consultaInfo = document.getElementById('consultaInfo');
+    const btnEntrada = document.querySelector('.btn-entrada');
+    const btnSaida = document.querySelector('.btn-saida');
+
+    if(consultaInfo) consultaInfo.style.display = 'block';
+
+    if(btnEntrada){
+      btnEntrada.title = 'Perfil CONSULTA pode abrir a tela para visualização. Gravação bloqueada no formulário.';
+    }
+
+    if(btnSaida){
+      btnSaida.title = 'Perfil CONSULTA pode abrir a tela para visualização. Gravação bloqueada no formulário.';
+    }
+  }
 
   const btn = document.getElementById('btnMenuPrincipal');
   if(btn){
