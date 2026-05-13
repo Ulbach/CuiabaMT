@@ -63,6 +63,20 @@
 
     .session-box strong{color:#e6edf7}
 
+    .consulta-box{
+      display:none;
+      margin:-4px 0 18px 0;
+      padding:12px 14px;
+      border-radius:14px;
+      background:rgba(59,130,246,0.10);
+      border:1px solid rgba(125,211,252,0.28);
+      color:#bfdbfe;
+      text-align:center;
+      font-size:12px;
+      font-weight:800;
+      line-height:1.35;
+    }
+
     .header{
       text-align:center;
       margin-bottom:25px;
@@ -202,6 +216,10 @@
       Segurança logado: <strong id="sessaoSegurancaTopo">...</strong>
     </div>
 
+    <div class="consulta-box" id="consultaBox">
+      Perfil CONSULTA: visualização liberada. Gravação de entrada bloqueada.
+    </div>
+
     <div class="header">
       <h2>Registrar Entrada</h2>
       <p># DELTA CUIABÁ #</p>
@@ -292,9 +310,11 @@ function clearAuth(){ localStorage.removeItem(STORAGE_KEY); localStorage.removeI
 function sessaoValidaLocal(auth){
   if(!auth) return false;
   if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
-  return !!(auth.Nome || auth.seguranca || auth.nome || auth.usuario);
+  return !!(auth.Nome || auth.seguranca || auth.nome || auth.usuario || auth.email);
 }
-function nomeSeguranca(auth){ return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '---'; }
+function nomeSeguranca(auth){ return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '---'; }
+function perfilAuth(auth){ return String(auth?.Perfil || auth?.perfil || auth?.tipo || auth?.Tipo || 'OPERADOR').trim().toUpperCase(); }
+function isConsulta(){ return perfilAuth(AUTH) === 'CONSULTA'; }
 function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function setMsg(texto, corVar){ const msg=document.getElementById('msg'); msg.style.color=corVar?`var(${corVar})`:'var(--text-soft)'; msg.innerText=texto||''; }
 function setHint(texto, corVar){ const hint=document.getElementById('hintKm'); hint.style.color=corVar?`var(${corVar})`:'var(--text-soft)'; hint.innerHTML=texto||''; }
@@ -398,6 +418,13 @@ function validateForm(){
   const m=document.getElementById('motorista').value;
   const s=document.getElementById('seguranca').value;
   const btn=document.getElementById('btnSalvar');
+
+  if(isConsulta()){
+    btn.disabled=true;
+    btn.title='Perfil CONSULTA não possui permissão para gravar entrada.';
+    return;
+  }
+
   if(v && k && m && s && k < KM_SAIDA){
     setMsg(`KM de retorno inferior ao KM de saída (${KM_SAIDA}).`, '--red');
     btn.disabled=true;
@@ -410,6 +437,12 @@ function validateForm(){
 
 async function doEnviar(){
   if(inFlight) return;
+
+  if(isConsulta()){
+    setMsg('Perfil CONSULTA não possui permissão para gravar entrada de veículo.', '--red');
+    validateForm();
+    return;
+  }
   const veiculoId=document.getElementById('veiculo').value;
   const veiculo=VEICULOS_NA_RUA.find(v=>v.id===veiculoId);
   const KmRetorno=Number(String(document.getElementById('kmRetorno').value||'0').replace(',','.'))||0;
@@ -478,6 +511,17 @@ async function init(){
   const nome=nomeSeguranca(AUTH);
   document.getElementById('sessaoSegurancaTopo').textContent=nome;
   document.getElementById('seguranca').value=nome;
+
+  if(isConsulta()){
+    const consultaBox=document.getElementById('consultaBox');
+    const btnSalvar=document.getElementById('btnSalvar');
+    if(consultaBox) consultaBox.style.display='block';
+    if(btnSalvar){
+      btnSalvar.disabled=true;
+      btnSalvar.innerText='SOMENTE CONSULTA';
+      btnSalvar.title='Perfil CONSULTA não possui permissão para gravar entrada.';
+    }
+  }
 
   document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);
   document.getElementById('kmRetorno').addEventListener('input', validateForm);

@@ -17,6 +17,7 @@
     .card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:30px;backdrop-filter:blur(10px);box-shadow:var(--shadow);position:relative;overflow:hidden}
     .session-box{margin:-6px 0 18px 0;padding:12px 14px;border-radius:14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.18);text-align:center;font-size:13px;color:#9fb4d3}
     .session-box strong{color:#e6edf7}
+    .consulta-box{display:none;margin:-4px 0 18px 0;padding:12px 14px;border-radius:14px;background:rgba(59,130,246,0.10);border:1px solid rgba(125,211,252,0.28);color:#bfdbfe;text-align:center;font-size:12px;font-weight:800;line-height:1.35}
     .header{text-align:center;margin-bottom:25px}
     .header h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-0.5px;color:var(--red)}
     .header p{margin:5px 0 0;font-size:11px;color:var(--text-soft);text-transform:uppercase;letter-spacing:2px;font-weight:600}
@@ -44,6 +45,10 @@
 
     <div class="session-box">
       Segurança logado: <strong id="sessaoSegurancaTopo">...</strong>
+    </div>
+
+    <div class="consulta-box" id="consultaBox">
+      Perfil CONSULTA: visualização liberada. Gravação de saída bloqueada.
     </div>
 
     <div class="header">
@@ -154,11 +159,19 @@ function clearAuth(){
 function sessaoValidaLocal(auth){
   if(!auth) return false;
   if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
-  return !!(auth.Nome || auth.seguranca || auth.nome || auth.usuario);
+  return !!(auth.Nome || auth.seguranca || auth.nome || auth.usuario || auth.email);
 }
 
 function nomeSeguranca(auth){
-  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '---';
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '---';
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || auth?.tipo || auth?.Tipo || 'OPERADOR').trim().toUpperCase();
+}
+
+function isConsulta(){
+  return perfilAuth(AUTH) === 'CONSULTA';
 }
 
 function esc(v){
@@ -343,6 +356,12 @@ function validateForm(){
   const destino = document.getElementById('destino').value.trim();
   const btn = document.getElementById('btnSalvar');
 
+  if(isConsulta()){
+    btn.disabled = true;
+    btn.title = 'Perfil CONSULTA não possui permissão para gravar saída.';
+    return;
+  }
+
   if(veiculoId && motoristaId && seguranca && km && destino && km < KM_ANTERIOR){
     setMsg(`KM inferior ao último registrado (${KM_ANTERIOR}).`, '--red');
     btn.disabled = true;
@@ -357,6 +376,12 @@ function validateForm(){
 
 async function doEnviar(){
   if(inFlight) return;
+
+  if(isConsulta()){
+    setMsg('Perfil CONSULTA não possui permissão para gravar saída de veículo.', '--red');
+    validateForm();
+    return;
+  }
 
   const veiculoId = document.getElementById('veiculo').value;
   const motoristaId = document.getElementById('motorista').value;
@@ -438,6 +463,17 @@ async function init(){
   const nome = nomeSeguranca(AUTH);
   document.getElementById('sessaoSegurancaTopo').textContent = nome;
   document.getElementById('seguranca').value = nome;
+
+  if(isConsulta()){
+    const consultaBox = document.getElementById('consultaBox');
+    const btnSalvar = document.getElementById('btnSalvar');
+    if(consultaBox) consultaBox.style.display = 'block';
+    if(btnSalvar){
+      btnSalvar.disabled = true;
+      btnSalvar.innerText = 'SOMENTE CONSULTA';
+      btnSalvar.title = 'Perfil CONSULTA não possui permissão para gravar saída.';
+    }
+  }
 
   document.getElementById('motorista').addEventListener('change', filtrarVeiculosPorMotorista);
   document.getElementById('veiculo').addEventListener('change', onChangeVeiculo);

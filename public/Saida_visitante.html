@@ -381,7 +381,7 @@ function clearAuth() {
 }
 
 function nomeAuth(auth){
-  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || '';
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '';
 }
 
 function perfilAuth(auth){
@@ -389,7 +389,7 @@ function perfilAuth(auth){
 }
 
 function tokenAuth(auth){
-  return auth?.token || auth?.id || auth?.Sen_Segura || '';
+  return auth?.token || auth?.id || auth?.Sen_Segura || auth?.uid || auth?.email || '';
 }
 
 function sessaoValidaLocal(auth){
@@ -561,6 +561,13 @@ async function darBaixa(id) {
 
   if(!confirm(`Registrar saída definitiva de ${nome}?`)) return;
 
+  if(!AUTH || !AUTH.seguranca){
+    setMsg('Sessão inválida. Faça login novamente.', 'var(--alert)');
+    clearAuth();
+    setTimeout(() => location.href = 'index.html', 1200);
+    return;
+  }
+
   inFlight = true;
 
   const item = document.getElementById(`item-${id}`);
@@ -577,7 +584,11 @@ async function darBaixa(id) {
       status: 'FINALIZADO',
       dataSaida: Timestamp.fromDate(agora),
       tempoPermanenciaMin: tempoMin,
-      segurancaSaida: AUTH.seguranca || AUTH.Nome || '---',
+
+      segurancaSaida: AUTH.seguranca || AUTH.Nome || AUTH.nome || AUTH.usuario || AUTH.email || '---',
+      perfilSaida: AUTH.Perfil || AUTH.perfil || 'OPERADOR',
+      origemSaida: 'Saida_visitante.html',
+
       atualizadoEm: serverTimestamp()
     });
 
@@ -609,7 +620,8 @@ window.onload = async function() {
 
   if (!AUTH) return;
 
-  document.getElementById('sessaoSegurancaTopo').textContent = AUTH.seguranca || '---';
+  document.getElementById('sessaoSegurancaTopo').textContent =
+    AUTH.seguranca || AUTH.Nome || AUTH.nome || AUTH.usuario || AUTH.email || '---';
 
   const btn = document.getElementById('btnVoltarMenu');
 

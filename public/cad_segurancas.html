@@ -273,6 +273,30 @@ input:focus,select:focus{
   text-align:center;
 }
 
+.consulta-box{
+  display:none;
+  margin-bottom:16px;
+  padding:13px 14px;
+  border-radius:14px;
+  background:rgba(59,130,246,.10);
+  border:1px solid rgba(125,211,252,.28);
+  color:#bfdbfe;
+  text-align:center;
+  font-size:12px;
+  font-weight:900;
+  line-height:1.4;
+}
+
+body.perfil-consulta #tituloForm::after{
+  content:" - SOMENTE CONSULTA";
+  color:#7dd3fc;
+}
+
+body.perfil-consulta #formCadastro input,
+body.perfil-consulta #formCadastro select{
+  opacity:.62;
+}
+
 @media(max-width:620px){
   .row{
     grid-template-columns:1fr;
@@ -312,6 +336,10 @@ input:focus,select:focus{
     <button class="btn btn-light" type="button" onclick="consultarSeguranca()">Consultar</button>
 
     <div id="resultado" class="result"></div>
+  </div>
+
+  <div class="consulta-box" id="consultaBox">
+    Perfil CONSULTA: consulta liberada. Inclusão e edição de seguranças bloqueadas.
   </div>
 
   <div class="card">
@@ -393,9 +421,76 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+const STORAGE_KEY = 'delta_auth_firebase_v1';
+const STORAGE_KEY_LEGADO = 'delta_auth_v1';
+
+let AUTH = null;
 let modoEdicao = false;
 let editId = null;
 let resultadosCache = [];
+
+function getAuth(){
+  try{
+    return JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ||
+      localStorage.getItem(STORAGE_KEY_LEGADO) ||
+      'null'
+    );
+  }catch(_){
+    return null;
+  }
+}
+
+function clearAuth(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+}
+
+function nomeAuth(auth){
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '';
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || auth?.tipo || auth?.Tipo || 'OPERADOR').trim().toUpperCase();
+}
+
+function sessaoValidaLocal(auth){
+  if(!auth) return false;
+  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return !!nomeAuth(auth);
+}
+
+function isConsulta(){
+  return perfilAuth(AUTH) === 'CONSULTA';
+}
+
+function aplicarPerfilConsulta(){
+  AUTH = getAuth();
+
+  if(!sessaoValidaLocal(AUTH)){
+    clearAuth();
+    location.href = 'index.html';
+    return;
+  }
+
+  if(isConsulta()){
+    document.body.classList.add('perfil-consulta');
+
+    const box = document.getElementById('consultaBox');
+    const btn = document.getElementById('btnSalvar');
+    const cancelar = document.getElementById('btnCancelarEdicao');
+
+    if(box) box.style.display = 'block';
+
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = 'SOMENTE CONSULTA';
+      btn.title = 'Perfil CONSULTA não possui permissão para salvar seguranças.';
+    }
+
+    if(cancelar) cancelar.style.display = 'none';
+  }
+}
 
 function texto(id){
   return (document.getElementById(id)?.value || "").trim();
@@ -455,6 +550,26 @@ function mostrarResultado(html){
 }
 
 function setModoEdicao(ativo,id=null){
+  if(isConsulta()){
+    modoEdicao = false;
+    editId = null;
+
+    const titulo = document.getElementById("tituloForm");
+    const btn = document.getElementById("btnSalvar");
+    const cancelar = document.getElementById("btnCancelarEdicao");
+    const banner = document.getElementById("editBanner");
+
+    if(titulo) titulo.textContent = "Novo Cadastro";
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = "SOMENTE CONSULTA";
+      btn.title = "Perfil CONSULTA não possui permissão para salvar seguranças.";
+    }
+    if(cancelar) cancelar.style.display = "none";
+    if(banner) banner.style.display = "none";
+    return;
+  }
+
   modoEdicao = ativo;
   editId = id;
 
@@ -465,12 +580,18 @@ function setModoEdicao(ativo,id=null){
 
   if(ativo){
     if(titulo) titulo.textContent = "Editando Cadastro";
-    if(btn) btn.textContent = "Atualizar no Firebase";
+    if(btn){
+      btn.textContent = "Atualizar no Firebase";
+      btn.disabled = false;
+    }
     if(cancelar) cancelar.style.display = "flex";
     if(banner) banner.style.display = "block";
   }else{
     if(titulo) titulo.textContent = "Novo Cadastro";
-    if(btn) btn.textContent = "Salvar";
+    if(btn){
+      btn.textContent = "Salvar";
+      btn.disabled = false;
+    }
     if(cancelar) cancelar.style.display = "none";
     if(banner) banner.style.display = "none";
   }
@@ -515,6 +636,10 @@ async function buscarPrefixo(colecao,campoBusca,termo,max=10){
 }
 
 function renderSeguranca(d,idx){
+  const editBtn = isConsulta()
+    ? ""
+    : `<button class="btn btn-warn" type="button" onclick="editarSeguranca(${idx})">Editar cadastro</button>`;
+
   return `<div class="result-item">
     <div class="result-title">${esc(d.Nome || "-")}</div>
     <div class="result-sub">
@@ -522,11 +647,16 @@ function renderSeguranca(d,idx){
       Perfil: ${esc(d.Perfil || "-")}<br>
       Ativo: ${d.Ativo ? "Sim" : "Não"}
     </div>
-    <button class="btn btn-warn" type="button" onclick="editarSeguranca(${idx})">Editar cadastro</button>
+    ${editBtn}
   </div>`;
 }
 
 function editarSeguranca(idx){
+  if(isConsulta()){
+    msg('Perfil CONSULTA não possui permissão para editar seguranças.','warn');
+    return;
+  }
+
   const d = resultadosCache[idx];
   if(!d) return;
 
@@ -542,6 +672,11 @@ function editarSeguranca(idx){
 
 async function salvarSeguranca(){
   limparMsg();
+
+  if(isConsulta()){
+    msg('Perfil CONSULTA não possui permissão para salvar seguranças.','erro');
+    return;
+  }
 
   const nomeOriginal = texto("Nome");
   const nomeBusca = upper(nomeOriginal);
@@ -630,6 +765,8 @@ Object.assign(window,{
   editarSeguranca,
   cancelarEdicao
 });
+
+window.addEventListener('load', aplicarPerfilConsulta);
 </script>
 
 </body>
