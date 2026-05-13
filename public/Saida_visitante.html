@@ -10,18 +10,25 @@
 :root{
   --bg1:#061427;
   --bg2:#0b1b33;
+
   --card:rgba(255,255,255,0.06);
   --border:rgba(255,255,255,0.12);
+
   --text-main:#e6edf7;
   --text-soft:#9fb4d3;
+
   --accent:#22c55e;
   --alert:#ef4444;
   --warn:#ffb020;
-  --blue:#3b82f6;
+
+  --blue:#7dd3fc;
+
   --shadow:0 12px 28px rgba(0,0,0,.35);
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
 
 body{
   margin:0;
@@ -85,7 +92,9 @@ body::after{
   font-weight:900;
   letter-spacing:.4px;
   color:#fff;
-  text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);
+  text-shadow:
+    0 0 8px rgba(34,197,94,.5),
+    0 0 18px rgba(34,197,94,.25);
 }
 
 .hero-content p{
@@ -106,17 +115,17 @@ body::after{
 
 .session-box{
   background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.10);
   border-radius:18px;
   padding:12px 14px;
   box-shadow:var(--shadow);
   font-size:13px;
-  color:var(--text-soft);
+  color:#9fb4d3;
   text-align:center;
 }
 
 .session-box strong{
-  color:var(--text-main);
+  color:#dbeafe;
 }
 
 .container{
@@ -150,8 +159,8 @@ body::after{
 
 .visitante-item:hover{
   transform:translateY(-2px);
-  border-color:rgba(239,68,68,.45);
-  box-shadow:0 0 18px rgba(239,68,68,.12);
+  border-color:rgba(125,211,252,.35);
+  box-shadow:0 0 18px rgba(125,211,252,.10);
 }
 
 .visitante-item.leaving{
@@ -174,13 +183,13 @@ body::after{
 
 .info span{
   font-size:12px;
-  color:var(--text-soft);
+  color:#cbd5e1;
   line-height:1.35;
 }
 
 .info i{
   width:16px;
-  color:var(--accent);
+  color:var(--blue);
 }
 
 .btn-out-circle{
@@ -207,8 +216,8 @@ body::after{
 .empty-box i{
   font-size:34px;
   margin-bottom:10px;
-  opacity:.4;
-  color:var(--accent);
+  opacity:.55;
+  color:var(--blue);
 }
 
 .loading-box{
@@ -220,6 +229,7 @@ body::after{
 .loading-box i{
   font-size:24px;
   margin-bottom:10px;
+  color:var(--blue);
 }
 
 #msg_status{
@@ -254,17 +264,32 @@ body::after{
   transition:.25s;
 }
 
+.btn-back i{
+  color:var(--blue);
+}
+
 .btn-back:hover{
   transform:translateY(-2px);
-  border-color:rgba(34,197,94,.45);
+  border-color:rgba(125,211,252,.35);
   color:#fff;
 }
 
 @media(max-width:560px){
-  .hero-header{height:160px}
-  .hero-content h2{font-size:23px}
-  .panel{padding:14px}
-  .visitante-item{align-items:flex-start}
+  .hero-header{
+    height:160px;
+  }
+
+  .hero-content h2{
+    font-size:23px;
+  }
+
+  .panel{
+    padding:14px;
+  }
+
+  .visitante-item{
+    align-items:flex-start;
+  }
 }
 </style>
 </head>
@@ -275,7 +300,7 @@ body::after{
   <div class="hero-content">
     <i class="fa-solid fa-person-walking-arrow-right"></i>
     <h2>Saída de Visitantes</h2>
-    <p>DELTA BIOCOMBUSTÍVEIS</p>
+    <p>DELTA CUIABA MT</p>
   </div>
 </div>
 
