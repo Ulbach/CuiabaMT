@@ -229,10 +229,8 @@ window.onload=async function(){
 
   const btnVoltar=document.getElementById('btnVoltarInicio');
   if(btnVoltar){
-    btnVoltar.addEventListener('click',async function(e){
+    btnVoltar.addEventListener('click',function(e){
       e.preventDefault();
-      await registrarLogout('FINALIZADA');
-      clearAuth();
       location.href='index.html';
     });
   }
