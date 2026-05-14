@@ -151,12 +151,18 @@
       cursor:not-allowed;
     }
 
+    select:disabled,input:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+
     .hint{
       margin-top:7px;
       font-size:12px;
       color:var(--text-soft);
       min-height:16px;
       text-align:right;
+      line-height:1.4;
     }
 
     .hint b{color:var(--red)}
@@ -245,13 +251,14 @@
     </div>
 
     <div class="field">
-      <label>Motorista</label>
+      <label>Motorista no Retorno</label>
       <div class="input-group">
         <i class="fa-solid fa-user-tie"></i>
         <select id="motorista">
-          <option value="">Aguardando...</option>
+          <option value="">Selecione o veículo primeiro</option>
         </select>
       </div>
+      <div id="hintMotorista" class="hint">Será preenchido com o motorista da saída, mas pode ser alterado.</div>
     </div>
 
     <div class="field">
@@ -299,33 +306,99 @@ const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 let AUTH = null;
 let inFlight = false;
 let VEICULOS_NA_RUA = [];
+let MOTORISTAS_ATIVOS = [];
 let MOVIMENTACAO_ATUAL = null;
 let KM_SAIDA = 0;
+let MOTORISTA_SAIDA = '';
 
 function getAuth(){
-  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY_LEGADO) || 'null'); }
-  catch(_){ return null; }
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY_LEGADO) || 'null');
+  }catch(_){
+    return null;
+  }
 }
-function clearAuth(){ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(STORAGE_KEY_LEGADO); }
+
+function clearAuth(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_LEGADO);
+}
+
 function sessaoValidaLocal(auth){
   if(!auth) return false;
   if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
   return !!(auth.Nome || auth.seguranca || auth.nome || auth.usuario || auth.email);
 }
-function nomeSeguranca(auth){ return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '---'; }
-function perfilAuth(auth){ return String(auth?.Perfil || auth?.perfil || auth?.tipo || auth?.Tipo || 'OPERADOR').trim().toUpperCase(); }
-function isConsulta(){ return perfilAuth(AUTH) === 'CONSULTA'; }
-function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function setMsg(texto, corVar){ const msg=document.getElementById('msg'); msg.style.color=corVar?`var(${corVar})`:'var(--text-soft)'; msg.innerText=texto||''; }
-function setHint(texto, corVar){ const hint=document.getElementById('hintKm'); hint.style.color=corVar?`var(${corVar})`:'var(--text-soft)'; hint.innerHTML=texto||''; }
-function textoVeiculo(v){ const nome=v.Nome||v.nome||v.Veiculo||v.veiculo||'Veículo'; const placa=v.Placa||v.placa||''; return placa?`${nome} - ${placa}`:nome; }
-function kmAtualVeiculo(v){ return Number(String(v.KmAtualCadastro ?? v.KmAtual ?? v.kmAtual ?? v.Km ?? v.km ?? 0).replace(',','.')) || 0; }
+
+function nomeSeguranca(auth){
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '---';
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || auth?.tipo || auth?.Tipo || 'OPERADOR').trim().toUpperCase();
+}
+
+function isConsulta(){
+  return perfilAuth(AUTH) === 'CONSULTA';
+}
+
+function esc(v){
+  return String(v==null?'':v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function setMsg(texto, corVar){
+  const msg=document.getElementById('msg');
+  msg.style.color=corVar?`var(${corVar})`:'var(--text-soft)';
+  msg.innerText=texto||'';
+}
+
+function setHint(texto, corVar){
+  const hint=document.getElementById('hintKm');
+  hint.style.color=corVar?`var(${corVar})`:'var(--text-soft)';
+  hint.innerHTML=texto||'';
+}
+
+function setHintMotorista(texto, corVar){
+  const hint=document.getElementById('hintMotorista');
+  if(!hint) return;
+  hint.style.color=corVar?`var(${corVar})`:'var(--text-soft)';
+  hint.innerHTML=texto||'';
+}
+
+function textoVeiculo(v){
+  const nome=v.Nome||v.nome||v.Veiculo||v.veiculo||'Veículo';
+  const placa=v.Placa||v.placa||'';
+  return placa?`${nome} - ${placa}`:nome;
+}
+
+function textoMotorista(m){
+  return m.Nome || m.nome || m.Motorista || m.motorista || m.Descricao || m.descricao || 'Motorista';
+}
+
+function kmAtualVeiculo(v){
+  return Number(String(v.KmAtualCadastro ?? v.KmAtual ?? v.kmAtual ?? v.Km ?? v.km ?? 0).replace(',','.')) || 0;
+}
+
+function motoristaSelecionadoTexto(){
+  const el=document.getElementById('motorista');
+  return el.value || '';
+}
+
+async function carregarMotoristasAtivos(){
+  const snap = await getDocs(collection(db,'motoristas'));
+
+  MOTORISTAS_ATIVOS = snap.docs
+    .map(d=>({ id:d.id, ...d.data() }))
+    .filter(m => m.Ativo !== false)
+    .sort((a,b)=>textoMotorista(a).localeCompare(textoMotorista(b),'pt-BR'));
+}
 
 async function carregarVeiculosNaRua(){
-  /*
-    Leitura direta da coleção inteira e filtro local.
-    Motivo: evita erro de query/index/regra no Firestore durante a migração.
-  */
   const snap = await getDocs(collection(db,'veiculos'));
 
   VEICULOS_NA_RUA = snap.docs
@@ -348,10 +421,6 @@ async function carregarVeiculosNaRua(){
 }
 
 async function buscarMovimentacaoAberta(veiculo){
-  /*
-    Também evita where() aqui.
-    Procura localmente a movimentação aberta mais recente do veículo.
-  */
   const snap = await getDocs(collection(db,'movimentacoes_frota'));
 
   const nomeAtual = textoVeiculo(veiculo).toUpperCase();
@@ -366,6 +435,7 @@ async function buscarMovimentacaoAberta(veiculo){
       const mesmoId = String(m.veiculoId || '') === String(veiculo.id);
       const mesmoNome = String(m.veiculo || m.Veiculo || '').toUpperCase() === nomeAtual;
       const mesmaPlaca = placaAtual && String(m.placa || m.Placa || '').toUpperCase() === placaAtual;
+
       return semRetorno && naoConcluido && (mesmoId || mesmoNome || mesmaPlaca);
     })
     .sort((a,b)=>{
@@ -377,38 +447,107 @@ async function buscarMovimentacaoAberta(veiculo){
   return abertas[0] || null;
 }
 
+function preencherMotoristasRetorno(motoristaSaida){
+  const el=document.getElementById('motorista');
+
+  const nomeSaida = String(motoristaSaida || '').trim();
+  const nomes = new Map();
+
+  if(nomeSaida){
+    nomes.set(nomeSaida.toUpperCase(), {
+      nome:nomeSaida,
+      origemSaida:true
+    });
+  }
+
+  MOTORISTAS_ATIVOS.forEach(m=>{
+    const nome=textoMotorista(m);
+    nomes.set(nome.toUpperCase(), {
+      nome,
+      origemSaida:false
+    });
+  });
+
+  const lista=[...nomes.values()]
+    .sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+
+  if(!lista.length){
+    el.innerHTML='<option value="">Nenhum motorista disponível</option>';
+    return;
+  }
+
+  el.innerHTML = '<option value="">Selecione o motorista...</option>' + lista
+    .map(m=>{
+      const selecionado = nomeSaida && m.nome.toUpperCase() === nomeSaida.toUpperCase() ? ' selected' : '';
+      const tag = m.origemSaida ? ' — motorista da saída' : '';
+      return `<option value="${esc(m.nome)}"${selecionado}>${esc(m.nome + tag)}</option>`;
+    })
+    .join('');
+
+  if(nomeSaida){
+    setHintMotorista(`Motorista da saída: <b>${esc(nomeSaida)}</b>. Se o veículo retornou com outra pessoa, selecione o motorista correto.`);
+  }else{
+    setHintMotorista('Selecione o motorista que está retornando com o veículo.', '--yellow');
+  }
+}
+
 async function onChangeVeiculo(){
   const id=document.getElementById('veiculo').value;
   const kmInput=document.getElementById('kmRetorno');
   const motoristaEl=document.getElementById('motorista');
   const veiculo=VEICULOS_NA_RUA.find(v=>v.id===id);
+
   MOVIMENTACAO_ATUAL=null;
+  MOTORISTA_SAIDA='';
 
   if(!veiculo){
     KM_SAIDA=0;
     kmInput.value='';
-    motoristaEl.innerHTML='<option value="">Aguardando...</option>';
+    motoristaEl.innerHTML='<option value="">Selecione o veículo primeiro</option>';
     setHint('Selecione o veículo acima');
+    setHintMotorista('Será preenchido com o motorista da saída, mas pode ser alterado.');
     validateForm();
     return;
   }
 
   setHint('🔍 Buscando saída em aberto...');
+
   try{
     MOVIMENTACAO_ATUAL = await buscarMovimentacaoAberta(veiculo);
+
     KM_SAIDA = Number(String((MOVIMENTACAO_ATUAL?.KmSaida ?? MOVIMENTACAO_ATUAL?.kmSaida ?? kmAtualVeiculo(veiculo) ?? 0)).replace(',','.')) || 0;
-    const motorista = MOVIMENTACAO_ATUAL?.motorista || MOVIMENTACAO_ATUAL?.Motorista || veiculo.MotoristaAtual || 'Motorista não informado';
-    motoristaEl.innerHTML = `<option value="${esc(motorista)}">${esc(motorista)}</option>`;
+
+    MOTORISTA_SAIDA =
+      MOVIMENTACAO_ATUAL?.motorista ||
+      MOVIMENTACAO_ATUAL?.Motorista ||
+      veiculo.MotoristaAtual ||
+      '';
+
+    preencherMotoristasRetorno(MOTORISTA_SAIDA);
+
     kmInput.value = KM_SAIDA > 0 ? KM_SAIDA : '';
-    setHint(KM_SAIDA > 0 ? `KM de saída: <b>${esc(KM_SAIDA)}</b>` : 'KM de saída não localizado.', KM_SAIDA > 0 ? null : '--yellow');
+
+    setHint(
+      KM_SAIDA > 0
+        ? `KM de saída: <b>${esc(KM_SAIDA)}</b>`
+        : 'KM de saída não localizado.',
+      KM_SAIDA > 0 ? null : '--yellow'
+    );
+
     setMsg('');
+
   }catch(e){
     console.error(e);
+
     KM_SAIDA = kmAtualVeiculo(veiculo);
-    motoristaEl.innerHTML = `<option value="${esc(veiculo.MotoristaAtual || '')}">${esc(veiculo.MotoristaAtual || 'Motorista não localizado')}</option>`;
+    MOTORISTA_SAIDA = veiculo.MotoristaAtual || '';
+
+    preencherMotoristasRetorno(MOTORISTA_SAIDA);
+
     kmInput.value = KM_SAIDA > 0 ? KM_SAIDA : '';
     setHint('Não foi possível localizar a movimentação aberta.', '--yellow');
   }
+
   validateForm();
 }
 
@@ -430,8 +569,10 @@ function validateForm(){
     btn.disabled=true;
     return;
   }
+
   const atual=document.getElementById('msg').innerText||'';
   if(atual.startsWith('KM de retorno')) setMsg('');
+
   btn.disabled = !(v && k && m && s) || inFlight;
 }
 
@@ -443,14 +584,27 @@ async function doEnviar(){
     validateForm();
     return;
   }
+
   const veiculoId=document.getElementById('veiculo').value;
   const veiculo=VEICULOS_NA_RUA.find(v=>v.id===veiculoId);
   const KmRetorno=Number(String(document.getElementById('kmRetorno').value||'0').replace(',','.'))||0;
-  const motorista=document.getElementById('motorista').value;
+  const motoristaRetorno=motoristaSelecionadoTexto();
   const seguranca=document.getElementById('seguranca').value;
 
-  if(!veiculo || !KmRetorno || !motorista || !seguranca){ validateForm(); return; }
-  if(KmRetorno < KM_SAIDA){ setMsg(`KM de retorno inferior ao KM de saída (${KM_SAIDA}).`, '--red'); return; }
+  if(!veiculo || !KmRetorno || !motoristaRetorno || !seguranca){
+    validateForm();
+    return;
+  }
+
+  if(KmRetorno < KM_SAIDA){
+    setMsg(`KM de retorno inferior ao KM de saída (${KM_SAIDA}).`, '--red');
+    return;
+  }
+
+  const houveTrocaMotorista =
+    MOTORISTA_SAIDA &&
+    motoristaRetorno &&
+    MOTORISTA_SAIDA.trim().toUpperCase() !== motoristaRetorno.trim().toUpperCase();
 
   inFlight=true;
   document.getElementById('btnSalvar').disabled=true;
@@ -461,10 +615,21 @@ async function doEnviar(){
       tipo: 'ENTRADA',
       status: 'CONCLUIDO',
       Status: 'CONCLUIDO',
+
       segurancaEntrada: seguranca,
       SegurancaEntrada: seguranca,
+
       KmRetorno: KmRetorno,
       kmRetorno: KmRetorno,
+
+      motoristaRetorno: motoristaRetorno,
+      MotoristaRetorno: motoristaRetorno,
+
+      motoristaSaida: MOTORISTA_SAIDA || motoristaRetorno,
+      MotoristaSaida: MOTORISTA_SAIDA || motoristaRetorno,
+
+      motoristaTrocaRetorno: houveTrocaMotorista,
+
       dataRetorno: serverTimestamp(),
       atualizadoEm: serverTimestamp(),
       origemEntrada: 'entrada.html'
@@ -479,8 +644,8 @@ async function doEnviar(){
         veiculo: textoVeiculo(veiculo),
         Veiculo: textoVeiculo(veiculo),
         placa: veiculo.Placa || veiculo.placa || '',
-        motorista,
-        Motorista: motorista,
+        motorista: MOTORISTA_SAIDA || motoristaRetorno,
+        Motorista: MOTORISTA_SAIDA || motoristaRetorno,
         KmSaida: KM_SAIDA || kmAtualVeiculo(veiculo),
         kmSaida: KM_SAIDA || kmAtualVeiculo(veiculo),
         criadoEm: serverTimestamp()
@@ -495,8 +660,17 @@ async function doEnviar(){
       UltimaEntradaEm: serverTimestamp()
     });
 
-    setMsg('✅ Entrada gravada com sucesso!', '--green');
-    setTimeout(()=>{ location.href='veiculos.html'; }, 1200);
+    setMsg(
+      houveTrocaMotorista
+        ? 'Entrada gravada com troca de motorista no retorno.'
+        : '✅ Entrada gravada com sucesso!',
+      '--green'
+    );
+
+    setTimeout(()=>{
+      location.href='veiculos.html';
+    }, 1200);
+
   }catch(e){
     console.error(e);
     setMsg((e && e.message) ? e.message : 'Erro ao salvar no Firebase.', '--red');
@@ -507,7 +681,13 @@ async function doEnviar(){
 
 async function init(){
   AUTH=getAuth();
-  if(!sessaoValidaLocal(AUTH)){ clearAuth(); location.href='index.html'; return; }
+
+  if(!sessaoValidaLocal(AUTH)){
+    clearAuth();
+    location.href='index.html';
+    return;
+  }
+
   const nome=nomeSeguranca(AUTH);
   document.getElementById('sessaoSegurancaTopo').textContent=nome;
   document.getElementById('seguranca').value=nome;
@@ -515,7 +695,9 @@ async function init(){
   if(isConsulta()){
     const consultaBox=document.getElementById('consultaBox');
     const btnSalvar=document.getElementById('btnSalvar');
+
     if(consultaBox) consultaBox.style.display='block';
+
     if(btnSalvar){
       btnSalvar.disabled=true;
       btnSalvar.innerText='SOMENTE CONSULTA';
@@ -527,19 +709,31 @@ async function init(){
   document.getElementById('kmRetorno').addEventListener('input', validateForm);
   document.getElementById('motorista').addEventListener('change', validateForm);
   document.getElementById('btnSalvar').addEventListener('click', doEnviar);
-  document.getElementById('btnVoltarMenu').addEventListener('click', e=>{ e.preventDefault(); location.href='veiculos.html'; });
+  document.getElementById('btnVoltarMenu').addEventListener('click', e=>{
+    e.preventDefault();
+    location.href='veiculos.html';
+  });
 
   try{
-    setMsg('Carregando veículos em trânsito...', '--text-soft');
-    await carregarVeiculosNaRua();
+    setMsg('Carregando veículos e motoristas...', '--text-soft');
+
+    await Promise.all([
+      carregarVeiculosNaRua(),
+      carregarMotoristasAtivos()
+    ]);
+
     setMsg('');
+
   }catch(e){
     console.error(e);
-    setMsg('Erro ao carregar veículos em trânsito. Verifique regras/permissão do Firestore.', '--red');
+    setMsg('Erro ao carregar dados. Verifique regras/permissão do Firestore.', '--red');
     document.getElementById('veiculo').innerHTML='<option value="">Erro ao carregar</option>';
+    document.getElementById('motorista').innerHTML='<option value="">Erro ao carregar</option>';
   }
+
   validateForm();
 }
+
 window.addEventListener('load', init);
 </script>
 
