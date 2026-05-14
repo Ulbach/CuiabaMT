@@ -2,6 +2,14 @@
   "projects": {
     "Y": "cuiaba-01617931-f126e"
   },
-  "targets": {},
+  "targets": {
+    "cuiaba-01617931-f126e": {
+      "hosting": {
+        "cuiabamt": [
+          "cuiabamt"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

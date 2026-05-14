@@ -283,7 +283,7 @@ body.perfil-consulta .menu-card:hover{
   </div>
 
   <div class="consulta-box" id="consultaBox">
-    Perfil CONSULTA: todos os relatórios podem ser abertos para visualização. Alterações e gravações permanecem bloqueadas nas telas operacionais.
+    Perfil CONSULTA: relatórios liberados para visualização. Alterações e gravações permanecem bloqueadas nas telas operacionais.
   </div>
 
   <div class="top-actions">
@@ -387,8 +387,8 @@ body.perfil-consulta .menu-card:hover{
 <script>
 const STORAGE_KEY = "delta_auth_firebase_v1";
 const STORAGE_KEY_LEGADO = "delta_auth_v1";
-const LOG_ID_KEY = 'delta_log_acesso_id_v1';
-const LOG_INICIO_KEY = 'delta_log_acesso_inicio_v1';
+const LOG_ID_KEY = "delta_log_acesso_id_v1";
+const LOG_INICIO_KEY = "delta_log_acesso_inicio_v1";
 
 function getAuth(){
   try{
@@ -444,34 +444,34 @@ function validarSessaoOuRedirecionar(){
   return auth;
 }
 
-async function registrarLogout(statusFinal='FINALIZADA'){
+async function registrarLogout(statusFinal="FINALIZADA"){
   try{
     const logId = localStorage.getItem(LOG_ID_KEY);
     const inicioMs = Number(localStorage.getItem(LOG_INICIO_KEY) || 0);
 
-    if(!logId) return;
+    if(!logId || !window.db || !window.updateDoc || !window.doc || !window.serverTimestamp) return;
 
     const fimMs = Date.now();
     const tempoMin = inicioMs ? Math.max(0, Math.round((fimMs - inicioMs) / 60000)) : null;
 
-    await updateDoc(doc(db,'logs_acesso',logId), {
-      logoutEm: serverTimestamp(),
+    await window.updateDoc(window.doc(window.db,"logs_acesso",logId), {
+      logoutEm: window.serverTimestamp(),
       logoutMs: fimMs,
       tempoConectadoMin: tempoMin,
       status: statusFinal,
-      atualizadoEm: serverTimestamp()
+      atualizadoEm: window.serverTimestamp()
     });
 
   }catch(e){
-    console.error('Erro ao registrar logout:', e);
+    console.error("Erro ao registrar logout:", e);
   }
 }
 
-async function logoutSistema(){
-  await registrarLogout('FINALIZADA');
+window.logoutSistema = async function(){
+  await registrarLogout("FINALIZADA");
   clearAuth();
   location.href = "../index.html";
-}
+};
 
 function iniciarCentral(){
   const auth = validarSessaoOuRedirecionar();
@@ -493,7 +493,7 @@ function iniciarCentral(){
   }
 }
 
-iniciarCentral();
+window.addEventListener("load", iniciarCentral);
 </script>
 
 </body>
