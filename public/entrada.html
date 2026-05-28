@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Frota Pro — Registrar Entrada</title>
+  <title>Delta Cuiabá - Registrar Entrada</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
@@ -17,7 +17,7 @@
       --text-main:#e6edf7;
       --text-soft:#9fb4d3;
       --text-muted:#7b8ca7;
-      --green:#22c55e;
+      --green:#ef4444;
       --red:#ef4444;
       --blue:#3b82f6;
       --yellow:#f59e0b;
@@ -54,8 +54,8 @@
       margin:-6px 0 18px 0;
       padding:12px 14px;
       border-radius:14px;
-      background:rgba(34,197,94,0.08);
-      border:1px solid rgba(34,197,94,0.18);
+      background:rgba(239,68,68,0.08);
+      border:1px solid rgba(239,68,68,0.18);
       text-align:center;
       font-size:13px;
       color:#9fb4d3;
@@ -77,10 +77,7 @@
       line-height:1.35;
     }
 
-    .header{
-      text-align:center;
-      margin-bottom:25px;
-    }
+    .header{text-align:center;margin-bottom:25px}
 
     .header h2{
       margin:0;
@@ -136,20 +133,14 @@
       transition:0.2s;
     }
 
-    select option{
-      background:#0b1b33;
-      color:#fff;
-    }
+    select option{background:#0b1b33;color:#fff}
 
     select:focus,input:focus{
       border-color:var(--green);
       background:rgba(255,255,255,0.05);
     }
 
-    input[readonly]{
-      opacity:.9;
-      cursor:not-allowed;
-    }
+    input[readonly]{opacity:.9;cursor:not-allowed}
 
     select:disabled,input:disabled{
       opacity:.45;
@@ -167,6 +158,16 @@
 
     .hint b{color:var(--red)}
 
+    .oil-info{
+      display:block;
+      margin-top:6px;
+      font-weight:800;
+      text-align:right;
+    }
+
+    .oil-warn{color:var(--yellow)}
+    .oil-over{color:var(--red)}
+
     .btn-save{
       width:100%;
       padding:16px;
@@ -179,7 +180,7 @@
       cursor:pointer;
       margin-top:10px;
       transition:0.25s;
-      box-shadow:0 10px 24px rgba(34,197,94,.18);
+      box-shadow:0 10px 24px rgba(239,68,68,.18);
     }
 
     .btn-save:active{transform:scale(.98)}
@@ -228,7 +229,7 @@
 
     <div class="header">
       <h2>Registrar Entrada</h2>
-      <p># DELTA CUIABÁ #</p>
+      <p># DELTA CUIABA #</p>
     </div>
 
     <div class="field">
@@ -271,7 +272,7 @@
 
     <button class="btn-save" id="btnSalvar" disabled>GRAVAR ENTRADA</button>
 
-    <a href="veiculos.html" id="btnVoltarMenu" class="btn-back">← VOLTAR AO MENU</a>
+    <a href="veiculos.html" id="btnVoltarMenu" class="btn-back">VOLTAR AO MENU</a>
 
     <div id="msg"></div>
   </div>
@@ -310,6 +311,7 @@ let MOTORISTAS_ATIVOS = [];
 let MOVIMENTACAO_ATUAL = null;
 let KM_SAIDA = 0;
 let MOTORISTA_SAIDA = '';
+let VEICULO_ATUAL = null;
 
 function getAuth(){
   try{
@@ -384,6 +386,45 @@ function kmAtualVeiculo(v){
   return Number(String(v.KmAtualCadastro ?? v.KmAtual ?? v.kmAtual ?? v.Km ?? v.km ?? 0).replace(',','.')) || 0;
 }
 
+function kmTrocaOleoVeiculo(v){
+  return Number(String(v.KmTrocaOleo ?? v.kmTrocaOleo ?? v.KmProximaTrocaOleo ?? v.kmProximaTrocaOleo ?? 0).replace(',','.')) || 0;
+}
+
+function avisoOleoHtml(v, kmReferencia){
+  const kmTroca = kmTrocaOleoVeiculo(v);
+  const kmAtual = Number(String(kmReferencia || 0).replace(',','.')) || 0;
+  if(!kmTroca || !kmAtual) return '';
+
+  const restante = kmTroca - kmAtual;
+
+  if(restante < 0){
+    return `<span class="oil-info oil-over">Informativo: troca de óleo ultrapassada em ${esc(Math.abs(restante))} km. Não bloqueia a operação.</span>`;
+  }
+
+  if(restante <= 500){
+    return `<span class="oil-info oil-warn">Informativo: faltam ${esc(restante)} km para a troca de óleo. Não bloqueia a operação.</span>`;
+  }
+
+  return '';
+}
+
+function atualizarHintVeiculo(){
+  const kmDigitado = Number(String(document.getElementById('kmRetorno').value || '0').replace(',','.')) || KM_SAIDA;
+
+  if(!VEICULO_ATUAL){
+    setHint('Selecione o veiculo acima');
+    return;
+  }
+
+  const avisoOleo = avisoOleoHtml(VEICULO_ATUAL, kmDigitado);
+
+  setHint(
+    KM_SAIDA > 0
+      ? `KM de saida: <b>${esc(KM_SAIDA)}</b>${avisoOleo}`
+      : `KM de saida nao localizado.${avisoOleo}`,
+    KM_SAIDA > 0 ? null : '--yellow'
+  );
+}
 function motoristaSelecionadoTexto(){
   const el=document.getElementById('motorista');
   return el.value || '';
@@ -455,6 +496,7 @@ function preencherMotoristasRetorno(motoristaSaida){
 
   if(nomeSaida){
     nomes.set(nomeSaida.toUpperCase(), {
+      id:'',
       nome:nomeSaida,
       origemSaida:true
     });
@@ -463,6 +505,7 @@ function preencherMotoristasRetorno(motoristaSaida){
   MOTORISTAS_ATIVOS.forEach(m=>{
     const nome=textoMotorista(m);
     nomes.set(nome.toUpperCase(), {
+      id:m.id,
       nome,
       origemSaida:false
     });
@@ -499,9 +542,11 @@ async function onChangeVeiculo(){
 
   MOVIMENTACAO_ATUAL=null;
   MOTORISTA_SAIDA='';
+  VEICULO_ATUAL=null;
 
   if(!veiculo){
     KM_SAIDA=0;
+    VEICULO_ATUAL=null;
     kmInput.value='';
     motoristaEl.innerHTML='<option value="">Selecione o veículo primeiro</option>';
     setHint('Selecione o veículo acima');
@@ -510,7 +555,8 @@ async function onChangeVeiculo(){
     return;
   }
 
-  setHint('🔍 Buscando saída em aberto...');
+  setHint('Buscando saída em aberto...');
+  VEICULO_ATUAL=veiculo;
 
   try{
     MOVIMENTACAO_ATUAL = await buscarMovimentacaoAberta(veiculo);
@@ -527,12 +573,7 @@ async function onChangeVeiculo(){
 
     kmInput.value = KM_SAIDA > 0 ? KM_SAIDA : '';
 
-    setHint(
-      KM_SAIDA > 0
-        ? `KM de saída: <b>${esc(KM_SAIDA)}</b>`
-        : 'KM de saída não localizado.',
-      KM_SAIDA > 0 ? null : '--yellow'
-    );
+    atualizarHintVeiculo();
 
     setMsg('');
 
@@ -545,7 +586,7 @@ async function onChangeVeiculo(){
     preencherMotoristasRetorno(MOTORISTA_SAIDA);
 
     kmInput.value = KM_SAIDA > 0 ? KM_SAIDA : '';
-    setHint('Não foi possível localizar a movimentação aberta.', '--yellow');
+    atualizarHintVeiculo();
   }
 
   validateForm();
@@ -569,6 +610,8 @@ function validateForm(){
     btn.disabled=true;
     return;
   }
+
+  atualizarHintVeiculo();
 
   const atual=document.getElementById('msg').innerText||'';
   if(atual.startsWith('KM de retorno')) setMsg('');
@@ -663,7 +706,7 @@ async function doEnviar(){
     setMsg(
       houveTrocaMotorista
         ? 'Entrada gravada com troca de motorista no retorno.'
-        : '✅ Entrada gravada com sucesso!',
+        : 'Entrada gravada com sucesso!',
       '--green'
     );
 

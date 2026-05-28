@@ -6,13 +6,17 @@
 <title>Controle de Veículos - Delta Cuiabá</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-:root{--bg1:#061427;--bg2:#0b1b33;--card:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.12);--text-main:#e6edf7;--text-soft:#9fb4d3;--accent:#22c55e;--alert:#ef4444;--blue:#3b82f6;}
+:root{--bg1:#061427;--bg2:#0b1b33;--card:rgba(255,255,255,0.06);--border:rgba(255,255,255,0.12);--text-main:#e6edf7;--text-soft:#9fb4d3;--accent:#ef4444;--alert:#ef4444;--success:#22c55e;--blue:#3b82f6;}
 *{box-sizing:border-box;}
 body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text-main);min-height:100vh;display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden;}
-body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;pointer-events:none;background:linear-gradient(to top,rgba(34,197,94,0.42) 0%,rgba(34,197,94,0.20) 35%,rgba(34,197,94,0.08) 58%,rgba(34,197,94,0) 100%);}
-.hero-header{width:100%;height:180px;background:linear-gradient(180deg,rgba(6,20,39,0.18) 0%,rgba(6,20,39,0.55) 100%),url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600') center/cover no-repeat;display:flex;align-items:center;justify-content:center;text-align:center;}
+body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;pointer-events:none;background:linear-gradient(to top,rgba(239,68,68,0.42) 0%,rgba(239,68,68,0.20) 35%,rgba(239,68,68,0.08) 58%,rgba(239,68,68,0) 100%);}
+.hero-header{width:100%;height:180px;background:linear-gradient(180deg,rgba(6,20,39,0.18) 0%,rgba(6,20,39,0.55) 100%),url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=1600') center/cover no-repeat;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;}
+.top-actions{position:absolute;top:18px;left:18px;right:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:3;}
+.top-btn{width:44px;height:44px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text-main);display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer;transition:.2s ease;}
+.top-btn:hover{transform:translateY(-2px);border-color:rgba(239,68,68,.45);box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 12px rgba(239,68,68,.12);}
+.top-btn-danger{color:#fecaca;background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.28);}
 .hero-content{width:100%;max-width:500px;margin-top:-35px;}
-.brand-title{font-size:26px;font-weight:900;letter-spacing:4px;margin:4px 0;color:#e6edf7;text-shadow:0 0 8px rgba(34,197,94,0.5),0 0 18px rgba(34,197,94,0.25);}
+.brand-title{font-size:26px;font-weight:900;letter-spacing:4px;margin:4px 0;color:#e6edf7;text-shadow:0 0 8px rgba(239,68,68,0.5),0 0 18px rgba(239,68,68,0.25);}
 .main-container{width:100%;max-width:500px;padding:20px;flex:1;}
 .action-grid{display:flex;gap:15px;margin-bottom:30px;}
 .btn-action{flex:1;background:var(--card);border:1px solid var(--border);padding:25px 15px;border-radius:20px;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:12px;transition:0.3s;}
@@ -20,17 +24,24 @@ body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;point
 .btn-action i{font-size:32px;}
 .btn-action span{font-size:12px;font-weight:800;text-transform:uppercase;color:var(--text-main);}
 .ico-saida{color:var(--alert);}
-.ico-entrada{color:var(--accent);}
+#btnEntrada{border-color:rgba(34,197,94,.38);background:rgba(34,197,94,.08);}
+#btnEntrada:hover{border-color:rgba(34,197,94,.62);box-shadow:0 0 18px rgba(34,197,94,.14);}
+#btnEntrada span,.ico-entrada{color:var(--success);}
 .section-title{font-size:13px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:1px;margin-bottom:15px;}
 .list-wrap{display:flex;flex-direction:column;gap:10px;}
+.section-block{margin-bottom:26px;}
+.transito-title{color:#fecaca;}
+.transito-title i{color:var(--alert);margin-right:8px;}
+.item-transito{border-color:rgba(239,68,68,.34);background:rgba(239,68,68,.08);}
+.item-transito .veh-ico{color:var(--alert);background:rgba(239,68,68,.12);}
 .item{background:var(--card);border:1px solid var(--border);padding:15px;border-radius:20px;display:flex;align-items:center;gap:15px;}
 .veh-ico{width:45px;height:45px;background:rgba(255,255,255,0.05);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--blue);}
 .item-main{flex:1;}
 .item-title{font-weight:800;font-size:15px;}
 .item-sub{font-size:12px;color:var(--text-soft);margin-top:2px;}
 .status-tag{font-size:10px;font-weight:800;padding:4px 10px;border-radius:8px;text-transform:uppercase;}
-.tag-ok{background:rgba(34,197,94,0.1);color:var(--accent);}
-.tag-warn{background:rgba(239,68,68,0.1);color:var(--alert);}
+.tag-ok{background:rgba(34,197,94,0.12);color:var(--success);}
+.tag-warn{background:rgba(239,68,68,0.12);color:var(--alert);}
 .btn-report{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);padding:18px;border-radius:20px;margin-top:28px;margin-bottom:18px;color:#f3f7ff;text-decoration:none;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);}
 .btn-report i{color:var(--accent);font-size:24px;}
 .btn-footer{width:100%;background:var(--card);border:1px solid var(--border);padding:18px;border-radius:20px;margin-top:18px;margin-bottom:40px;color:var(--text-soft);text-decoration:none;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;}
@@ -56,20 +67,24 @@ body.perfil-consulta .btn-action:hover{
   box-shadow:0 10px 30px rgba(0,0,0,0.35), 0 0 12px rgba(125,211,252,0.10);
 }
 </style>
+<link rel="stylesheet" href="css/menu-header.css">
 </head>
 <body>
-<div class="hero-header">
-  <div class="hero-content">
-    <div class="brand-title">Delta Cuiabá</div>
-    <div class="brand-line"></div>
-    <div class="brand-title">Controle de Frota</div>
+<div class="app-hero">
+  <div class="app-top-actions">
+    <a class="app-top-btn" href="index.html" title="Voltar para Menu Principal" aria-label="Voltar para Menu Principal"><i class="fa-solid fa-chevron-left"></i></a>
+    <button class="app-top-btn app-top-btn-danger" onclick="logoutSistema()" type="button" title="Sair" aria-label="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
+  </div>
+  <div class="app-hero-content">
+    <h1 class="app-hero-logo">GEST&Atilde;O<span>INTELIGENTE</span></h1>
+    <div class="app-menu-title"><i class="fa-solid fa-truck-front"></i><span>Controle de Frota</span></div>
+    <div class="app-tagline"># DELTA CUIABA #</div>
     <div id="pillStatus" style="display:none"></div>
   </div>
 </div>
-<div style="width:100%;max-width:500px;padding:0 20px;margin-top:-6px;margin-bottom:14px;">
+<div style="width:100%;max-width:500px;padding:0 20px;margin-top:14px;margin-bottom:14px;">
   <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
     <div style="font-size:13px;color:#9fb4d3;">Logado como: <strong id="sessaoSeguranca" style="color:#e6edf7;">...</strong></div>
-    <button onclick="logoutSistema()" style="background:#0b1a30;border:1px solid rgba(255,255,255,0.12);color:#e6edf7;padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer;">Sair</button>
   </div>
 </div>
 <div class="main-container">
@@ -80,12 +95,17 @@ body.perfil-consulta .btn-action:hover{
 <div class="consulta-info" id="consultaInfo">
   Perfil CONSULTA: entrada, saída e relatórios podem ser abertos para visualização. A gravação permanece bloqueada dentro das telas.
 </div>
-<div class="section-title">Últimas 5 Movimentações</div>
+<div class="section-block" id="blocoTransito">
+  <div class="section-title transito-title"><i class="fa-solid fa-truck-fast"></i>Ve&iacute;culos em tr&acirc;nsito:</div>
+  <div id="listaTransito" class="list-wrap">
+    <div style="text-align:center;padding:24px;color:var(--text-soft);"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Buscando dados...</div>
+  </div>
+</div>
+<div class="section-title">&Uacute;ltimas 5 Movimenta&ccedil;&otilde;es:</div>
 <div id="listaRecentes" class="list-wrap">
 <div style="text-align:center;padding:40px;color:var(--text-soft);"><i class="fa-solid fa-circle-notch fa-spin"></i><br>Buscando dados...</div>
 </div>
 <a href="relatorios/central_relatorios.html" class="btn-footer btn-report hidden-admin" id="btnRelatorioGeral"><i class="fa-solid fa-chart-line"></i>Relatório Geral</a>
-<a href="index.html" class="btn-footer" id="btnVoltarInicio"><i class="fa-solid fa-chevron-left"></i>Voltar ao Menu Principal</a>
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -158,33 +178,79 @@ function formatarData(valor){
   }catch(_){}
   return String(valor);
 }
+function dataMs(valor){
+  if(!valor)return 0;
+  try{
+    if(valor.toMillis)return valor.toMillis();
+    if(valor.toDate)return valor.toDate().getTime();
+    const ms=new Date(valor).getTime();
+    return Number.isFinite(ms) ? ms : 0;
+  }catch(_){
+    return 0;
+  }
+}
+function dataMovimentacaoMs(item){
+  return Math.max(
+    dataMs(item.dataRetorno),
+    dataMs(item.DataRetorno),
+    dataMs(item.atualizadoEm),
+    dataMs(item.dataSaida),
+    dataMs(item.DataSaida),
+    dataMs(item.criadoEm),
+    dataMs(item.importadoEm)
+  );
+}
+function statusNormalizado(item){
+  return String(item.status||item.Status||'').toUpperCase();
+}
+function emTransito(item){
+  const status=statusNormalizado(item);
+  return item.EmTransito===true || item.emTransito===true || status.includes('TRANSITO') || status.includes('TRÂNSITO');
+}
+function dataPrincipal(item){
+  return item.dataRetorno||item.dataSaida||item.DataRetorno||item.DataSaida||'';
+}
+function cardMovimentacao(it, extraClass=''){
+  const status=statusNormalizado(it);
+  const isOk=status.includes('PÁTIO')||status.includes('PATIO')||status.includes('ENTRADA')||status.includes('CONCLUÍDO')||status.includes('CONCLUIDO');
+  return `<div class="item ${extraClass}">
+      <div class="veh-ico"><i class="fa-solid fa-truck-front"></i></div>
+      <div class="item-main">
+        <div class="item-title">${esc((it.veiculo||it.Veiculo||'N/A').toUpperCase())}</div>
+        <div class="item-sub">${esc(it.motorista||it.Motorista||'---')} | ${esc(formatarData(dataPrincipal(it)))}</div>
+      </div>
+      <div class="status-tag ${isOk?'tag-ok':'tag-warn'}">${esc(status||'---')}</div>
+    </div>`;
+}
+function renderTransito(lista){
+  const bloco=document.getElementById('blocoTransito');
+  const wrap=document.getElementById('listaTransito');
+  const abertos=(lista||[]).filter(emTransito);
+  if(!abertos.length){
+    if(bloco)bloco.style.display='none';
+    return;
+  }
+  if(bloco)bloco.style.display='block';
+  wrap.innerHTML=abertos.map(it=>cardMovimentacao(it,'item-transito')).join('');
+}
 function renderRecentes(lista){
   const wrap=document.getElementById('listaRecentes');
-  const ultimos5=(lista||[]).slice(0,5);
+  const ultimos5=(lista||[]).filter(item=>!emTransito(item)).slice(0,5);
   if(!ultimos5.length){
     wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-soft);">Nenhuma movimentação encontrada.</div>';
     return;
   }
-  wrap.innerHTML=ultimos5.map(it=>{
-    const status=String(it.status||it.Status||'').toUpperCase();
-    const dataMov=it.dataRetorno||it.dataSaida||it.DataRetorno||it.DataSaida||'';
-    const isOk=status.includes('PÁTIO')||status.includes('ENTRADA')||status.includes('CONCLUÍDO')||status.includes('CONCLUIDO');
-    return `<div class="item">
-      <div class="veh-ico"><i class="fa-solid fa-truck-front"></i></div>
-      <div class="item-main">
-        <div class="item-title">${esc((it.veiculo||it.Veiculo||'N/A').toUpperCase())}</div>
-        <div class="item-sub">${esc(it.motorista||it.Motorista||'---')} | ${esc(formatarData(dataMov))}</div>
-      </div>
-      <div class="status-tag ${isOk?'tag-ok':'tag-warn'}">${esc(status||'---')}</div>
-    </div>`;
-  }).join('');
+  wrap.innerHTML=ultimos5.map(it=>cardMovimentacao(it)).join('');
 }
 async function carregarDados(){
   const pill=document.getElementById('pillStatus');
   try{
-    const q=query(collection(db,'movimentacoes_frota'),orderBy('dataSaida','desc'),limit(10));
-    const snap=await getDocs(q);
-    const lista=snap.docs.map(docItem=>({id:docItem.id,...docItem.data()})).filter(item=>item.Modelo!==true);
+    const snap=await getDocs(collection(db,'movimentacoes_frota'));
+    const lista=snap.docs
+      .map(docItem=>({id:docItem.id,...docItem.data()}))
+      .filter(item=>item.Modelo!==true)
+      .sort((a,b)=>dataMovimentacaoMs(b)-dataMovimentacaoMs(a));
+    renderTransito(lista);
     renderRecentes(lista);
     if(pill)pill.innerText='Sincronizado';
   }catch(e){
@@ -226,16 +292,9 @@ window.onload=async function(){
       btnEntrada.title='Perfil CONSULTA pode abrir a tela para visualização. Gravação bloqueada no formulário.';
     }
   }
-
-  const btnVoltar=document.getElementById('btnVoltarInicio');
-  if(btnVoltar){
-    btnVoltar.addEventListener('click',function(e){
-      e.preventDefault();
-      location.href='index.html';
-    });
-  }
   carregarDados();
 };
 </script>
 </body>
 </html>
+

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Agenda - Delta Cuiabá</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --bg1:#0b1220;
+  --bg2:#0b0f17;
+  --card:#0b1221;
+  --border:#1d2940;
+  --text:#e6edf7;
+  --muted:#9fb0cc;
+  --accent:#ef4444;
+  --danger:#ff4d4f;
+  --warn:#ffb020;
+  --blue:#7dd3fc;
+  --ok:#34d399;
+  --shadow:0 24px 64px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;
+  background:
+    radial-gradient(900px 360px at -10% -10%,#ef44441f 0%,transparent 60%),
+    radial-gradient(900px 360px at 120% -20%,#06b6d41f 0%,transparent 60%),
+    linear-gradient(180deg,var(--bg1),var(--bg2));
+  color:var(--text);
+}
+.wrap{
+  width:100%;
+  max-width:760px;
+  margin:0 auto;
+  padding:18px 16px 30px;
+}
+.head{
+  text-align:center;
+  margin:0;
+}
+.top-actions{
+  width:100%;
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) 44px;
+  align-items:center;
+  gap:12px;
+  margin-bottom:22px;
+}
+.top-btn{
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  cursor:pointer;
+  transition:.2s ease;
+}
+.top-btn:hover{
+  transform:translateY(-2px);
+  border-color:#b91c1c;
+  box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 12px rgba(239,68,68,.12);
+}
+.top-btn-danger{
+  color:#fecaca;
+  background:rgba(255,77,79,.10);
+  border-color:rgba(255,77,79,.28);
+}
+.chip{
+  display:none;
+  align-items:center;
+  gap:8px;
+  padding:6px 14px;
+  border-radius:99px;
+  border:1px solid var(--border);
+  color:#fecaca;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:1px;
+  background:rgba(255,255,255,.03);
+}
+.logo{
+  margin:0;
+  font-size:24px;
+  font-weight:900;
+  font-style:italic;
+  line-height:1.05;
+  letter-spacing:.8px;
+}
+.logo span{display:block;color:#ff4d4d}
+.tagline{
+  display:none;
+  margin-top:14px;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:4px;
+  color:var(--muted);
+  opacity:.7;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+  box-shadow:var(--shadow);
+  margin-bottom:18px;
+  overflow:hidden;
+}
+.session-box,.readonly-box{
+  margin-bottom:14px;
+  padding:12px 14px;
+  border-radius:14px;
+  background:rgba(239,68,68,0.08);
+  border:1px solid rgba(239,68,68,0.18);
+  text-align:center;
+  font-size:13px;
+  color:#9fb4d3;
+  font-weight:700;
+}
+.session-box strong{color:var(--text)}
+.readonly-box{
+  display:none;
+  background:rgba(59,130,246,0.10);
+  border-color:rgba(125,211,252,0.28);
+  color:#bfdbfe;
+  line-height:1.4;
+}
+.toolbar{
+  display:block;
+  margin-top:14px;
+}
+.search-wrap{position:relative}
+.search-wrap i{
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--muted);
+}
+input,textarea{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  padding:15px;
+  font-size:15px;
+  outline:none;
+}
+.search-wrap input{padding-left:42px}
+textarea{
+  min-height:140px;
+  resize:vertical;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;
+  font-size:14px;
+  line-height:1.45;
+}
+.edit-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.edit-grid .wide{
+  grid-column:1 / -1;
+}
+input:focus,textarea:focus{
+  border-color:#dc2626;
+  box-shadow:0 0 0 3px rgba(239,68,68,.10);
+}
+.btn{
+  border:none;
+  border-radius:14px;
+  padding:13px 16px;
+  font-size:14px;
+  font-weight:900;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  transition:.2s ease;
+  color:var(--text);
+  white-space:nowrap;
+}
+.btn:hover{
+  transform:translateY(-2px);
+  border-color:#b91c1c;
+  box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 12px rgba(239,68,68,.12);
+}
+.btn-primary{background:var(--accent);color:#08131f}
+.btn-light{background:rgba(255,255,255,.04);border:1px solid var(--border)}
+.btn-warn{background:rgba(255,176,32,.14);color:#ffd27a;border:1px solid rgba(255,176,32,.35)}
+.btn-danger{background:rgba(255,77,79,.14);color:#fecaca;border:1px solid rgba(255,77,79,.35)}
+.btn-small{
+  padding:9px 11px;
+  border-radius:12px;
+  font-size:12px;
+}
+label{
+  display:block;
+  margin:0 0 7px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+}
+.form-actions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+  flex-wrap:wrap;
+}
+.msg{
+  display:none;
+  margin-top:14px;
+  padding:13px;
+  border-radius:14px;
+  font-weight:900;
+  text-align:center;
+}
+.msg.ok{display:block;color:#d1fae5;background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.25)}
+.msg.warn{display:block;color:#ffd27a;background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.35)}
+.msg.erro{display:block;color:#fff;background:rgba(255,77,79,.18);border:1px solid rgba(255,77,79,.35)}
+.agenda-list{
+  display:grid;
+  gap:12px;
+}
+.agenda-row{
+  padding:16px;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
+}
+.contact-top{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:14px;
+  align-items:start;
+}
+.contact-name{
+  margin:0;
+  color:#f8fafc;
+  font-size:17px;
+  font-weight:900;
+  line-height:1.2;
+}
+.contact-company{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+}
+.contact-phone-col{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+  min-width:150px;
+}
+.contact-bottom{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:14px;
+  align-items:start;
+  margin-top:12px;
+}
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  max-width:100%;
+  padding:8px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.08);
+  color:#dbeafe;
+  font-size:12px;
+  font-weight:850;
+  overflow-wrap:anywhere;
+}
+.pill-phone{
+  color:#fecaca;
+  background:rgba(239,68,68,.10);
+  border-color:rgba(239,68,68,.22);
+}
+.pill-ramal{
+  min-width:150px;
+  justify-content:center;
+  color:#d1fae5;
+  background:rgba(52,211,153,.10);
+  border-color:rgba(52,211,153,.22);
+}
+.contact-extra{
+  margin-top:12px;
+  color:#9fb0cc;
+  font-size:12px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+.row-actions{
+  display:flex;
+  gap:8px;
+  flex-shrink:0;
+  justify-content:flex-start;
+}
+.editor{
+  display:none;
+}
+.editor.open{
+  display:block;
+}
+.editor-title{
+  margin:0 0 12px;
+  font-size:13px;
+  color:#f8fafc;
+  font-weight:900;
+}
+.empty{
+  padding:34px 16px;
+  text-align:center;
+  color:var(--muted);
+  font-weight:800;
+}
+.hint{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+  margin:8px 0 0;
+}
+@media(max-width:680px){
+  .edit-grid{grid-template-columns:1fr}
+  .edit-grid .wide{grid-column:auto}
+  .contact-top,.contact-bottom{
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:start;
+  }
+  .contact-phone-col{
+    align-items:flex-end;
+    min-width:122px;
+  }
+  .pill{
+    max-width:100%;
+    font-size:11px;
+    padding:8px 9px;
+  }
+  .pill-ramal{
+    min-width:122px;
+    justify-content:center;
+  }
+  .row-actions{justify-content:flex-start}
+  .btn{width:100%}
+  .btn-small{width:auto}
+}
+</style>
+<link rel="stylesheet" href="css/menu-header.css">
+</head>
+<body>
+<div class="app-hero">
+  <div class="app-top-actions">
+    <a class="app-top-btn" href="index.html" title="Voltar para Menu Principal" aria-label="Voltar para Menu Principal"><i class="fa-solid fa-chevron-left"></i></a>
+    <button class="app-top-btn app-top-btn-danger" id="btnSairTopo" type="button" title="Sair" aria-label="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
+  </div>
+  <div class="app-hero-content">
+    <h1 class="app-hero-logo">GEST&Atilde;O<span>INTELIGENTE</span></h1>
+    <div class="app-menu-title"><i class="fa-solid fa-address-book"></i><span>Agenda</span></div>
+    <div class="app-tagline"># DELTA CUIABA #</div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="card">
+    <div class="session-box">Perfil logado: <strong id="perfilLogado">...</strong></div>
+    <div class="readonly-box" id="readonlyBox">Perfil CONSULTA: visualizacao liberada.</div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input id="busca" placeholder="Buscar nome, sobrenome, ramal ou telefone...">
+      </div>
+    </div>
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <div class="card editor" id="editorCard">
+    <p class="editor-title">Corrigir contato</p>
+    <div class="edit-grid">
+      <div>
+        <label for="editNome">Nome</label>
+        <input id="editNome" placeholder="Nome do contato">
+      </div>
+      <div>
+        <label for="editTelefone">Telefone</label>
+        <input id="editTelefone" placeholder="(67) 00000-0000">
+      </div>
+      <div>
+        <label for="editSetor">Setor</label>
+        <input id="editSetor" placeholder="Setor / empresa">
+      </div>
+      <div>
+        <label for="editRamal">Ramal</label>
+        <input id="editRamal" placeholder="Ex: 5011">
+      </div>
+      <div class="wide">
+        <label for="editObservacoes">Observacoes</label>
+        <textarea id="editObservacoes" placeholder="Observacoes adicionais"></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btnSalvarEdicao" type="button"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+      <button class="btn btn-light" id="btnCancelarEdicao" type="button"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="agenda-list">
+      <div id="listaAgenda"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const AUTH_KEY = 'delta_auth_firebase_v1';
+const AUTH_KEY_LEGADO = 'delta_auth_v1';
+const LOG_ID_KEY = 'delta_log_acesso_id_v1';
+const LOG_INICIO_KEY = 'delta_log_acesso_inicio_v1';
+const AGENDA_KEY = 'delta_cuiaba_agenda_categoria_v3';
+const DEFAULT_AGENDA_URL = 'data/agenda-bio-default.json';
+
+let registros = carregarAgenda();
+let editId = null;
+
+function getAuth(){
+  try{
+    return JSON.parse(localStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY_LEGADO) || 'null');
+  }catch(_){
+    return null;
+  }
+}
+
+function nomeAuth(auth){
+  return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '';
+}
+
+function perfilAuth(auth){
+  return String(auth?.Perfil || auth?.perfil || auth?.tipo || auth?.Tipo || 'OPERADOR').trim().toUpperCase();
+}
+
+function sair(){
+  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(AUTH_KEY_LEGADO);
+  localStorage.removeItem(LOG_ID_KEY);
+  localStorage.removeItem(LOG_INICIO_KEY);
+  window.location.href = 'index.html';
+}
+
+function sessaoValidaLocal(auth){
+  if(!auth) return false;
+  if(auth.expiraEm && Number(auth.expiraEm) <= Date.now()) return false;
+  return !!nomeAuth(auth);
+}
+
+function normalizar(texto){
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^A-Z0-9]+/gi,' ')
+    .trim()
+    .toUpperCase();
+}
+
+function limparTexto(texto){
+  return String(texto || '').replace(/\s+/g,' ').trim();
+}
+
+function normalizarTelefonesNoTexto(texto){
+  return corrigirContatosConhecidos(String(texto || '')).replace(/Tel:\s*([^|]+)/gi, (_, telefones) => {
+    return 'Tel: ' + formatarTelefone(telefones);
+  });
+}
+
+function corrigirContatosConhecidos(texto){
+  return String(texto || '').replace(
+    /Delta Gestora Rio Bte\s*\|\s*Tel:\s*\(?67\)?\s*9?3452-?1200/gi,
+    'Delta Gestora Rio Bte | Tel: (67) 3452-1200'
+  );
+}
+
+function gerarId(){
+  return 'agenda-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
+}
+
+function carregarAgenda(){
+  try{
+    const raw = localStorage.getItem(AGENDA_KEY);
+    if(!raw) return [];
+    const data = JSON.parse(raw);
+    if(!Array.isArray(data)) return [];
+    return data
+      .map(item => ({
+        id:item.id || gerarId(),
+        categoria:limparTexto(item.categoria || item.CATEGORIA),
+        deltams:normalizarTelefonesNoTexto(limparTexto(item.deltams || item.DELTAMS))
+      }))
+      .filter(item => item.categoria || item.deltams);
+  }catch(_){
+    return [];
+  }
+}
+
+async function carregarAgendaPadrao(){
+  if(registros.length) return;
+  try{
+    const resp = await fetch(DEFAULT_AGENDA_URL, { cache:'no-cache' });
+    if(!resp.ok) return;
+    const data = await resp.json();
+    if(!Array.isArray(data)) return;
+    registros = data
+      .map(item => ({
+        id:item.id || gerarId(),
+        categoria:limparTexto(item.categoria || item.CATEGORIA),
+        deltams:normalizarTelefonesNoTexto(limparTexto(item.deltams || item.DELTAMS))
+      }))
+      .filter(item => item.categoria || item.deltams);
+    if(registros.length) salvarAgenda();
+  }catch(e){
+    console.warn('Agenda padrao nao carregada:', e);
+  }
+}
+
+function salvarAgenda(){
+  localStorage.setItem(AGENDA_KEY, JSON.stringify(registros));
+}
+
+function corrigirAgendaAtual(){
+  let alterou = false;
+  registros = registros.map(item => {
+    const texto = normalizarTelefonesNoTexto(item.deltams);
+    if(texto !== item.deltams) alterou = true;
+    return {...item,deltams:texto};
+  });
+  if(alterou) salvarAgenda();
+}
+
+function msg(texto,tipo='ok'){
+  const el = document.getElementById('msg');
+  el.textContent = texto || '';
+  el.className = texto ? 'msg ' + tipo : 'msg';
+}
+
+function podeEditar(){
+  return !document.body.classList.contains('perfil-consulta');
+}
+
+function podeExcluir(){
+  return document.body.classList.contains('perfil-admin');
+}
+
+function separarContato(texto){
+  const partes = String(texto || '')
+    .split('|')
+    .map(parte => parte.trim())
+    .filter(Boolean);
+  const nome = partes.shift() || '-';
+  const telefones = [];
+  const ramais = [];
+  const detalhes = [];
+  let empresa = '';
+
+  partes.forEach((parte, index) => {
+    if(/^tel:/i.test(parte)){
+      telefones.push(parte.replace(/^tel:\s*/i,''));
+      return;
+    }
+    if(/^ramal:/i.test(parte)){
+      ramais.push(parte.replace(/^ramal:\s*/i,''));
+      return;
+    }
+    if(index === 0 && !parte.includes('@')){
+      empresa = parte;
+      return;
+    }
+    detalhes.push(parte);
+  });
+
+  return { nome, empresa, telefones, ramais, detalhes };
+}
+
+function formatarTelefone(valor){
+  const original = String(valor || '').trim();
+  if(!original) return '';
+
+  return original
+    .split(/\s*:::\s*|\s+\/\s+|,\s*/)
+    .map(item => {
+      const digitos = item.replace(/\D/g,'');
+      if(!digitos) return item.trim();
+      let d = digitos;
+      if(d.startsWith('55') && d.length > 11) d = d.slice(2);
+      if(d.startsWith('0') && d.length > 10) d = d.slice(1);
+      if(d.length === 11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+      if(d.length === 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+      if(d.length === 8) return `${d.slice(0,4)}-${d.slice(4)}`;
+      if(d.length === 9) return `${d.slice(0,5)}-${d.slice(5)}`;
+      return d;
+    })
+    .join(' / ');
+}
+
+function whatsappHref(valor){
+  const digitos = String(valor || '').replace(/\D/g,'');
+  if(!digitos) return '#';
+  let numero = digitos;
+  if(numero.startsWith('55') && numero.length > 11) numero = numero.slice(2);
+  if(numero.startsWith('0') && numero.length > 10) numero = numero.slice(1);
+  if(numero.length === 8 || numero.length === 9) numero = '67' + numero;
+  if(!numero.startsWith('55')) numero = '55' + numero;
+  return 'https://wa.me/' + numero;
+}
+
+function listarTelefones(telefones){
+  return telefones.flatMap(phone => String(phone || '')
+    .split(/\s+\/\s+|\s*:::\s*|,\s*/)
+    .map(item => item.trim())
+    .filter(Boolean));
+}
+
+function renderContato(item){
+  const contato = separarContato(item.deltams);
+  const extras = contato.detalhes.join(' | ');
+  const telefones = listarTelefones(contato.telefones);
+  return `
+    <div class="agenda-row">
+      <div class="contact-top">
+        <div>
+          <p class="contact-name">${escapeHtml(contato.nome)}</p>
+          ${contato.empresa ? `<div class="contact-company">${escapeHtml(contato.empresa)}</div>` : ''}
+        </div>
+        <div class="contact-phone-col">
+          ${telefones.length ? telefones.map(phone => `<a class="pill pill-phone" href="${whatsappHref(phone)}" target="_blank" rel="noopener" title="Abrir WhatsApp"><i class="fa-brands fa-whatsapp"></i>${escapeHtml(formatarTelefone(phone))}</a>`).join('') : '<span class="pill">Sem telefone</span>'}
+        </div>
+      </div>
+      <div class="contact-bottom">
+        <div class="row-actions">
+          ${podeEditar() ? `<button class="btn btn-light btn-small" type="button" onclick="editarRegistro('${item.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>` : ''}
+          ${podeExcluir() ? `<button class="btn btn-danger btn-small" type="button" onclick="excluirRegistro('${item.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}
+        </div>
+        <div class="contact-phone-col">
+          ${contato.ramais.map(ramal => `<span class="pill pill-ramal"><i class="fa-solid fa-phone-volume"></i>${escapeHtml(ramal)}</span>`).join('')}
+        </div>
+      </div>
+      ${extras ? `<div class="contact-extra">${escapeHtml(extras)}</div>` : ''}
+    </div>
+  `;
+}
+
+function render(){
+  const termos = normalizar(document.getElementById('busca').value)
+    .split(/\s+/)
+    .filter(Boolean);
+  const lista = document.getElementById('listaAgenda');
+  const filtrados = registros
+    .filter(item => {
+      if(!termos.length) return true;
+      const textoBusca = normalizar(`${item.categoria || ''} ${item.deltams || ''}`);
+      return termos.every(termo => textoBusca.includes(termo));
+    })
+    .sort((a,b) => normalizar(a.categoria + a.deltams).localeCompare(normalizar(b.categoria + b.deltams)));
+
+  if(!filtrados.length){
+    lista.innerHTML = '<div class="empty">Nenhum registro encontrado.</div>';
+    return;
+  }
+
+  lista.innerHTML = filtrados.map(renderContato).join('');
+}
+
+function escapeHtml(texto){
+  return String(texto || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+function abrirEditor(item){
+  editId = item.id;
+  const contato = separarContato(item.deltams);
+  const ramais = contato.ramais.join(' / ');
+  const setorDoRamal = ramais.match(/\(([^)]+)\)/);
+  const ramalLimpo = ramais.replace(/\s*\([^)]+\)\s*/g,'').trim();
+  document.getElementById('editNome').value = contato.nome === '-' ? '' : contato.nome;
+  document.getElementById('editTelefone').value = listarTelefones(contato.telefones).map(formatarTelefone).join(' / ');
+  document.getElementById('editSetor').value = contato.empresa || (setorDoRamal ? setorDoRamal[1].trim() : '');
+  document.getElementById('editRamal').value = ramalLimpo;
+  document.getElementById('editObservacoes').value = contato.detalhes.join(' | ');
+  document.getElementById('editorCard').classList.add('open');
+  document.getElementById('editNome').focus();
+  document.getElementById('editorCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function fecharEditor(){
+  editId = null;
+  document.getElementById('editNome').value = '';
+  document.getElementById('editTelefone').value = '';
+  document.getElementById('editSetor').value = '';
+  document.getElementById('editRamal').value = '';
+  document.getElementById('editObservacoes').value = '';
+  document.getElementById('editorCard').classList.remove('open');
+}
+
+window.editarRegistro = function(id){
+  if(!podeEditar()) return;
+  const item = registros.find(registro => registro.id === id);
+  if(!item) return;
+  abrirEditor(item);
+};
+
+window.excluirRegistro = function(id){
+  if(!podeExcluir()) return;
+  const item = registros.find(registro => registro.id === id);
+  if(!item) return;
+  if(!confirm('Excluir este contato da agenda?')) return;
+  registros = registros.filter(registro => registro.id !== id);
+  salvarAgenda();
+  if(editId === id) fecharEditor();
+  render();
+  msg('Contato excluido.','ok');
+};
+
+function salvarEdicao(){
+  if(!podeEditar() || !editId) return;
+  const nome = limparTexto(document.getElementById('editNome').value);
+  const telefone = limparTexto(document.getElementById('editTelefone').value);
+  const setor = limparTexto(document.getElementById('editSetor').value);
+  const ramal = limparTexto(document.getElementById('editRamal').value);
+  const observacoes = limparTexto(document.getElementById('editObservacoes').value);
+
+  if(!nome){
+    msg('Informe o nome do contato.','warn');
+    return;
+  }
+
+  const partes = [nome];
+  if(setor) partes.push(setor);
+  if(telefone) partes.push('Tel: ' + formatarTelefone(telefone));
+  if(ramal) partes.push('Ramal: ' + ramal);
+  if(observacoes) partes.push(observacoes);
+
+  const texto = partes.join(' | ');
+  registros = registros.map(item => item.id === editId ? {...item,deltams:texto} : item);
+  salvarAgenda();
+  fecharEditor();
+  render();
+  msg('Contato atualizado.','ok');
+}
+
+async function iniciar(){
+  const auth = getAuth();
+  if(!sessaoValidaLocal(auth)){
+    window.location.href = 'index.html';
+    return;
+  }
+
+  const perfil = perfilAuth(auth);
+  document.body.classList.add('perfil-' + perfil.toLowerCase());
+  document.getElementById('perfilLogado').textContent = `${nomeAuth(auth)} - ${perfil}`;
+  document.getElementById('readonlyBox').style.display = perfil === 'CONSULTA' ? 'block' : 'none';
+
+  document.getElementById('busca').addEventListener('input', render);
+  document.getElementById('btnSalvarEdicao').addEventListener('click', salvarEdicao);
+  document.getElementById('btnCancelarEdicao').addEventListener('click', fecharEditor);
+  document.getElementById('btnSairTopo').addEventListener('click', sair);
+
+  await carregarAgendaPadrao();
+  corrigirAgendaAtual();
+  render();
+}
+
+iniciar();
+</script>
+</body>
+</html>

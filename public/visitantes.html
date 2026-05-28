@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Gestão de Visitantes - Delta Cuiabá MT</title>
+<title>Gestão de Visitantes - Delta Cuiabá</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -14,8 +14,9 @@
   --border:rgba(255,255,255,0.12);
   --text-main:#e6edf7;
   --text-soft:#9fb4d3;
-  --accent:#22c55e;
+  --accent:#ef4444;
   --alert:#ef4444;
+  --success:#22c55e;
   --blue:#3b82f6;
   --warn:#f59e0b;
   --shadow:0 12px 28px rgba(0,0,0,.35);
@@ -46,10 +47,10 @@ body::after{
   pointer-events:none;
   background:linear-gradient(
     to top,
-    rgba(34,197,94,.42) 0%,
-    rgba(34,197,94,.20) 35%,
-    rgba(34,197,94,.08) 58%,
-    rgba(34,197,94,0) 100%
+    rgba(239,68,68,.42) 0%,
+    rgba(239,68,68,.20) 35%,
+    rgba(239,68,68,.08) 58%,
+    rgba(239,68,68,0) 100%
   );
   z-index:-1;
 }
@@ -65,6 +66,46 @@ body::after{
   align-items:center;
   justify-content:center;
   text-align:center;
+  position:relative;
+}
+
+.top-actions{
+  position:absolute;
+  top:18px;
+  left:18px;
+  right:18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  z-index:3;
+}
+
+.top-btn{
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.06);
+  color:var(--text-main);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.top-btn:hover{
+  transform:translateY(-2px);
+  border-color:rgba(239,68,68,.45);
+  box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 12px rgba(239,68,68,.12);
+}
+
+.top-btn-danger{
+  color:#fecaca;
+  background:rgba(239,68,68,.10);
+  border-color:rgba(239,68,68,.28);
 }
 
 .hero-content{
@@ -91,7 +132,7 @@ body::after{
   font-weight:900;
   letter-spacing:.5px;
   color:#fff;
-  text-shadow:0 0 8px rgba(34,197,94,.5),0 0 18px rgba(34,197,94,.25);
+  text-shadow:0 0 8px rgba(239,68,68,.5),0 0 18px rgba(239,68,68,.25);
 }
 
 .hero-content p{
@@ -105,7 +146,7 @@ body::after{
   width:100%;
   max-width:520px;
   padding:0 20px;
-  margin-top:-14px;
+  margin-top:14px;
   margin-bottom:18px;
   z-index:2;
 }
@@ -176,8 +217,8 @@ body::after{
 
 .btn-nav:hover{
   transform:translateY(-2px);
-  border-color:rgba(34,197,94,.45);
-  box-shadow:0 0 18px rgba(34,197,94,.12);
+  border-color:rgba(239,68,68,.45);
+  box-shadow:0 0 18px rgba(239,68,68,.12);
 }
 
 .btn-nav i{
@@ -185,7 +226,7 @@ body::after{
 }
 
 .btn-entrada i{color:var(--accent)}
-.btn-saida i{color:var(--alert)}
+.btn-saida i,.btn-saida span{color:var(--success)}
 
 .btn-report,.btn-back{
   width:100%;
@@ -219,7 +260,7 @@ body::after{
 
 .btn-report:hover,.btn-back:hover{
   transform:translateY(-2px);
-  border-color:rgba(34,197,94,.45);
+  border-color:rgba(239,68,68,.45);
   color:#fff;
 }
 
@@ -334,9 +375,9 @@ body::after{
 }
 
 .tag-final{
-  background:rgba(34,197,94,.13);
+  background:rgba(239,68,68,.13);
   color:var(--accent);
-  border:1px solid rgba(34,197,94,.30);
+  border:1px solid rgba(239,68,68,.30);
 }
 
 .loading{
@@ -400,15 +441,20 @@ body.perfil-consulta .btn-nav span::after{
   }
 }
 </style>
+<link rel="stylesheet" href="css/menu-header.css">
 </head>
 
 <body>
 
-<div class="hero-header">
-  <div class="hero-content">
-    <span class="badge">Acesso Controlado</span>
-    <h2>Portaria Visitantes</h2>
-    <p>Delta Cuiabá MT</p>
+<div class="app-hero">
+  <div class="app-top-actions">
+    <a class="app-top-btn" href="index.html" title="Voltar para Menu Principal" aria-label="Voltar para Menu Principal"><i class="fa-solid fa-chevron-left"></i></a>
+    <button class="app-top-btn app-top-btn-danger" onclick="logoutSistema()" type="button" title="Sair" aria-label="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
+  </div>
+  <div class="app-hero-content">
+    <h1 class="app-hero-logo">GEST&Atilde;O<span>INTELIGENTE</span></h1>
+    <div class="app-menu-title"><i class="fa-solid fa-users"></i><span>Portaria Visitantes</span></div>
+    <div class="app-tagline"># DELTA CUIABA #</div>
   </div>
 </div>
 
@@ -417,7 +463,6 @@ body.perfil-consulta .btn-nav span::after{
     <div class="login-text">
       Logado como: <strong id="sessaoSeguranca">...</strong>
     </div>
-    <button class="btn-sair" onclick="logoutSistema()">Sair</button>
   </div>
 </div>
 
@@ -443,11 +488,6 @@ body.perfil-consulta .btn-nav span::after{
     Relatório de Visitas
   </a>
 
-  <a href="index.html" class="btn-back" id="btnMenuPrincipal">
-    <i class="fa-solid fa-house"></i>
-    Menu Principal
-  </a>
-
   <div class="section-title">Resumo de Visitantes</div>
 
   <div class="stats-grid">
@@ -470,7 +510,7 @@ body.perfil-consulta .btn-nav span::after{
     </div>
   </div>
 
-  <div class="section-title">Últimas 10 visitas</div>
+  <div class="section-title">altimas 10 visitas</div>
 
   <div id="listaRecentes" class="list-wrap">
     <div class="loading">
@@ -718,18 +758,10 @@ window.onload = async function(){
       btnSaida.title = 'Perfil CONSULTA pode abrir a tela para visualização. Gravação bloqueada no formulário.';
     }
   }
-
-  const btn = document.getElementById('btnMenuPrincipal');
-  if(btn){
-    btn.addEventListener('click', function(e){
-      e.preventDefault();
-      location.href = 'index.html';
-    });
-  }
-
   carregarResumo();
 };
 </script>
 
 </body>
 </html>
+
