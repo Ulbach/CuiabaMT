@@ -386,12 +386,13 @@ label{
         <i class="fa-solid fa-magnifying-glass"></i>
         <input id="busca" placeholder="Buscar nome, sobrenome, ramal ou telefone...">
       </div>
+      <button class="btn btn-primary" id="btnNovoContato" type="button"><i class="fa-solid fa-plus"></i> Novo contato</button>
     </div>
     <div id="msg" class="msg"></div>
   </div>
 
   <div class="card editor" id="editorCard">
-    <p class="editor-title">Corrigir contato</p>
+    <p class="editor-title" id="editorTitle">Novo contato</p>
     <div class="edit-grid">
       <div>
         <label for="editNome">Nome</label>
@@ -433,8 +434,8 @@ const AUTH_KEY = 'delta_auth_firebase_v1';
 const AUTH_KEY_LEGADO = 'delta_auth_v1';
 const LOG_ID_KEY = 'delta_log_acesso_id_v1';
 const LOG_INICIO_KEY = 'delta_log_acesso_inicio_v1';
-const AGENDA_KEY = 'delta_cuiaba_agenda_categoria_v3';
-const DEFAULT_AGENDA_URL = 'data/agenda-bio-default.json';
+const AGENDA_KEY = 'delta_cuiaba_agenda_categoria_v4';
+const DEFAULT_AGENDA_URL = 'data/agenda-default.json';
 
 let registros = carregarAgenda();
 let editId = null;
@@ -483,16 +484,9 @@ function limparTexto(texto){
 }
 
 function normalizarTelefonesNoTexto(texto){
-  return corrigirContatosConhecidos(String(texto || '')).replace(/Tel:\s*([^|]+)/gi, (_, telefones) => {
+  return String(texto || '').replace(/Tel:\s*([^|]+)/gi, (_, telefones) => {
     return 'Tel: ' + formatarTelefone(telefones);
   });
-}
-
-function corrigirContatosConhecidos(texto){
-  return String(texto || '').replace(
-    /Delta Gestora Rio Bte\s*\|\s*Tel:\s*\(?67\)?\s*9?3452-?1200/gi,
-    'Delta Gestora Rio Bte | Tel: (67) 3452-1200'
-  );
 }
 
 function gerarId(){
@@ -509,9 +503,9 @@ function carregarAgenda(){
       .map(item => ({
         id:item.id || gerarId(),
         categoria:limparTexto(item.categoria || item.CATEGORIA),
-        deltams:normalizarTelefonesNoTexto(limparTexto(item.deltams || item.DELTAMS))
+        contato:normalizarTelefonesNoTexto(limparTexto(item.contato))
       }))
-      .filter(item => item.categoria || item.deltams);
+      .filter(item => item.categoria || item.contato);
   }catch(_){
     return [];
   }
@@ -528,9 +522,9 @@ async function carregarAgendaPadrao(){
       .map(item => ({
         id:item.id || gerarId(),
         categoria:limparTexto(item.categoria || item.CATEGORIA),
-        deltams:normalizarTelefonesNoTexto(limparTexto(item.deltams || item.DELTAMS))
+        contato:normalizarTelefonesNoTexto(limparTexto(item.contato))
       }))
-      .filter(item => item.categoria || item.deltams);
+      .filter(item => item.categoria || item.contato);
     if(registros.length) salvarAgenda();
   }catch(e){
     console.warn('Agenda padrao nao carregada:', e);
@@ -544,9 +538,9 @@ function salvarAgenda(){
 function corrigirAgendaAtual(){
   let alterou = false;
   registros = registros.map(item => {
-    const texto = normalizarTelefonesNoTexto(item.deltams);
-    if(texto !== item.deltams) alterou = true;
-    return {...item,deltams:texto};
+    const texto = normalizarTelefonesNoTexto(item.contato || '');
+    if(texto !== item.contato) alterou = true;
+    return {id:item.id, categoria:item.categoria, contato:texto};
   });
   if(alterou) salvarAgenda();
 }
@@ -635,7 +629,7 @@ function listarTelefones(telefones){
 }
 
 function renderContato(item){
-  const contato = separarContato(item.deltams);
+  const contato = separarContato(item.contato);
   const extras = contato.detalhes.join(' | ');
   const telefones = listarTelefones(contato.telefones);
   return `
@@ -671,10 +665,10 @@ function render(){
   const filtrados = registros
     .filter(item => {
       if(!termos.length) return true;
-      const textoBusca = normalizar(`${item.categoria || ''} ${item.deltams || ''}`);
+      const textoBusca = normalizar(`${item.categoria || ''} ${item.contato || ''}`);
       return termos.every(termo => textoBusca.includes(termo));
     })
-    .sort((a,b) => normalizar(a.categoria + a.deltams).localeCompare(normalizar(b.categoria + b.deltams)));
+    .sort((a,b) => normalizar((a.categoria || '') + (a.contato || '')).localeCompare(normalizar((b.categoria || '') + (b.contato || ''))));
 
   if(!filtrados.length){
     lista.innerHTML = '<div class="empty">Nenhum registro encontrado.</div>';
@@ -695,7 +689,8 @@ function escapeHtml(texto){
 
 function abrirEditor(item){
   editId = item.id;
-  const contato = separarContato(item.deltams);
+  document.getElementById('editorTitle').textContent = 'Corrigir contato';
+  const contato = separarContato(item.contato);
   const ramais = contato.ramais.join(' / ');
   const setorDoRamal = ramais.match(/\(([^)]+)\)/);
   const ramalLimpo = ramais.replace(/\s*\([^)]+\)\s*/g,'').trim();
@@ -709,8 +704,19 @@ function abrirEditor(item){
   document.getElementById('editorCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+function abrirNovoContato(){
+  if(!podeEditar()) return;
+  fecharEditor();
+  editId = null;
+  document.getElementById('editorTitle').textContent = 'Novo contato';
+  document.getElementById('editorCard').classList.add('open');
+  document.getElementById('editNome').focus();
+  document.getElementById('editorCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 function fecharEditor(){
   editId = null;
+  document.getElementById('editorTitle').textContent = 'Novo contato';
   document.getElementById('editNome').value = '';
   document.getElementById('editTelefone').value = '';
   document.getElementById('editSetor').value = '';
@@ -739,7 +745,7 @@ window.excluirRegistro = function(id){
 };
 
 function salvarEdicao(){
-  if(!podeEditar() || !editId) return;
+  if(!podeEditar()) return;
   const nome = limparTexto(document.getElementById('editNome').value);
   const telefone = limparTexto(document.getElementById('editTelefone').value);
   const setor = limparTexto(document.getElementById('editSetor').value);
@@ -758,11 +764,16 @@ function salvarEdicao(){
   if(observacoes) partes.push(observacoes);
 
   const texto = partes.join(' | ');
-  registros = registros.map(item => item.id === editId ? {...item,deltams:texto} : item);
+  const estavaEditando = !!editId;
+  if(estavaEditando){
+    registros = registros.map(item => item.id === editId ? {...item,contato:texto} : item);
+  }else{
+    registros = [{id: gerarId(), categoria: 'CUIABA', contato: texto}, ...registros];
+  }
   salvarAgenda();
   fecharEditor();
   render();
-  msg('Contato atualizado.','ok');
+  msg(estavaEditando ? 'Contato atualizado.' : 'Contato cadastrado.','ok');
 }
 
 async function iniciar(){
@@ -778,6 +789,7 @@ async function iniciar(){
   document.getElementById('readonlyBox').style.display = perfil === 'CONSULTA' ? 'block' : 'none';
 
   document.getElementById('busca').addEventListener('input', render);
+  document.getElementById('btnNovoContato').addEventListener('click', abrirNovoContato);
   document.getElementById('btnSalvarEdicao').addEventListener('click', salvarEdicao);
   document.getElementById('btnCancelarEdicao').addEventListener('click', fecharEditor);
   document.getElementById('btnSairTopo').addEventListener('click', sair);
