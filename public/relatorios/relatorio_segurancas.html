@@ -566,6 +566,18 @@ function upper(v){
   return String(v || "").trim().toUpperCase();
 }
 
+function lower(v){
+  return String(v || "").trim().toLowerCase();
+}
+
+function usuarioProtegido(s){
+  return s?.Protegido === true || s?.CredencialPrivada === true || s?.SuperAdmin === true;
+}
+
+function emailVisivel(s){
+  return usuarioProtegido(s) ? "Conta protegida" : (s.Email || s.email || "-");
+}
+
 function perfilClasse(perfil){
   const p = upper(perfil);
   if(p === "ADMIN") return "admin";
@@ -584,7 +596,7 @@ function render(lista){
 
   tbody.innerHTML = lista.map(s => {
     const nome = s.Nome || s.nome || "-";
-    const email = s.Email || s.email || "-";
+    const email = emailVisivel(s);
     const perfil = upper(s.Perfil || s.perfil || "-");
     const ativo = s.Ativo === true || s.ativo === true;
 

@@ -599,6 +599,19 @@ function perfilLog(auth){
   return String(auth?.Perfil || auth?.perfil || '').trim().toUpperCase();
 }
 
+function normalizarEmail(valor){
+  return String(valor || '').trim().toLowerCase();
+}
+
+function usuarioProtegido(usuario){
+  return usuario?.Protegido === true || usuario?.CredencialPrivada === true || usuario?.SuperAdmin === true;
+}
+
+function donoDaContaProtegida(usuario){
+  const auth = getAuth();
+  return normalizarEmail(auth?.Email || auth?.email) === normalizarEmail(usuario?.Email || usuario?.email);
+}
+
 async function registrarLogin(auth, origem='index.html'){
   try{
     if(!auth) return null;
@@ -952,6 +965,12 @@ async function alterarSenhaSeguranca(){
 
     if(!usuario){
       setMsgSenha('Codigo atual nao encontrado ou seguranca inativo.');
+      setLoadingSenha(false);
+      return;
+    }
+
+    if(usuarioProtegido(usuario) && !donoDaContaProtegida(usuario)){
+      setMsgSenha('Senha protegida. Somente o proprio usuario pode alterar essa conta.');
       setLoadingSenha(false);
       return;
     }

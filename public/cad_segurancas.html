@@ -520,6 +520,23 @@ function lower(v){
   return String(v || "").trim().toLowerCase();
 }
 
+function emailAuth(auth){
+  return lower(auth?.Email || auth?.email || auth?.usuario || "");
+}
+
+function usuarioProtegido(d){
+  return d?.Protegido === true || d?.CredencialPrivada === true || d?.SuperAdmin === true;
+}
+
+function podeEditarUsuarioProtegido(d){
+  return !usuarioProtegido(d) || emailAuth(AUTH) === lower(d?.Email || d?.email);
+}
+
+function emailVisivel(d){
+  if(usuarioProtegido(d) && !podeEditarUsuarioProtegido(d)) return "Conta protegida";
+  return d.Email || d.email || "-";
+}
+
 function esc(v){
   return String(v == null ? "" : v)
     .replace(/&/g,"&amp;")
@@ -648,14 +665,16 @@ async function buscarPrefixo(colecao,campoBusca,termo,max=10){
 }
 
 function renderSeguranca(d,idx){
-  const editBtn = isConsulta()
+  const protegido = usuarioProtegido(d);
+  const podeEditar = !isConsulta() && podeEditarUsuarioProtegido(d);
+  const editBtn = !podeEditar
     ? ""
     : `<button class="btn btn-warn" type="button" onclick="editarSeguranca(${idx})">Editar cadastro</button>`;
 
   return `<div class="result-item">
     <div class="result-title">${esc(d.Nome || "-")}</div>
     <div class="result-sub">
-      E-mail: ${esc(d.Email || "-")}<br>
+      E-mail: ${esc(emailVisivel(d))}<br>
       Perfil: ${esc(d.Perfil || "-")}<br>
       Ativo: ${d.Ativo ? "Sim" : "Não"}
     </div>
@@ -671,6 +690,11 @@ function editarSeguranca(idx){
 
   const d = resultadosCache[idx];
   if(!d) return;
+
+  if(!podeEditarUsuarioProtegido(d)){
+    msg('Conta protegida. Somente o proprio usuario pode alterar esse cadastro.','erro');
+    return;
+  }
 
   Nome.value = d.Nome || "";
   Email.value = d.Email || "";
@@ -703,6 +727,15 @@ async function salvarSeguranca(){
   }
 
   try{
+    const registroAtual = modoEdicao
+      ? resultadosCache.find(item => item.id === editId)
+      : null;
+
+    if(registroAtual && usuarioProtegido(registroAtual) && !podeEditarUsuarioProtegido(registroAtual)){
+      msg("Conta protegida. Somente o proprio usuario pode alterar esse cadastro.","erro");
+      return;
+    }
+
     if(await existeRegistro("segurancas","Email",email,modoEdicao ? editId : null)){
       msg("Duplicidade bloqueada: já existe segurança com este e-mail.","erro");
       return;
@@ -715,6 +748,9 @@ async function salvarSeguranca(){
       NomeBusca: nomeBusca,
       Perfil: perfil,
       Sen_Segura: senha,
+      Protegido: registroAtual?.Protegido === true,
+      CredencialPrivada: registroAtual?.CredencialPrivada === true,
+      BloquearAlteracaoPorOutroAdmin: registroAtual?.BloquearAlteracaoPorOutroAdmin === true,
       AtualizadoEm: serverTimestamp()
     };
 
