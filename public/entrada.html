@@ -390,6 +390,42 @@ function kmTrocaOleoVeiculo(v){
   return Number(String(v.KmTrocaOleo ?? v.kmTrocaOleo ?? v.KmProximaTrocaOleo ?? v.kmProximaTrocaOleo ?? 0).replace(',','.')) || 0;
 }
 
+function diferencaKmRetorno(kmRetorno){
+  if(!KM_SAIDA || !kmRetorno) return 0;
+  return Math.max(0, kmRetorno - KM_SAIDA);
+}
+
+function modeloVeiculo(v){
+  return textoVeiculo(v || {}).toUpperCase();
+}
+
+function regraKmRetorno(v, kmRetorno){
+  const modelo = modeloVeiculo(v);
+  const diff = diferencaKmRetorno(kmRetorno);
+  if(modelo.includes('GOL') && diff > 600){
+    return {
+      tipo: 'bloqueio',
+      diff,
+      mensagem: `KM de retorno ${diff} km acima do KM de saida. Para GOL, o limite e 600 km. Confira se o veiculo selecionado esta correto.`
+    };
+  }
+  if(modelo.includes('AMAROK') && diff > 2000){
+    return {
+      tipo: 'senha',
+      diff,
+      mensagem: `KM de retorno ${diff} km acima do KM de saida. Para Amarok acima de 2.000 km, informe a senha diaria para confirmar.`
+    };
+  }
+  return null;
+}
+
+function senhaKmRetornoHoje(){
+  const hoje = new Date();
+  const dia = hoje.getDate() + 20;
+  const mes = hoje.getMonth() + 1 + 11;
+  return `${dia}${mes}`;
+}
+
 function avisoOleoHtml(v, kmReferencia){
   const kmTroca = kmTrocaOleoVeiculo(v);
   const kmAtual = Number(String(kmReferencia || 0).replace(',','.')) || 0;
@@ -598,6 +634,7 @@ function validateForm(){
   const m=document.getElementById('motorista').value;
   const s=document.getElementById('seguranca').value;
   const btn=document.getElementById('btnSalvar');
+  let avisoKmEspecial=false;
 
   if(isConsulta()){
     btn.disabled=true;
@@ -611,10 +648,24 @@ function validateForm(){
     return;
   }
 
+  if(v && k && m && s){
+    const veiculo = VEICULOS_NA_RUA.find(item=>item.id===v);
+    const regra = regraKmRetorno(veiculo, k);
+    if(regra?.tipo === 'bloqueio'){
+      setMsg(regra.mensagem, '--red');
+      btn.disabled=true;
+      return;
+    }
+    if(regra?.tipo === 'senha'){
+      setMsg(regra.mensagem, '--yellow');
+      avisoKmEspecial=true;
+    }
+  }
+
   atualizarHintVeiculo();
 
   const atual=document.getElementById('msg').innerText||'';
-  if(atual.startsWith('KM de retorno')) setMsg('');
+  if(!avisoKmEspecial && atual.startsWith('KM de retorno')) setMsg('');
 
   btn.disabled = !(v && k && m && s) || inFlight;
 }
@@ -642,6 +693,21 @@ async function doEnviar(){
   if(KmRetorno < KM_SAIDA){
     setMsg(`KM de retorno inferior ao KM de saída (${KM_SAIDA}).`, '--red');
     return;
+  }
+
+  const regraKm = regraKmRetorno(veiculo, KmRetorno);
+  if(regraKm?.tipo === 'bloqueio'){
+    setMsg(regraKm.mensagem, '--red');
+    validateForm();
+    return;
+  }
+  if(regraKm?.tipo === 'senha'){
+    const senha = window.prompt(`${regraKm.mensagem}\n\nDigite a senha diaria para liberar este lancamento:`);
+    if(String(senha || '').trim() !== senhaKmRetornoHoje()){
+      setMsg('Senha diaria invalida. Entrada nao gravada. Confira o KM ou procure o administrador.', '--red');
+      validateForm();
+      return;
+    }
   }
 
   const houveTrocaMotorista =

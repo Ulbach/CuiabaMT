@@ -49,6 +49,10 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 .pill.ok{background:rgba(34,197,94,.12);color:#22c55e;border-color:rgba(34,197,94,.35)}
 .pill.warn{background:rgba(245,158,11,.13);color:#f59e0b;border-color:rgba(245,158,11,.35)}
 .pill.danger{background:rgba(239,68,68,.13);color:#ef4444;border-color:rgba(239,68,68,.35)}
+.security-row td{padding-top:0;background:rgba(255,255,255,.025);color:var(--text-soft)}
+.security-tag{display:inline-flex;align-items:center;gap:7px;white-space:normal;font-size:12px}
+.security-label{font-weight:900;text-transform:uppercase;font-size:11px}
+.security-label.exit{color:#93c5fd}.security-label.return{color:#86efac}
 .status{padding:13px 18px;color:var(--text-soft);font-size:14px;border-top:1px solid var(--border);background:rgba(255,255,255,.035)}
 .menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .menu-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:22px 18px;text-decoration:none;color:var(--text-main);display:flex;align-items:center;gap:18px;transition:.25s}
@@ -78,14 +82,14 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
   <div class="card-body"><div class="stats-grid"><div class="stat"><div class="label">Registros</div><div class="value" id="stTotal">0</div><div class="sub">No período</div></div><div class="stat"><div class="label">Em Trânsito</div><div class="value" id="stTransito">0</div><div class="sub">Operações abertas</div></div><div class="stat"><div class="label">Concluídos</div><div class="value" id="stConcluidos">0</div><div class="sub">Com retorno</div></div><div class="stat"><div class="label">Veículos Usados</div><div class="value" id="stVeiculos">0</div><div class="sub">Distintos</div></div></div></div>
   <div class="status" id="statusLinha">Carregando relatório.</div>
 </div>
-<div class="card"><div class="card-head"><h2>Movimentações Operacionais</h2><button class="btn" id="btnCsv"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Veículo</th><th>Motorista</th><th>Saída</th><th>Retorno</th><th>Duração</th><th>Destino</th><th>Status</th></tr></thead><tbody id="tbodyRelatorio"></tbody></table></div></div></div>
+<div class="card"><div class="card-head"><h2>Movimentações Operacionais</h2><button class="btn" id="btnCsv"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Veículo</th><th>Motorista</th><th>Saída</th><th>Retorno</th><th>Duração</th><th>KM Inicial</th><th>KM Final</th><th>KM Rodados</th><th>Destino</th><th>Status</th></tr></thead><tbody id="tbodyRelatorio"></tbody></table></div></div></div>
 
   <div class="assinatura">Delta Cuiabá • Controle de Frota</div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -99,16 +103,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const STORAGE_KEY = "delta_auth_firebase_v1";
+const STORAGE_KEY_LEGADO = "delta_auth_v1";
+const LOG_ID_KEY = "delta_log_acesso_id_v1";
+const LOG_INICIO_KEY = "delta_log_acesso_inicio_v1";
 
-function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");}catch(_){return null;}}
-function clearAuth(){localStorage.removeItem(STORAGE_KEY);}
+function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||localStorage.getItem(STORAGE_KEY_LEGADO)||"null");}catch(_){return null;}}
+function clearAuth(){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(STORAGE_KEY_LEGADO);localStorage.removeItem(LOG_ID_KEY);localStorage.removeItem(LOG_INICIO_KEY);}
 function sessaoValidaLocal(auth){return !!(auth && auth.Nome && auth.Perfil && auth.expiraEm && Number(auth.expiraEm)>Date.now());}
 function validarSessaoOuRedirecionar(){
   const auth=getAuth();
   if(!sessaoValidaLocal(auth)){clearAuth();location.href="../index.html";return null;}
   return auth;
 }
-window.logoutSistema=function(){clearAuth();location.href="../index.html";};
+async function registrarLogout(statusFinal="FINALIZADA"){
+  try{
+    const logId=localStorage.getItem(LOG_ID_KEY);
+    const inicioMs=Number(localStorage.getItem(LOG_INICIO_KEY)||0);
+    if(!logId)return;
+    const fimMs=Date.now();
+    const tempoMin=inicioMs ? Math.max(0,Math.round((fimMs-inicioMs)/60000)) : null;
+    await updateDoc(doc(db,"logs_acesso",logId),{logoutEm:serverTimestamp(),logoutMs:fimMs,tempoConectadoMin:tempoMin,status:statusFinal,atualizadoEm:serverTimestamp()});
+  }catch(e){console.error("Erro ao registrar logout:",e);}
+}
+window.logoutSistema=async function(){await registrarLogout("FINALIZADA");clearAuth();location.href="../index.html";};
 
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 function norm(v){return String(v==null?"":v).trim();}
@@ -171,11 +188,42 @@ function durationText(saida, retorno, status){
   const m=Math.floor(diff/60);
   return h+"h "+String(m).padStart(2,"0")+"min";
 }
+function parseKm(v){
+  if(v===null || v===undefined || v==="")return null;
+  const n=Number(String(v).replace(/\./g,"").replace(",",".").replace(/[^\d.-]/g,""));
+  return Number.isFinite(n) ? n : null;
+}
+function fmtKm(v){
+  const n=parseKm(v);
+  return n===null ? "-" : n.toLocaleString("pt-BR",{maximumFractionDigits:0});
+}
+function kmRodadosText(r){
+  const informado=parseKm(r.kmRodado);
+  if(informado!==null)return fmtKm(informado);
+  const ini=parseKm(r.kmSaida);
+  const fim=parseKm(r.kmRetorno);
+  if(ini===null || fim===null || fim<ini)return "-";
+  return fmtKm(fim-ini);
+}
 function pillClass(status){
   const st=upper(status);
   if(st.includes("CONCLU") || st.includes("PÁTIO") || st.includes("PATIO") || st.includes("ENTRADA"))return "ok";
   if(st.includes("TRANS"))return "warn";
   return "danger";
+}
+function segurancaMovimentacao(r){
+  const saida=norm(r.segurancaSaida);
+  const entrada=norm(r.segurancaEntrada);
+  if(saida && entrada && upper(saida)!==upper(entrada))return `Saida: ${saida} / Retorno: ${entrada}`;
+  return saida || entrada || "-";
+}
+function segurancaMovimentacaoHtml(r){
+  const saida=norm(r.segurancaSaida);
+  const entrada=norm(r.segurancaEntrada);
+  if(saida && entrada && upper(saida)!==upper(entrada)){
+    return `<span class="security-label exit">Saida:</span> ${esc(saida)} <span class="security-label return">Retorno:</span> ${esc(entrada)}`;
+  }
+  return esc(saida || entrada || "-");
 }
 function showLoading(on){
   const el=document.getElementById("loadingOverlay");
@@ -201,18 +249,23 @@ async function getCollectionSafe(name, max=1000, ordered=true){
   }
 }
 async function getMovimentacoes(max=1000){
-  const rows=await getCollectionSafe("movimentacoes_frota",max,true);
+  const rows=await getCollectionSafe("movimentacoes_frota",max,false);
   return rows.filter(r=>r && r.Modelo!==true).map(r=>({
     id:r.id,
+    veiculoId:getField(r,["veiculoId","VeiculoId","VEICULO_ID"],""),
     veiculo:getField(r,["veiculo","Veiculo","VEICULO","placa","Placa"],"-"),
+    placa:getField(r,["placa","Placa","PLACA"],""),
     motorista:getField(r,["motorista","Motorista","MOTORISTA","nomeMotorista"],"-"),
     destino:getField(r,["destino","Destino","DESTINO","responsavel","Responsavel"],"-"),
     status:getField(r,["status","Status","STATUS"],"-"),
+    segurancaSaida:getField(r,["segurancaSaida","SegurancaSaida","segurançaSaida","SegurançaSaida"],""),
+    segurancaEntrada:getField(r,["segurancaEntrada","SegurancaEntrada","segurançaEntrada","SegurançaEntrada"],""),
     dataSaida:getField(r,["dataSaida","DataSaida","DATA_SAIDA","saida","Saida"],""),
     dataRetorno:getField(r,["dataRetorno","DataRetorno","DATA_RETORNO","entrada","Entrada"],""),
-    kmSaida:getField(r,["kmSaida","KmSaida","KM_SAIDA"],""),
-    kmRetorno:getField(r,["kmRetorno","KmRetorno","KM_RETORNO"],"")
-  }));
+    kmSaida:getField(r,["kmSaida","KmSaida","KM_SAIDA","km_saida","Km_Saida","KM SAIDA","KmInicial","kmInicial","KM_INICIAL"],""),
+    kmRetorno:getField(r,["kmRetorno","KmRetorno","KM_RETORNO","km_retorno","Km_Retorno","KM RETORNO","KmFinal","kmFinal","KM_FINAL"],""),
+    kmRodado:getField(r,["kmRodado","KmRodado","KM_RODADO","km_rodado","Km_Rodado","KM RODADO","kmRodados","KmRodados","KM_RODADOS"],"")
+  })).sort((a,b)=>(toDate(b.dataSaida)?.getTime()||0)-(toDate(a.dataSaida)?.getTime()||0));
 }
 async function getMotoristas(){
   const nomes=["motoristas","Motoristas","cad_motoristas","cadastro_motoristas"];
@@ -239,7 +292,7 @@ function exportCSV(filename, headers, rows){
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
-window.DeltaReport={db,esc,norm,upper,getField,toDate,fmtDate,fmtDateTime,inputToDate,setDefaultPeriod,inPeriod,durationText,pillClass,showLoading,setStatus,getMovimentacoes,getMotoristas,exportCSV,validarSessaoOuRedirecionar};
+window.DeltaReport={db,esc,norm,upper,getField,toDate,fmtDate,fmtDateTime,inputToDate,setDefaultPeriod,inPeriod,durationText,fmtKm,kmRodadosText,pillClass,segurancaMovimentacao,segurancaMovimentacaoHtml,showLoading,setStatus,getMovimentacoes,getMotoristas,exportCSV,validarSessaoOuRedirecionar};
 </script>
 
 
@@ -250,7 +303,7 @@ function render(rows){
   stTransito.textContent=rows.filter(r=>R.upper(r.status).includes("TRANS")).length;
   stConcluidos.textContent=rows.filter(r=>R.pillClass(r.status)==="ok").length;
   stVeiculos.textContent=new Set(rows.map(r=>R.upper(r.veiculo)).filter(Boolean)).size;
-  tbodyRelatorio.innerHTML=rows.length?rows.map(r=>`<tr><td>${R.esc(r.veiculo)}</td><td>${R.esc(r.motorista)}</td><td>${R.esc(R.fmtDateTime(r.dataSaida))}</td><td>${R.esc(R.fmtDateTime(r.dataRetorno))}</td><td>${R.esc(R.durationText(r.dataSaida,r.dataRetorno,r.status))}</td><td class="wrap-text">${R.esc(r.destino)}</td><td><span class="pill ${R.pillClass(r.status)}">${R.esc(r.status)}</span></td></tr>`).join(""):'<tr><td colspan="7" class="empty">Nenhuma movimentação encontrada no período.</td></tr>';
+  tbodyRelatorio.innerHTML=rows.length?rows.map(r=>`<tr><td>${R.esc(r.veiculo)}</td><td>${R.esc(r.motorista)}</td><td>${R.esc(R.fmtDateTime(r.dataSaida))}</td><td>${R.esc(R.fmtDateTime(r.dataRetorno))}</td><td>${R.esc(R.durationText(r.dataSaida,r.dataRetorno,r.status))}</td><td>${R.esc(R.fmtKm(r.kmSaida))}</td><td>${R.esc(R.fmtKm(r.kmRetorno))}</td><td>${R.esc(R.kmRodadosText(r))}</td><td class="wrap-text">${R.esc(r.destino)}</td><td><span class="pill ${R.pillClass(r.status)}">${R.esc(r.status)}</span></td></tr><tr class="security-row"><td colspan="10"><span class="security-tag"><i class="fa-solid fa-shield-halved"></i> Seguranca: ${R.segurancaMovimentacaoHtml(r)}</span></td></tr>`).join(""):'<tr><td colspan="10" class="empty">Nenhuma movimentação encontrada no período.</td></tr>';
 }
 async function carregar(){
   if(!R.validarSessaoOuRedirecionar())return;
@@ -263,7 +316,7 @@ async function carregar(){
   finally{R.showLoading(false);}
 }
 R.setDefaultPeriod(30); btnFiltrar.onclick=carregar;
-btnCsv.onclick=()=>R.exportCSV("relatorio_operacional.csv",["Veículo","Motorista","Saída","Retorno","Duração","Destino","Status"],BASE.map(r=>[r.veiculo,r.motorista,R.fmtDateTime(r.dataSaida),R.fmtDateTime(r.dataRetorno),R.durationText(r.dataSaida,r.dataRetorno,r.status),r.destino,r.status]));
+btnCsv.onclick=()=>R.exportCSV("relatorio_operacional.csv",["Veículo","Motorista","Saída","Retorno","Duração","KM Inicial","KM Final","KM Rodados","Destino","Seguranca","Status"],BASE.map(r=>[r.veiculo,r.motorista,R.fmtDateTime(r.dataSaida),R.fmtDateTime(r.dataRetorno),R.durationText(r.dataSaida,r.dataRetorno,r.status),R.fmtKm(r.kmSaida),R.fmtKm(r.kmRetorno),R.kmRodadosText(r),r.destino,R.segurancaMovimentacao(r),r.status]));
 carregar();
 </script>
 

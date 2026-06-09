@@ -97,7 +97,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -111,16 +111,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const STORAGE_KEY = "delta_auth_firebase_v1";
+const STORAGE_KEY_LEGADO = "delta_auth_v1";
+const LOG_ID_KEY = "delta_log_acesso_id_v1";
+const LOG_INICIO_KEY = "delta_log_acesso_inicio_v1";
 
-function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");}catch(_){return null;}}
-function clearAuth(){localStorage.removeItem(STORAGE_KEY);}
+function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||localStorage.getItem(STORAGE_KEY_LEGADO)||"null");}catch(_){return null;}}
+function clearAuth(){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(STORAGE_KEY_LEGADO);localStorage.removeItem(LOG_ID_KEY);localStorage.removeItem(LOG_INICIO_KEY);}
 function sessaoValidaLocal(auth){return !!(auth && auth.Nome && auth.Perfil && auth.expiraEm && Number(auth.expiraEm)>Date.now());}
 function validarSessaoOuRedirecionar(){
   const auth=getAuth();
   if(!sessaoValidaLocal(auth)){clearAuth();location.href="../index.html";return null;}
   return auth;
 }
-window.logoutSistema=function(){clearAuth();location.href="../index.html";};
+async function registrarLogout(statusFinal="FINALIZADA"){
+  try{
+    const logId=localStorage.getItem(LOG_ID_KEY);
+    const inicioMs=Number(localStorage.getItem(LOG_INICIO_KEY)||0);
+    if(!logId)return;
+    const fimMs=Date.now();
+    const tempoMin=inicioMs ? Math.max(0,Math.round((fimMs-inicioMs)/60000)) : null;
+    await updateDoc(doc(db,"logs_acesso",logId),{logoutEm:serverTimestamp(),logoutMs:fimMs,tempoConectadoMin:tempoMin,status:statusFinal,atualizadoEm:serverTimestamp()});
+  }catch(e){console.error("Erro ao registrar logout:",e);}
+}
+window.logoutSistema=async function(){await registrarLogout("FINALIZADA");clearAuth();location.href="../index.html";};
 
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 function norm(v){return String(v==null?"":v).trim();}
@@ -235,8 +248,9 @@ async function getMotoristas(){
       id:r.id,
       nome:getField(r,["nome","Nome","NOME","motorista","Motorista"],"-"),
       cnh:getField(r,["cnh","CNH","Cnh"],"-"),
-      validade:getField(r,["validadeCNH","ValidadeCNH","validade_cnh","Validade CNH","vencimentoCNH","VencimentoCNH"],""),
-      ativo:getField(r,["ativo","Ativo","ATIVO","status","Status"],"")
+      validade:getField(r,["Val_CNH","val_CNH","val_cnh","validadeCNH","ValidadeCNH","validade_cnh","Validade CNH","vencimentoCNH","VencimentoCNH"],""),
+      ativo:getField(r,["ativo","Ativo","ATIVO","status","Status"],""),
+      categorias:getField(r,["CategoriasAutorizadas","categoriasAutorizadas","categorias","Categorias"],[])
     }));
   }
   return [];
@@ -267,13 +281,23 @@ function statusCNH(validade){
   if(dias<=30)return {texto:"VENCE EM 30 DIAS",classe:"warn",dias};
   return {texto:"VÁLIDA",classe:"ok",dias};
 }
+function ativoTexto(valor){
+  return R.norm(valor) || "-";
+}
+function diasTexto(status){
+  if(status.dias === "-")return "-";
+  const dias=Number(status.dias);
+  if(dias < 0)return `Vencida ha ${Math.abs(dias)} dia${Math.abs(dias)===1?"":"s"}`;
+  if(dias === 0)return "Vence hoje";
+  return `${dias} dia${dias===1?"":"s"}`;
+}
 function render(rows){
   const total=rows.length;
   const vencidas=rows.filter(r=>r.status.texto==="VENCIDA").length;
   const alertas=rows.filter(r=>r.status.texto==="VENCE EM 30 DIAS").length;
   const aptos=rows.filter(r=>r.status.texto==="VÁLIDA" || r.status.texto==="VENCE EM 30 DIAS").length;
   stTotal.textContent=total; stAptos.textContent=aptos; stVencidas.textContent=vencidas; stAlertas.textContent=alertas;
-  tbodyRelatorio.innerHTML=rows.length?rows.map(r=>`<tr><td>${R.esc(r.nome)}</td><td>${R.esc(r.cnh)}</td><td>${R.esc(R.fmtDate(r.validade))}</td><td>${R.esc(r.status.dias)}</td><td><span class="pill ${r.status.classe}">${R.esc(r.status.texto)}</span></td><td>${R.esc(r.ativo||"-")}</td></tr>`).join(""):'<tr><td colspan="6" class="empty">Nenhum motorista encontrado.</td></tr>';
+  tbodyRelatorio.innerHTML=rows.length?rows.map(r=>`<tr><td>${R.esc(r.nome)}</td><td>${R.esc(r.cnh)}</td><td>${R.esc(R.fmtDate(r.validade))}</td><td>${R.esc(diasTexto(r.status))}</td><td><span class="pill ${r.status.classe}">${R.esc(r.status.texto)}</span></td><td>${R.esc(ativoTexto(r.ativo))}</td></tr>`).join(""):'<tr><td colspan="6" class="empty">Nenhum motorista encontrado.</td></tr>';
 }
 async function carregar(){
   if(!R.validarSessaoOuRedirecionar())return;
@@ -289,7 +313,7 @@ async function carregar(){
   finally{R.showLoading(false);}
 }
 btnAtualizar.onclick=carregar;
-btnCsv.onclick=()=>R.exportCSV("relatorio_cnh.csv",["Motorista","CNH","Validade","Dias Restantes","Status","Ativo"],BASE.map(r=>[r.nome,r.cnh,R.fmtDate(r.validade),r.status.dias,r.status.texto,r.ativo]));
+btnCsv.onclick=()=>R.exportCSV("relatorio_cnh.csv",["Motorista","CNH","Validade","Dias Restantes","Status","Ativo"],BASE.map(r=>[r.nome,r.cnh,R.fmtDate(r.validade),diasTexto(r.status),r.status.texto,ativoTexto(r.ativo)]));
 carregar();
 </script>
 
