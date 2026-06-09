@@ -210,6 +210,31 @@
       border-color:#dc2626;
       box-shadow:0 0 0 3px rgba(239,68,68,.10);
     }
+    .login-input{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:rgba(255,255,255,.03);
+      color:#fff;
+      font-size:16px;
+      font-weight:800;
+      padding:16px;
+      outline:none;
+    }
+    .login-input:focus{
+      border-color:#dc2626;
+      box-shadow:0 0 0 3px rgba(239,68,68,.10);
+    }
+    .remember-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:-4px 0 16px;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+    }
+    .remember-row input{width:18px;height:18px;accent-color:#ef4444}
     .password-card{
       margin-top:16px;
       border-color:rgba(239,68,68,.24);
@@ -375,11 +400,15 @@
 
     .footer{
       padding:6px 0 18px;
-      font-size:12px;
-      color:#6b85a6;
       opacity:.75;
-      letter-spacing:1px;
       text-align:center;
+    }
+    .footer-logo{
+      width:92px;
+      height:92px;
+      object-fit:contain;
+      border-radius:22px;
+      filter:drop-shadow(0 10px 18px rgba(0,0,0,.28));
     }
 
     .hidden{ display:none !important; }
@@ -405,20 +434,30 @@
 
     <div class="card" id="loginCard">
       <h2 class="title">Acesso do Segurança</h2>
-      <p class="sub">Digite apenas o seu código pessoal para acessar o sistema.</p>
+      <p class="sub">Entre com seu e-mail interno e senha numérica de 6 dígitos.</p>
 
       <div class="field">
-        <label for="codigo">Código de acesso</label>
+        <label for="emailLogin">E-mail</label>
+        <input id="emailLogin" class="login-input" type="email" placeholder="admin@cuiabamt.local" autocomplete="username">
+      </div>
+
+      <div class="field">
+        <label for="senhaLogin">Senha</label>
         <div class="pin-wrap">
-          <input id="codigo" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="⬢⬢⬢⬢" autocomplete="one-time-code">
+          <input id="senhaLogin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="⬢⬢⬢⬢⬢⬢" autocomplete="current-password">
         </div>
       </div>
+
+      <label class="remember-row" for="lembrarEmail">
+        <input id="lembrarEmail" type="checkbox">
+        <span>Lembrar e-mail neste navegador</span>
+      </label>
 
       <button id="btnEntrar" class="btn btn-primary" type="button">Entrar</button>
 
       <div id="welcomeMsg" class="welcome"></div>
       <div id="loading" class="loading"></div>
-      <div id="msg" class="msg">Digite seu código para entrar.</div>
+      <div id="msg" class="msg">Digite seu e-mail e senha para entrar.</div>
     </div>
 
     <div class="card password-card hidden" id="senhaCard">
@@ -467,7 +506,7 @@
     </div>
   </div>
 
-  <div class="footer">by Ulbach</div>
+  <div class="footer"><img class="footer-logo" src="assets/ulbach-logo-botao.png" alt="Ulbach"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -500,6 +539,7 @@ const STORAGE_KEY = 'delta_auth_firebase_v1';
 const STORAGE_KEY_LEGADO = 'delta_auth_v1';
 const LOG_ID_KEY = 'delta_log_acesso_id_v1';
 const LOG_INICIO_KEY = 'delta_log_acesso_inicio_v1';
+const EMAIL_LEMBRADO_KEY = 'delta_email_login_v1';
 const MODO_MODELO_ALTERAR_SENHA = false;
 
 function setChip(text, color){
@@ -682,7 +722,7 @@ function closeAlterarSenha(){
     openMenu(auth);
   }else{
     document.getElementById('loginCard').classList.remove('hidden');
-    document.getElementById('codigo').focus();
+    document.getElementById('emailLogin').focus();
   }
 }
 
@@ -781,12 +821,17 @@ function openLogin(){
   if(btnSairTopo) btnSairTopo.classList.add('hidden');
   if(btnVoltarSenha) btnVoltarSenha.classList.add('hidden');
   setMenuTitulo('fa-solid fa-house', 'Menu Principal');
-  document.getElementById('codigo').value = '';
-  document.getElementById('codigo').focus();
+  const emailEl = document.getElementById('emailLogin');
+  const senhaEl = document.getElementById('senhaLogin');
+  const lembrarEl = document.getElementById('lembrarEmail');
+  const emailLembrado = localStorage.getItem(EMAIL_LEMBRADO_KEY) || '';
+  emailEl.value = emailLembrado;
+  senhaEl.value = '';
+  lembrarEl.checked = !!emailLembrado;
+  (emailLembrado ? senhaEl : emailEl).focus();
   document.getElementById('welcomeMsg').style.display = 'none';
-  setMsg('Digite seu código para entrar.');
+  setMsg('Digite seu e-mail e senha para entrar.');
 }
-
 function sessaoValidaLocal(auth){
   if(!auth) return false;
 
@@ -813,6 +858,26 @@ async function buscarSegurancaPorCodigo(codigo){
   const q = query(
     collection(db, 'segurancas'),
     where('Sen_Segura', '==', codigo),
+    where('Ativo', '==', true),
+    limit(1)
+  );
+
+  const snap = await getDocs(q);
+
+  if (snap.empty) return null;
+
+  const docItem = snap.docs[0];
+  return {
+    id: docItem.id,
+    ...docItem.data()
+  };
+}
+
+async function buscarSegurancaPorEmailSenha(email, senha){
+  const q = query(
+    collection(db, 'segurancas'),
+    where('Email', '==', email),
+    where('Sen_Segura', '==', senha),
     where('Ativo', '==', true),
     limit(1)
   );
@@ -903,7 +968,8 @@ async function alterarSenhaSeguranca(){
     });
 
     setMsgSenha('Senha alterada com sucesso. Use a nova senha no proximo acesso.', true);
-    document.getElementById('codigo').value = nova;
+    const senhaLogin = document.getElementById('senhaLogin');
+    if(senhaLogin) senhaLogin.value = nova;
 
     setTimeout(() => {
       setLoadingSenha(false);
@@ -919,11 +985,24 @@ async function alterarSenhaSeguranca(){
 }
 
 async function fazerLogin(){
-  const codigo = (document.getElementById('codigo').value || '').trim();
+  const email = (document.getElementById('emailLogin').value || '').trim().toLowerCase();
+  const senha = (document.getElementById('senhaLogin').value || '').trim();
 
-  if (!codigo) {
-    setMsg('Digite o seu código de acesso.');
-    document.getElementById('codigo').focus();
+  if (!email) {
+    setMsg('Digite o seu e-mail.');
+    document.getElementById('emailLogin').focus();
+    return;
+  }
+
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    setMsg('Digite um e-mail valido.');
+    document.getElementById('emailLogin').focus();
+    return;
+  }
+
+  if (!/^\d{6}$/.test(senha)) {
+    setMsg('Digite a senha numerica de 6 digitos.');
+    document.getElementById('senhaLogin').focus();
     return;
   }
 
@@ -931,10 +1010,10 @@ async function fazerLogin(){
   setMsg('Validando acesso no Firebase...');
 
   try {
-    const usuario = await buscarSegurancaPorCodigo(codigo);
+    const usuario = await buscarSegurancaPorEmailSenha(email, senha);
 
     if (!usuario) {
-      setMsg('Código não encontrado ou usuário inativo.');
+      setMsg('E-mail ou senha invalido, ou usuario inativo.');
       setLoading(false);
       return;
     }
@@ -942,14 +1021,14 @@ async function fazerLogin(){
     const perfil = normalizarPerfil(usuario.Perfil);
 
     if (!['ADMIN', 'OPERADOR', 'CONSULTA'].includes(perfil)) {
-      setMsg('Perfil inválido no cadastro do usuário.');
+      setMsg('Perfil invalido no cadastro do usuario.');
       setLoading(false);
       return;
     }
 
     const sessao = {
       id: usuario.id,
-      token: usuario.id || usuario.Sen_Segura || codigo,
+      token: usuario.id || usuario.Sen_Segura || senha,
       Nome: usuario.Nome || '',
       seguranca: usuario.Nome || '',
       Email: usuario.Email || '',
@@ -958,6 +1037,12 @@ async function fazerLogin(){
       expiraEm: Date.now() + (8 * 60 * 60 * 1000),
       ultimoCheck: Date.now()
     };
+
+    if(document.getElementById('lembrarEmail').checked){
+      localStorage.setItem(EMAIL_LEMBRADO_KEY, email);
+    }else{
+      localStorage.removeItem(EMAIL_LEMBRADO_KEY);
+    }
 
     setAuth(sessao);
     await registrarLogin(sessao, 'index.html');
@@ -987,7 +1072,10 @@ document.getElementById('btnEntrar').addEventListener('click', fazerLogin);
 document.getElementById('btnMostrarAlterarSenha').addEventListener('click', openAlterarSenha);
 document.getElementById('btnCancelarSenha').addEventListener('click', closeAlterarSenha);
 document.getElementById('btnSalvarSenha').addEventListener('click', alterarSenhaSeguranca);
-document.getElementById('codigo').addEventListener('keydown', (e) => {
+document.getElementById('emailLogin').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('senhaLogin').focus();
+});
+document.getElementById('senhaLogin').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') fazerLogin();
 });
 ['senhaAtual','senhaNova','senhaConfirma'].forEach(id => {
@@ -1001,10 +1089,16 @@ document.getElementById('btnSairTopo').addEventListener('click', trocarUsuario);
 document.getElementById('btnVoltarSenha').addEventListener('click', closeAlterarSenha);
 
 window.addEventListener('load', async () => {
-  document.getElementById('codigo').focus();
+  const emailLembrado = localStorage.getItem(EMAIL_LEMBRADO_KEY) || '';
+  const emailEl = document.getElementById('emailLogin');
+  const senhaEl = document.getElementById('senhaLogin');
+  const lembrarEl = document.getElementById('lembrarEmail');
+  emailEl.value = emailLembrado;
+  lembrarEl.checked = !!emailLembrado;
+  (emailLembrado ? senhaEl : emailEl).focus();
   setChip('● FIREBASE', '#fecaca');
   const logado = await validarSessaoExistente();
-  if (!logado) setMsg('Digite seu código para entrar.');
+  if (!logado) setMsg('Digite seu e-mail e senha para entrar.');
 });
 </script>
 </body>
