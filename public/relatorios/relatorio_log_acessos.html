@@ -46,6 +46,7 @@ body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;pointe
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const firebaseConfig={apiKey:"AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",authDomain:"cuiaba-01617931-f126e.firebaseapp.com",projectId:"cuiaba-01617931-f126e",storageBucket:"cuiaba-01617931-f126e.firebasestorage.app",messagingSenderId:"797115279316",appId:"1:797115279316:web:f229366de16d4e066e1841"};
 const app=initializeApp(firebaseConfig),db=getFirestore(app),STORAGE_KEY="delta_auth_firebase_v1",STORAGE_KEY_LEGADO="delta_auth_v1";
 const LOG_ID_KEY="delta_log_acesso_id_v1";

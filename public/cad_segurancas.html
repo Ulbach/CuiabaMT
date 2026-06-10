@@ -420,6 +420,7 @@ import {
   doc,
   updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -431,6 +432,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+getFirebaseAuth(app);
 const db = getFirestore(app);
 
 const STORAGE_KEY = 'delta_auth_firebase_v1';
@@ -535,6 +537,24 @@ function podeEditarUsuarioProtegido(d){
 function emailVisivel(d){
   if(usuarioProtegido(d) && !podeEditarUsuarioProtegido(d)) return "Conta protegida";
   return d.Email || d.email || "-";
+}
+
+async function registrarAuditoria(tipo, alvoId, detalhes={}){
+  try{
+    await addDoc(collection(db,"auditoria"),{
+      tipo,
+      alvoColecao: "segurancas",
+      alvoId,
+      usuarioUid: AUTH?.uid || "",
+      usuarioNome: AUTH?.Nome || AUTH?.seguranca || AUTH?.nome || "",
+      usuarioEmail: AUTH?.Email || AUTH?.email || "",
+      origem: "cad_segurancas.html",
+      detalhes,
+      criadoEm: serverTimestamp()
+    });
+  }catch(e){
+    console.warn("Falha ao registrar auditoria:", e);
+  }
 }
 
 function esc(v){
@@ -698,7 +718,8 @@ function editarSeguranca(idx){
 
   Nome.value = d.Nome || "";
   Email.value = d.Email || "";
-  Sen_Segura.value = d.Sen_Segura || "";
+  Sen_Segura.value = "";
+  Sen_Segura.placeholder = d.AuthMigrado ? "Credencial migrada para Firebase Auth" : "Nova senha temporaria";
   Perfil.value = d.Perfil || "OPERADOR";
   Ativo.checked = !!d.Ativo;
 
@@ -721,7 +742,7 @@ async function salvarSeguranca(){
   const perfil = upper(texto("Perfil"));
   const ativo = bool("Ativo");
 
-  if(!nomeOriginal || !email || !senha || !perfil || !ativo){
+  if(!nomeOriginal || !email || (!modoEdicao && !senha) || !perfil || !ativo){
     msg("Campos obrigatórios: Nome, E-mail, Senha, Perfil e Ativo.","erro");
     return;
   }
@@ -747,20 +768,33 @@ async function salvarSeguranca(){
       Nome: upper(nomeOriginal),
       NomeBusca: nomeBusca,
       Perfil: perfil,
-      Sen_Segura: senha,
       Protegido: registroAtual?.Protegido === true,
       CredencialPrivada: registroAtual?.CredencialPrivada === true,
       BloquearAlteracaoPorOutroAdmin: registroAtual?.BloquearAlteracaoPorOutroAdmin === true,
       AtualizadoEm: serverTimestamp()
     };
 
+    if(!modoEdicao || senha){
+      dados.Sen_Segura = senha;
+    }
+
     if(modoEdicao){
       await updateDoc(doc(db,"segurancas",editId),dados);
+      await registrarAuditoria("ALTERACAO_SEGURANCA", editId, {
+        perfil,
+        ativo,
+        alterouSenha: !!senha,
+        protegido: dados.Protegido === true
+      });
       msg("Segurança atualizado com sucesso.");
     }else{
-      await addDoc(collection(db,"segurancas"),{
+      const novo = await addDoc(collection(db,"segurancas"),{
         ...dados,
         CriadoEm: serverTimestamp()
+      });
+      await registrarAuditoria("CRIACAO_SEGURANCA", novo.id, {
+        perfil,
+        ativo
       });
       msg("Segurança cadastrado com sucesso.");
     }

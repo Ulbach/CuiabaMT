@@ -98,6 +98,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -109,6 +110,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+getFirebaseAuth(app);
 const db = getFirestore(app);
 const STORAGE_KEY = "delta_auth_firebase_v1";
 const STORAGE_KEY_LEGADO = "delta_auth_v1";

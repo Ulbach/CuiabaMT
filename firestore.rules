@@ -2,11 +2,111 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // REGRA TEMPORÁRIA PARA TESTES DO APP CUIABÁ.
-    // Permite leitura e escrita sem login apenas durante a fase inicial.
-    // Depois que o app estiver validado, trocar por regras com Firebase Auth.
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userProfile() {
+      return get(/databases/$(database)/documents/usuarios_auth/$(request.auth.uid)).data;
+    }
+
+    function activeUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/usuarios_auth/$(request.auth.uid))
+        && userProfile().Ativo == true;
+    }
+
+    function perfil() {
+      return activeUser() ? userProfile().Perfil : "";
+    }
+
+    function isSuperAdmin() {
+      return activeUser() && userProfile().SuperAdmin == true;
+    }
+
+    function isAdmin() {
+      return activeUser() && (perfil() == "ADMIN" || isSuperAdmin());
+    }
+
+    function isOperador() {
+      return activeUser() && (perfil() == "OPERADOR" || isAdmin());
+    }
+
+    function isConsulta() {
+      return activeUser() && (perfil() == "CONSULTA" || isOperador());
+    }
+
+    match /usuarios_auth/{uid} {
+      allow get: if activeUser() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    match /segurancas/{id} {
+      allow get, list: if isAdmin();
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin()
+        || (
+          activeUser()
+          && resource.data.AuthUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["Sen_Segura", "AtualizadoEm"])
+        );
+    }
+
+    match /veiculos/{id} {
+      allow get, list: if isConsulta();
+      allow create, delete: if isAdmin();
+      allow update: if isOperador();
+    }
+
+    match /motoristas/{id} {
+      allow get, list: if isConsulta();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /responsaveis/{id} {
+      allow get, list: if isConsulta();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /movimentacoes_frota/{id} {
+      allow get, list: if isConsulta();
+      allow create, update: if isOperador();
+      allow delete: if isAdmin();
+    }
+
+    match /visitantes/{id} {
+      allow get, list: if isConsulta();
+      allow create, update: if isOperador();
+      allow delete: if isAdmin();
+    }
+
+    match /logs_acesso/{id} {
+      allow get, list: if isAdmin();
+      allow create: if activeUser();
+      allow update: if activeUser();
+      allow delete: if isSuperAdmin();
+    }
+
+    match /frota_veiculos/{id} {
+      allow get, list: if isConsulta();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /frota_motoristas/{id} {
+      allow get, list: if isConsulta();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /auditoria/{id} {
+      allow get, list: if isAdmin();
+      allow create: if activeUser();
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

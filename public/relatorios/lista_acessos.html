@@ -385,7 +385,7 @@ tbody tr:hover{
 
   <div class="card">
     <div class="card-head">
-      <h2><i class="fa-solid fa-key"></i> Operadores e Senhas</h2>
+      <h2><i class="fa-solid fa-key"></i> Operadores e Acessos</h2>
 
       <div class="filters">
         <button class="btn primary" type="button" id="btnExportar">
@@ -453,7 +453,7 @@ tbody tr:hover{
             <tr>
               <th>Nome</th>
               <th>E-mail</th>
-              <th>Senha</th>
+              <th>Credencial</th>
               <th>Perfil</th>
               <th>Status</th>
               <th>Senha Temporária</th>
@@ -482,6 +482,7 @@ import {
   query,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -493,6 +494,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+getFirebaseAuth(app);
 const db = getFirestore(app);
 
 const STORAGE_KEY = "delta_auth_firebase_v1";
@@ -588,7 +590,7 @@ function render(lista){
   tbody.innerHTML = lista.map(s => {
     const nome = s.Nome || s.nome || "-";
     const email = s.Email || s.email || "-";
-    const senha = s.Sen_Segura || s.Senha || s.senha || "-";
+    const senha = s.AuthMigrado ? "Firebase Auth" : "Legado pendente";
     const ativo = ativoSeg(s);
     const temp = senhaTemporaria(s);
 
@@ -639,12 +641,12 @@ function csvEscape(v){
 
 function exportarCSV(){
   const linhas = [];
-  linhas.push(["Nome","E-mail","Senha","Perfil","Status","Senha Temporaria"].join(";"));
+  linhas.push(["Nome","E-mail","Credencial","Perfil","Status","Senha Temporaria"].join(";"));
 
   OPERADORES.forEach(s => {
     const nome = s.Nome || s.nome || "";
     const email = s.Email || s.email || "";
-    const senha = s.Sen_Segura || s.Senha || s.senha || "";
+    const senha = s.AuthMigrado ? "Firebase Auth" : "Legado pendente";
     const ativo = ativoSeg(s) ? "ATIVO" : "INATIVO";
     const temp = senhaTemporaria(s) ? "SIM" : "NAO";
 
