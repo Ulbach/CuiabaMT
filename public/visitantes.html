@@ -581,7 +581,7 @@ function perfilAuth(auth){
 }
 
 function tokenAuth(auth){
-  return auth?.token || auth?.id || auth?.Sen_Segura || '';
+  return auth?.token || auth?.id || auth?.uid || '';
 }
 
 function sessaoValidaLocal(auth){

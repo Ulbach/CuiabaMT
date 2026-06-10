@@ -375,8 +375,9 @@ body.perfil-consulta #formCadastro select{
 
       <div class="row">
         <div class="field">
-          <label for="Sen_Segura">Senha *</label>
-          <input id="Sen_Segura" required placeholder="Senha de acesso">
+          <label>Credencial</label>
+          <input value="Firebase Auth" readonly>
+          <small>Senha nao e salva no Firestore. Use o fluxo seguro de usuarios Auth.</small>
         </div>
 
         <div class="field">
@@ -718,8 +719,6 @@ function editarSeguranca(idx){
 
   Nome.value = d.Nome || "";
   Email.value = d.Email || "";
-  Sen_Segura.value = "";
-  Sen_Segura.placeholder = d.AuthMigrado ? "Credencial migrada para Firebase Auth" : "Nova senha temporaria";
   Perfil.value = d.Perfil || "OPERADOR";
   Ativo.checked = !!d.Ativo;
 
@@ -738,11 +737,10 @@ async function salvarSeguranca(){
   const nomeOriginal = texto("Nome");
   const nomeBusca = upper(nomeOriginal);
   const email = lower(texto("Email"));
-  const senha = texto("Sen_Segura");
   const perfil = upper(texto("Perfil"));
   const ativo = bool("Ativo");
 
-  if(!nomeOriginal || !email || (!modoEdicao && !senha) || !perfil || !ativo){
+  if(!nomeOriginal || !email || !perfil || !ativo){
     msg("Campos obrigatórios: Nome, E-mail, Senha, Perfil e Ativo.","erro");
     return;
   }
@@ -774,16 +772,12 @@ async function salvarSeguranca(){
       AtualizadoEm: serverTimestamp()
     };
 
-    if(!modoEdicao || senha){
-      dados.Sen_Segura = senha;
-    }
-
     if(modoEdicao){
       await updateDoc(doc(db,"segurancas",editId),dados);
       await registrarAuditoria("ALTERACAO_SEGURANCA", editId, {
         perfil,
         ativo,
-        alterouSenha: !!senha,
+        alterouSenha: false,
         protegido: dados.Protegido === true
       });
       msg("Segurança atualizado com sucesso.");

@@ -432,7 +432,7 @@ function clearAuth(){
 
 function nomeAuth(a){return a?.Nome||a?.seguranca||a?.nome||a?.usuario||''}
 function perfilAuth(a){return String(a?.Perfil||a?.perfil||'OPERADOR').trim().toUpperCase()}
-function tokenAuth(a){return a?.token||a?.id||a?.Sen_Segura||''}
+function tokenAuth(a){return a?.token||a?.id||a?.uid||''}
 
 function sessaoValidaLocal(a){
   if(!a) return false;

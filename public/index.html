@@ -513,10 +513,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getFirestore,
   collection,
-  getDocs,
-  query,
-  where,
-  limit,
   addDoc,
   doc,
   getDoc,
@@ -569,7 +565,7 @@ function getAuth(){
 
 function montarSessaoLegada(data){
   return {
-    token: data.token || data.id || data.Sen_Segura || '',
+    token: data.token || data.uid || data.id || '',
     seguranca: data.seguranca || data.Nome || '',
     nome: data.Nome || data.seguranca || '',
     perfil: data.Perfil || data.perfil || '',
@@ -581,7 +577,7 @@ function montarSessaoLegada(data){
 function setAuth(data){
   const firebaseSession = {
     ...data,
-    token: data.token || data.id || data.Sen_Segura || '',
+    token: data.token || data.uid || data.id || '',
     seguranca: data.seguranca || data.Nome || '',
     expiraEm: data.expiraEm || (Date.now() + (8 * 60 * 60 * 1000))
   };
@@ -906,56 +902,6 @@ async function validarSessaoExistente(){
   return true;
 }
 
-async function buscarSegurancaPorCodigo(codigo){
-  const q = query(
-    collection(db, 'segurancas'),
-    where('Sen_Segura', '==', codigo),
-    where('Ativo', '==', true),
-    limit(1)
-  );
-
-  const snap = await getDocs(q);
-
-  if (snap.empty) return null;
-
-  const docItem = snap.docs[0];
-  return {
-    id: docItem.id,
-    ...docItem.data()
-  };
-}
-
-async function buscarSegurancaPorEmailSenha(email, senha){
-  const q = query(
-    collection(db, 'segurancas'),
-    where('Email', '==', email),
-    where('Sen_Segura', '==', senha),
-    where('Ativo', '==', true),
-    limit(1)
-  );
-
-  const snap = await getDocs(q);
-
-  if (snap.empty) return null;
-
-  const docItem = snap.docs[0];
-  return {
-    id: docItem.id,
-    ...docItem.data()
-  };
-}
-
-async function senhaJaUsada(codigo, ignorarId){
-  const q = query(
-    collection(db, 'segurancas'),
-    where('Sen_Segura', '==', codigo),
-    limit(2)
-  );
-
-  const snap = await getDocs(q);
-  return snap.docs.some(docItem => docItem.id !== ignorarId);
-}
-
 async function alterarSenhaSeguranca(){
   const atual = (document.getElementById('senhaAtual').value || '').trim();
   const nova = (document.getElementById('senhaNova').value || '').trim();
@@ -1008,11 +954,6 @@ async function alterarSenhaSeguranca(){
     const credential = EmailAuthProvider.credential(authAtual.Email, atual);
     await reauthenticateWithCredential(user, credential);
     await updatePassword(user, nova);
-
-    await updateDoc(doc(db, 'segurancas', authAtual.id), {
-      Sen_Segura: nova,
-      AtualizadoEm: serverTimestamp()
-    });
 
     await addDoc(collection(db, 'auditoria'), {
       tipo: 'ALTERACAO_SENHA',
@@ -1068,54 +1009,17 @@ async function fazerLogin(){
   setMsg('Validando acesso seguro...');
 
   try {
-    let sessao = null;
+    const cred = await signInWithEmailAndPassword(firebaseAuth, email, senha);
+    const perfilDoc = await buscarPerfilAuth(cred.user.uid);
 
-    try{
-      const cred = await signInWithEmailAndPassword(firebaseAuth, email, senha);
-      const perfilDoc = await buscarPerfilAuth(cred.user.uid);
-
-      if(!perfilDoc || perfilDoc.Ativo !== true){
-        await signOut(firebaseAuth).catch(() => {});
-        setMsg('Usuario sem perfil ativo no sistema.');
-        setLoading(false);
-        return;
-      }
-
-      sessao = montarSessaoAuth(cred.user, perfilDoc);
-    }catch(authError){
-      console.warn('Fallback legado temporario:', authError);
-      const usuario = await buscarSegurancaPorEmailSenha(email, senha);
-
-      if (!usuario) {
-        setMsg('E-mail ou senha invalido, ou usuario inativo.');
-        setLoading(false);
-        return;
-      }
-
-      const perfil = normalizarPerfil(usuario.Perfil);
-
-      if (!['ADMIN', 'OPERADOR', 'CONSULTA'].includes(perfil)) {
-        setMsg('Perfil invalido no cadastro do usuario.');
-        setLoading(false);
-        return;
-      }
-
-      sessao = {
-        id: usuario.id,
-        uid: usuario.AuthUid || '',
-        token: usuario.AuthUid || usuario.id || usuario.Sen_Segura || senha,
-        Nome: usuario.Nome || '',
-        seguranca: usuario.Nome || '',
-        Email: usuario.Email || '',
-        Perfil: perfil,
-        AuthProvider: 'legacy-temporary',
-        Protegido: usuario.Protegido === true,
-        SuperAdmin: usuario.SuperAdmin === true,
-        CredencialPrivada: usuario.CredencialPrivada === true,
-        expiraEm: Date.now() + (8 * 60 * 60 * 1000),
-        ultimoCheck: Date.now()
-      };
+    if(!perfilDoc || perfilDoc.Ativo !== true){
+      await signOut(firebaseAuth).catch(() => {});
+      setMsg('Usuario sem perfil ativo no sistema.');
+      setLoading(false);
+      return;
     }
+
+    const sessao = montarSessaoAuth(cred.user, perfilDoc);
 
     if(document.getElementById('lembrarEmail').checked){
       localStorage.setItem(EMAIL_LEMBRADO_KEY, email);

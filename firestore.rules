@@ -45,13 +45,7 @@ service cloud.firestore {
     match /segurancas/{id} {
       allow get, list: if isAdmin();
       allow create, delete: if isSuperAdmin();
-      allow update: if isSuperAdmin()
-        || (
-          activeUser()
-          && resource.data.AuthUid == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(["Sen_Segura", "AtualizadoEm"])
-        );
+      allow update: if isSuperAdmin();
     }
 
     match /veiculos/{id} {

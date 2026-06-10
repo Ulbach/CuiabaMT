@@ -30,6 +30,6 @@ Data: 2026-06-10
 - Senhas removidas de listagem/exportacao principal.
 - Auditoria basica ativa para senha e usuarios.
 
-## Pendencia Controlada
+## Pendencia Encerrada
 
-`Sen_Segura` ainda existe como campo legado temporario. A retirada fisica do campo deve ocorrer em uma janela futura depois de confirmar que nao ha usuario dependendo do fallback.
+`Sen_Segura` foi removido da colecao `segurancas` na Fase 6. O login operacional passou a depender de Firebase Auth.

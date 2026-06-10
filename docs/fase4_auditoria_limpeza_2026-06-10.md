@@ -17,6 +17,6 @@ Data: 2026-06-10
 - `ALTERACAO_SEGURANCA`
 - `TESTE_REGRAS`
 
-## Observacao
+## Observacao Atualizada
 
-O campo legado `Sen_Segura` permanece temporariamente para compatibilidade e rollback. A remocao completa fica condicionada a todos os usuarios operarem somente via Firebase Auth.
+O campo legado `Sen_Segura` foi removido da colecao `segurancas` na Fase 6, depois da validacao de login Firebase Auth de todos os usuarios ativos.
