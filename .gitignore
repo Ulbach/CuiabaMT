@@ -5,6 +5,7 @@
 /build
 /dist
 /.next
+/backups
 
 # Log files
 *.log
