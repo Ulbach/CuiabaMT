@@ -370,7 +370,7 @@ body.perfil-consulta #formCadastro select{
 
       <div class="field">
         <label for="Email">E-mail *</label>
-        <input id="Email" type="email" required placeholder="email@empresa.com.br">
+        <input id="Email" type="email" required placeholder="usuario@cuiabamt.local">
       </div>
 
       <div class="row">
@@ -392,7 +392,7 @@ body.perfil-consulta #formCadastro select{
       </div>
 
       <div class="checkline">
-        <input id="Ativo" type="checkbox" checked required>
+        <input id="Ativo" type="checkbox" checked>
         <label for="Ativo">Ativo *</label>
       </div>
 
@@ -479,6 +479,10 @@ function isConsulta(){
   return perfilAuth(AUTH) === 'CONSULTA';
 }
 
+function isSuperAdmin(){
+  return AUTH?.SuperAdmin === true;
+}
+
 function aplicarPerfilConsulta(){
   AUTH = getAuth();
 
@@ -501,6 +505,23 @@ function aplicarPerfilConsulta(){
       btn.disabled = true;
       btn.textContent = 'SOMENTE CONSULTA';
       btn.title = 'Perfil CONSULTA não possui permissão para salvar seguranças.';
+    }
+
+    if(cancelar) cancelar.style.display = 'none';
+  }else if(!isSuperAdmin()){
+    const box = document.getElementById('consultaBox');
+    const btn = document.getElementById('btnSalvar');
+    const cancelar = document.getElementById('btnCancelarEdicao');
+
+    if(box){
+      box.style.display = 'block';
+      box.textContent = 'Somente SuperAdmin pode alterar usuarios. Consulta liberada.';
+    }
+
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = 'SOMENTE SUPERADMIN';
+      btn.title = 'Somente SuperAdmin pode alterar usuarios.';
     }
 
     if(cancelar) cancelar.style.display = 'none';
@@ -600,7 +621,7 @@ function mostrarResultado(html){
 }
 
 function setModoEdicao(ativo,id=null){
-  if(isConsulta()){
+  if(isConsulta() || !isSuperAdmin()){
     modoEdicao = false;
     editId = null;
 
@@ -609,10 +630,10 @@ function setModoEdicao(ativo,id=null){
     const cancelar = document.getElementById("btnCancelarEdicao");
     const banner = document.getElementById("editBanner");
 
-    if(titulo) titulo.textContent = "Novo Cadastro";
+    if(titulo) titulo.textContent = "Manutencao de Usuario";
     if(btn){
       btn.disabled = true;
-      btn.textContent = "SOMENTE CONSULTA";
+      btn.textContent = isConsulta() ? "SOMENTE CONSULTA" : "SOMENTE SUPERADMIN";
       btn.title = "Perfil CONSULTA não possui permissão para salvar seguranças.";
     }
     if(cancelar) cancelar.style.display = "none";
@@ -637,10 +658,11 @@ function setModoEdicao(ativo,id=null){
     if(cancelar) cancelar.style.display = "flex";
     if(banner) banner.style.display = "block";
   }else{
-    if(titulo) titulo.textContent = "Novo Cadastro";
+    if(titulo) titulo.textContent = "Manutencao de Usuario";
     if(btn){
-      btn.textContent = "Salvar";
-      btn.disabled = false;
+      btn.textContent = "Selecione um usuario para editar";
+      btn.disabled = true;
+      btn.title = "Novos usuarios devem ser criados pelo script seguro de provisionamento Auth.";
     }
     if(cancelar) cancelar.style.display = "none";
     if(banner) banner.style.display = "none";
@@ -687,7 +709,7 @@ async function buscarPrefixo(colecao,campoBusca,termo,max=10){
 
 function renderSeguranca(d,idx){
   const protegido = usuarioProtegido(d);
-  const podeEditar = !isConsulta() && podeEditarUsuarioProtegido(d);
+  const podeEditar = isSuperAdmin() && podeEditarUsuarioProtegido(d);
   const editBtn = !podeEditar
     ? ""
     : `<button class="btn btn-warn" type="button" onclick="editarSeguranca(${idx})">Editar cadastro</button>`;
@@ -729,8 +751,18 @@ function editarSeguranca(idx){
 async function salvarSeguranca(){
   limparMsg();
 
-  if(isConsulta()){
+  if(!isConsulta() && !isSuperAdmin()){
+    msg('Somente SuperAdmin pode alterar usuarios.','erro');
+    return;
+  }
+
+  if(isConsulta() || !isSuperAdmin()){
     msg('Perfil CONSULTA não possui permissão para salvar seguranças.','erro');
+    return;
+  }
+
+  if(!modoEdicao || !editId){
+    msg('Novo usuario deve ser criado pelo script seguro scripts/create-auth-user.mjs. A tela edita apenas perfis existentes.','erro');
     return;
   }
 
@@ -740,8 +772,8 @@ async function salvarSeguranca(){
   const perfil = upper(texto("Perfil"));
   const ativo = bool("Ativo");
 
-  if(!nomeOriginal || !email || !perfil || !ativo){
-    msg("Campos obrigatórios: Nome, E-mail, Senha, Perfil e Ativo.","erro");
+  if(!nomeOriginal || !email || !perfil){
+    msg("Campos obrigatórios: Nome, E-mail e Perfil.","erro");
     return;
   }
 
@@ -752,6 +784,11 @@ async function salvarSeguranca(){
 
     if(registroAtual && usuarioProtegido(registroAtual) && !podeEditarUsuarioProtegido(registroAtual)){
       msg("Conta protegida. Somente o proprio usuario pode alterar esse cadastro.","erro");
+      return;
+    }
+
+    if(!registroAtual?.AuthUid){
+      msg("Usuario sem vinculo Firebase Auth. Regularize pelo script seguro antes de alterar.","erro");
       return;
     }
 
@@ -774,11 +811,23 @@ async function salvarSeguranca(){
 
     if(modoEdicao){
       await updateDoc(doc(db,"segurancas",editId),dados);
+      await updateDoc(doc(db,"usuarios_auth",registroAtual.AuthUid),{
+        Email: email,
+        Nome: upper(nomeOriginal),
+        NomeBusca: nomeBusca,
+        Perfil: perfil,
+        Ativo: ativo,
+        Protegido: dados.Protegido === true,
+        SuperAdmin: registroAtual?.SuperAdmin === true,
+        CredencialPrivada: dados.CredencialPrivada === true,
+        AtualizadoEm: serverTimestamp()
+      });
       await registrarAuditoria("ALTERACAO_SEGURANCA", editId, {
         perfil,
         ativo,
         alterouSenha: false,
-        protegido: dados.Protegido === true
+        protegido: dados.Protegido === true,
+        authUid: registroAtual.AuthUid
       });
       msg("Segurança atualizado com sucesso.");
     }else{
@@ -842,7 +891,10 @@ Object.assign(window,{
   cancelarEdicao
 });
 
-window.addEventListener('load', aplicarPerfilConsulta);
+window.addEventListener('load', () => {
+  aplicarPerfilConsulta();
+  setModoEdicao(false);
+});
 </script>
 
 </body>

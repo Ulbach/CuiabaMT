@@ -167,6 +167,25 @@ let modoEdicao=false;
 let editId=null;
 let resultadosCache=[];
 
+async function registrarAuditoria(tipo, alvoColecao, alvoId, detalhes={}){
+  try{
+    await addDoc(collection(db,"auditoria"),{
+      tipo,
+      alvoColecao,
+      alvoId,
+      usuarioUid: AUTH?.uid || "",
+      usuarioNome: AUTH?.Nome || AUTH?.seguranca || AUTH?.nome || "",
+      usuarioEmail: AUTH?.Email || AUTH?.email || "",
+      usuarioPerfil: AUTH?.Perfil || AUTH?.perfil || "",
+      origem: "cad_motoristas.html",
+      detalhes,
+      criadoEm: serverTimestamp()
+    });
+  }catch(e){
+    console.warn("Falha ao registrar auditoria:", e);
+  }
+}
+
 function getAuth(){
   try{
     return JSON.parse(
@@ -450,9 +469,17 @@ async function salvarMotorista(){
 
     if(modoEdicao){
       await updateDoc(doc(db,"motoristas",editId),dados);
+      await registrarAuditoria("ALTERACAO_MOTORISTA","motoristas",editId,{
+        ativo,
+        categorias
+      });
       msg("Motorista atualizado com sucesso.");
     }else{
-      await addDoc(collection(db,"motoristas"),{...dados,CriadoEm:serverTimestamp()});
+      const novo = await addDoc(collection(db,"motoristas"),{...dados,CriadoEm:serverTimestamp()});
+      await registrarAuditoria("CRIACAO_MOTORISTA","motoristas",novo.id,{
+        ativo,
+        categorias
+      });
       msg("Motorista cadastrado com sucesso.");
     }
 

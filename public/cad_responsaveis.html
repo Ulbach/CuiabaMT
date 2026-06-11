@@ -436,6 +436,25 @@ let modoEdicao = false;
 let editId = null;
 let resultadosCache = [];
 
+async function registrarAuditoria(tipo, alvoColecao, alvoId, detalhes={}){
+  try{
+    await addDoc(collection(db,"auditoria"),{
+      tipo,
+      alvoColecao,
+      alvoId,
+      usuarioUid: AUTH?.uid || "",
+      usuarioNome: AUTH?.Nome || AUTH?.seguranca || AUTH?.nome || "",
+      usuarioEmail: AUTH?.Email || AUTH?.email || "",
+      usuarioPerfil: AUTH?.Perfil || AUTH?.perfil || "",
+      origem: "cad_responsaveis.html",
+      detalhes,
+      criadoEm: serverTimestamp()
+    });
+  }catch(e){
+    console.warn("Falha ao registrar auditoria:", e);
+  }
+}
+
 function getAuth(){
   try{
     return JSON.parse(
@@ -718,11 +737,19 @@ async function salvarResponsavel(){
 
     if(modoEdicao){
       await updateDoc(doc(db,"responsaveis",editId),dados);
+      await registrarAuditoria("ALTERACAO_RESPONSAVEL","responsaveis",editId,{
+        ativo: ativoValor,
+        area: areaValor
+      });
       msg("Responsável atualizado com sucesso.");
     }else{
-      await addDoc(collection(db,"responsaveis"),{
+      const novo = await addDoc(collection(db,"responsaveis"),{
         ...dados,
         criadoEm: serverTimestamp()
+      });
+      await registrarAuditoria("CRIACAO_RESPONSAVEL","responsaveis",novo.id,{
+        ativo: ativoValor,
+        area: areaValor
       });
       msg("Responsável cadastrado com sucesso.");
     }

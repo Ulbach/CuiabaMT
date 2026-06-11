@@ -363,6 +363,25 @@ function isConsulta(){
   return perfilAuth(AUTH) === 'CONSULTA';
 }
 
+async function registrarAuditoria(tipo, alvoColecao, alvoId, detalhes={}){
+  try{
+    await addDoc(collection(db,'auditoria'),{
+      tipo,
+      alvoColecao,
+      alvoId,
+      usuarioUid: AUTH?.uid || '',
+      usuarioNome: AUTH?.Nome || AUTH?.seguranca || AUTH?.nome || '',
+      usuarioEmail: AUTH?.Email || AUTH?.email || '',
+      usuarioPerfil: AUTH?.Perfil || AUTH?.perfil || '',
+      origem: 'saida.html',
+      detalhes,
+      criadoEm: serverTimestamp()
+    });
+  }catch(e){
+    console.warn('Falha ao registrar auditoria:', e);
+  }
+}
+
 function esc(v){
   return String(v == null ? '' : v)
     .replace(/&/g,'&amp;')
@@ -650,7 +669,7 @@ async function doEnviar(){
   setMsg('Gravando saída no Firebase...', '--text-soft');
 
   try{
-    await addDoc(collection(db,'movimentacoes_frota'), {
+    const movimentacaoRef = await addDoc(collection(db,'movimentacoes_frota'), {
       tipo: 'SAIDA',
       status: 'EM_TRANSITO',
 
@@ -688,6 +707,14 @@ async function doEnviar(){
     });
 
     setMsg('Saída gravada com sucesso!', '--green');
+
+    await registrarAuditoria('REGISTRO_SAIDA','movimentacoes_frota',movimentacaoRef.id,{
+      veiculoId: veiculo.id,
+      motoristaId: motorista.id,
+      kmSaida: KmSaida,
+      destino,
+      placa: veiculo.Placa || veiculo.placa || ''
+    });
 
     setTimeout(()=>{
       location.href = 'veiculos.html';

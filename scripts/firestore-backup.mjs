@@ -1,10 +1,15 @@
 import { initializeApp } from 'firebase/app';
 import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut
+} from 'firebase/auth';
+import {
   collection,
   getDocs,
   getFirestore
 } from 'firebase/firestore';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const firebaseConfig = {
@@ -23,6 +28,8 @@ const collections = [
   'responsaveis',
   'movimentacoes_frota',
   'logs_acesso',
+  'usuarios_auth',
+  'auditoria',
   'visitantes',
   'frota_veiculos',
   'frota_motoristas'
@@ -30,7 +37,33 @@ const collections = [
 
 const sensitiveFieldPattern = /(senha|sen_|password|token|secret|credencial)/i;
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
+
+async function backupDirsNewestFirst() {
+  const entries = await readdir('backups', { withFileTypes: true });
+  const dirs = entries
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith('firestore-'))
+    .map((entry) => entry.name)
+    .sort()
+    .reverse();
+  if (!dirs.length) throw new Error('Nenhum backup anterior encontrado para autenticar SuperAdmin.');
+  return dirs.map((dir) => join('backups', dir));
+}
+
+async function loadSuperAdminFromBackup() {
+  for (const dir of await backupDirsNewestFirst()) {
+    try {
+      const raw = await readFile(join(dir, 'segurancas.json'), 'utf8');
+      const users = JSON.parse(raw).map((item) => ({ id: item.id, ...item.data }));
+      const user = users.find((item) => item.Ativo === true && item.SuperAdmin === true && item.Email && item.Sen_Segura);
+      if (user) return user;
+    } catch (_) {
+      // Ignore failed/incomplete backup folders.
+    }
+  }
+  throw new Error('SuperAdmin com credencial legada nao encontrado no backup local.');
+}
 
 function normalizeValue(value) {
   if (!value || typeof value !== 'object') return value;
@@ -61,6 +94,9 @@ function summarizeDocs(docs) {
 
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const backupDir = join('backups', `firestore-${stamp}`);
+
+const superAdmin = await loadSuperAdminFromBackup();
+await signInWithEmailAndPassword(auth, superAdmin.Email, String(superAdmin.Sen_Segura));
 await mkdir(backupDir, { recursive: true });
 
 const manifest = {
@@ -85,6 +121,8 @@ for (const name of collections) {
 
   manifest.collections[name] = summarizeDocs(docs);
 }
+
+await signOut(auth).catch(() => {});
 
 await writeFile(
   join(backupDir, 'manifest.sanitized.json'),

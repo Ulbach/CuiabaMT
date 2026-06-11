@@ -17,23 +17,29 @@ const firebaseConfig = {
   appId: '1:797115279316:web:f229366de16d4e066e1841'
 };
 
-async function latestBackupDir() {
+async function backupDirsNewestFirst() {
   const entries = await readdir('backups', { withFileTypes: true });
   const dirs = entries
     .filter((entry) => entry.isDirectory() && entry.name.startsWith('firestore-'))
     .map((entry) => entry.name)
-    .sort();
+    .sort()
+    .reverse();
   if (!dirs.length) throw new Error('Nenhum backup encontrado em backups/.');
-  return join('backups', dirs.at(-1));
+  return dirs.map((dir) => join('backups', dir));
 }
 
 async function loadSuperAdmin() {
-  const dir = await latestBackupDir();
-  const raw = await readFile(join(dir, 'segurancas.json'), 'utf8');
-  const users = JSON.parse(raw).map((item) => ({ id: item.id, ...item.data }));
-  const user = users.find((item) => item.Ativo === true && item.SuperAdmin === true);
-  if (!user) throw new Error('SuperAdmin nao encontrado no backup local.');
-  return user;
+  for (const dir of await backupDirsNewestFirst()) {
+    try {
+      const raw = await readFile(join(dir, 'segurancas.json'), 'utf8');
+      const users = JSON.parse(raw).map((item) => ({ id: item.id, ...item.data }));
+      const user = users.find((item) => item.Ativo === true && item.SuperAdmin === true && item.Email && item.Sen_Segura);
+      if (user) return user;
+    } catch (_) {
+      // Ignore failed/incomplete backup folders.
+    }
+  }
+  throw new Error('SuperAdmin com credencial legada nao encontrado no backup local.');
 }
 
 const app = initializeApp(firebaseConfig);

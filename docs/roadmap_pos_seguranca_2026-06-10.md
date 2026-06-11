@@ -2,6 +2,8 @@
 
 Data: 2026-06-10
 
+Atualizacao: fases executadas em 2026-06-11. Detalhes em `docs/execucao_roadmap_pos_seguranca_2026-06-11.md`.
+
 ## Estado Atual
 
 A seguranca critica foi resolvida: Firebase Auth esta ativo, Firestore esta fechado por regras, usuarios foram migrados e o campo legado de senha foi removido do banco.

@@ -346,6 +346,25 @@ function isConsulta(){
   return perfilAuth(AUTH) === 'CONSULTA';
 }
 
+async function registrarAuditoria(tipo, alvoColecao, alvoId, detalhes={}){
+  try{
+    await addDoc(collection(db,'auditoria'),{
+      tipo,
+      alvoColecao,
+      alvoId,
+      usuarioUid: AUTH?.uid || '',
+      usuarioNome: AUTH?.Nome || AUTH?.seguranca || AUTH?.nome || '',
+      usuarioEmail: AUTH?.Email || AUTH?.email || '',
+      usuarioPerfil: AUTH?.Perfil || AUTH?.perfil || '',
+      origem: 'entrada.html',
+      detalhes,
+      criadoEm: serverTimestamp()
+    });
+  }catch(e){
+    console.warn('Falha ao registrar auditoria:', e);
+  }
+}
+
 function esc(v){
   return String(v==null?'':v)
     .replace(/&/g,'&amp;')
@@ -746,10 +765,12 @@ async function doEnviar(){
       origemEntrada: 'entrada.html'
     };
 
+    let movimentacaoId = MOVIMENTACAO_ATUAL?.id || '';
+
     if(MOVIMENTACAO_ATUAL && MOVIMENTACAO_ATUAL.id){
       await updateDoc(doc(db,'movimentacoes_frota',MOVIMENTACAO_ATUAL.id), dadosEntrada);
     }else{
-      await addDoc(collection(db,'movimentacoes_frota'), {
+      const movimentacaoRef = await addDoc(collection(db,'movimentacoes_frota'), {
         ...dadosEntrada,
         veiculoId: veiculo.id,
         veiculo: textoVeiculo(veiculo),
@@ -761,6 +782,7 @@ async function doEnviar(){
         kmSaida: KM_SAIDA || kmAtualVeiculo(veiculo),
         criadoEm: serverTimestamp()
       });
+      movimentacaoId = movimentacaoRef.id;
     }
 
     await updateDoc(doc(db,'veiculos',veiculo.id), {
@@ -769,6 +791,14 @@ async function doEnviar(){
       MotoristaAtual: '',
       DestinoAtual: '',
       UltimaEntradaEm: serverTimestamp()
+    });
+
+    await registrarAuditoria('REGISTRO_ENTRADA','movimentacoes_frota',movimentacaoId,{
+      veiculoId: veiculo.id,
+      kmRetorno: KmRetorno,
+      motoristaRetorno,
+      houveTrocaMotorista,
+      placa: veiculo.Placa || veiculo.placa || ''
     });
 
     setMsg(
