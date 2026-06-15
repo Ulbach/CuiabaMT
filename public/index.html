@@ -1074,7 +1074,18 @@ async function fazerLogin(){
 
   } catch(e) {
     console.error(e);
-    setMsg('Erro ao conectar no Firebase.');
+    const code = e?.code || '';
+    const mensagem =
+      (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password')
+        ? 'E-mail ou senha incorretos.'
+        : code === 'auth/user-disabled'
+          ? 'Conta desativada. Fale com o administrador.'
+          : code === 'auth/network-request-failed'
+            ? 'Sem conexao com a internet. Verifique a rede.'
+            : code === 'auth/too-many-requests'
+              ? 'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
+              : 'Erro ao conectar no Firebase.';
+    setMsg(mensagem);
     setLoading(false);
   }
 }
