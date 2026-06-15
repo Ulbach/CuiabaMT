@@ -11,7 +11,8 @@ Permitir que um ADMIN/SuperAdmin gere uma senha temporaria para um operador (nov
 1. **ADMIN/SuperAdmin** abre `cad_segurancas.html`
    - Para novo cadastro: preenche Nome, E-mail, Perfil e **Senha temporaria inicial** (6 digitos) → clica "Cadastrar Usuario"
    - O sistema cria o usuario no Firebase Auth via REST API e grava `MustChangePassword: true` em `segurancas` e `usuarios_auth`
-   - Para operador existente que esqueceu a senha: clicar "Exigir troca de senha" no resultado da consulta → grava `MustChangePassword: true` nos dois documentos
+   - Para operador existente **sem conta Auth** (AuthUid = null): editar o cadastro, informar 6 digitos no campo Senha Temporaria → sistema cria a conta e grava `MustChangePassword: true`
+   - Para operador existente **com conta Auth mas senha desconhecida**: editar o cadastro, informar 6 digitos → sistema grava `MustChangePassword: true` no Firestore e exibe instrucoes para o admin definir a senha no Firebase Console (ver secao "Limitacao do frontend" abaixo)
 
 2. **Operador** faz login com a senha temporaria
    - O sistema detecta `MustChangePassword: true` no perfil (lido de `usuarios_auth/{uid}`)
@@ -71,10 +72,21 @@ A restricao `affectedKeys().hasOnly(...)` garante que o operador so consegue atu
   - Usuario inativo nao pode atualizar: BLOQUEADO
 - Simulacao do fluxo completo de primeiro acesso: todos os passos corretos
 
+## Limitacao do frontend — redefinir senha de conta Auth existente
+
+O Firebase Auth REST API nao permite alterar a senha de outro usuario sem Admin SDK (biblioteca servidor). O campo "Senha Temporaria Inicial" na tela de edicao, quando o usuario ja tem `AuthUid`, executa o seguinte:
+
+1. Grava `MustChangePassword: true` em `segurancas/{id}` e `usuarios_auth/{uid}`
+2. Exibe instrucoes para o admin ir ao Firebase Console e definir a senha manualmente:
+   - https://console.firebase.google.com/project/cuiaba-01617931-f126e/authentication/users
+   - Encontrar o e-mail do operador → 3 pontos → Editar usuario → definir nova senha
+3. Admin informa a nova senha ao operador
+4. Operador faz login → sistema forca troca (MustChangePassword: true)
+
 ## Validacao recomendada em producao
 
 1. ADMIN cria novo operador com senha temporaria → verificar que `MustChangePassword: true` aparece na consulta
 2. Operador faz login com senha temporaria → deve abrir tela de troca obrigatoria (sem botao Cancelar)
 3. Operador troca a senha → deve ir para o menu normalmente
 4. Operador faz logout e login com a nova senha → deve entrar direto no menu (sem tela de troca)
-5. ADMIN clica "Exigir troca de senha" em operador existente → operador deve ver tela de troca no proximo login
+5. ADMIN edita operador com AuthUid existente → digita nova senha → sistema exibe aviso com instrucoes Firebase Console
