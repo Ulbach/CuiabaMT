@@ -7,6 +7,7 @@ import {
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getFirestore,
   serverTimestamp,
@@ -81,7 +82,23 @@ async function createAuthUser() {
     throw new Error(`Erro ao criar usuario Auth: ${payload?.error?.message || response.status}`);
   }
 
-  return payload.localId;
+  return {
+    uid: payload.localId,
+    idToken: payload.idToken
+  };
+}
+
+async function deleteAuthUser(idToken) {
+  if (!idToken) return false;
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${firebaseConfig.apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken })
+    }
+  );
+  return response.ok;
 }
 
 function maskEmail(value) {
@@ -104,57 +121,66 @@ if (dryRun) {
   process.exit(0);
 }
 
-const uid = await createAuthUser();
+const createdAuth = await createAuthUser();
+const uid = createdAuth.uid;
 
 await signInWithEmailAndPassword(auth, superAdmin.Email, String(superAdmin.Sen_Segura));
 
-const segurancaRef = await addDoc(collection(db, 'segurancas'), {
-  Ativo: true,
-  AuthMigrado: true,
-  AuthUid: uid,
-  Email: email,
-  Nome: nome,
-  NomeBusca: nome,
-  Perfil: perfil,
-  Protegido: false,
-  SuperAdmin: false,
-  CredencialPrivada: false,
-  BloquearAlteracaoPorOutroAdmin: false,
-  MustChangePassword: true,
-  CriadoEm: serverTimestamp(),
-  AtualizadoEm: serverTimestamp()
-});
+let segurancaRef = null;
+try {
+  segurancaRef = await addDoc(collection(db, 'segurancas'), {
+    Ativo: true,
+    AuthMigrado: true,
+    AuthUid: uid,
+    Email: email,
+    Nome: nome,
+    NomeBusca: nome,
+    Perfil: perfil,
+    Protegido: false,
+    SuperAdmin: false,
+    CredencialPrivada: false,
+    BloquearAlteracaoPorOutroAdmin: false,
+    MustChangePassword: true,
+    CriadoEm: serverTimestamp(),
+    AtualizadoEm: serverTimestamp()
+  });
 
-await setDoc(doc(db, 'usuarios_auth', uid), {
-  uid,
-  segurancaId: segurancaRef.id,
-  Email: email,
-  Nome: nome,
-  NomeBusca: nome,
-  Perfil: perfil,
-  Ativo: true,
-  Protegido: false,
-  SuperAdmin: false,
-  CredencialPrivada: false,
-  MustChangePassword: true,
-  CriadoPorScript: true,
-  AtualizadoEm: serverTimestamp()
-});
-
-await addDoc(collection(db, 'auditoria'), {
-  tipo: 'CRIACAO_USUARIO_AUTH',
-  alvoColecao: 'usuarios_auth',
-  alvoId: uid,
-  usuarioUid: superAdmin.AuthUid || '',
-  usuarioEmail: superAdmin.Email || '',
-  usuarioNome: superAdmin.Nome || '',
-  origem: 'scripts/create-auth-user.mjs',
-  detalhes: {
+  await setDoc(doc(db, 'usuarios_auth', uid), {
+    uid,
     segurancaId: segurancaRef.id,
-    perfil
-  },
-  criadoEm: serverTimestamp()
-});
+    Email: email,
+    Nome: nome,
+    NomeBusca: nome,
+    Perfil: perfil,
+    Ativo: true,
+    Protegido: false,
+    SuperAdmin: false,
+    CredencialPrivada: false,
+    MustChangePassword: true,
+    CriadoPorScript: true,
+    AtualizadoEm: serverTimestamp()
+  });
+
+  await addDoc(collection(db, 'auditoria'), {
+    tipo: 'CRIACAO_USUARIO_AUTH',
+    alvoColecao: 'usuarios_auth',
+    alvoId: uid,
+    usuarioUid: superAdmin.AuthUid || '',
+    usuarioEmail: superAdmin.Email || '',
+    usuarioNome: superAdmin.Nome || '',
+    origem: 'scripts/create-auth-user.mjs',
+    detalhes: {
+      segurancaId: segurancaRef.id,
+      perfil
+    },
+    criadoEm: serverTimestamp()
+  });
+} catch (error) {
+  await deleteDoc(doc(db, 'usuarios_auth', uid)).catch(() => {});
+  if (segurancaRef?.id) await deleteDoc(doc(db, 'segurancas', segurancaRef.id)).catch(() => {});
+  await deleteAuthUser(createdAuth.idToken);
+  throw error;
+}
 
 await signOut(auth).catch(() => {});
 

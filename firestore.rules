@@ -39,7 +39,8 @@ service cloud.firestore {
     match /usuarios_auth/{uid} {
       allow get: if activeUser() && (request.auth.uid == uid || isAdmin());
       allow list: if isAdmin();
-      allow create, delete: if isSuperAdmin();
+      allow create: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
       allow update: if isSuperAdmin() || (
         request.auth.uid == uid &&
         request.resource.data.diff(resource.data).affectedKeys()

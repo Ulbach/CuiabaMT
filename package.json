@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "firebase:emulators": "firebase emulators:start",
-    "firebase:deploy": "firebase deploy"
+    "firebase:deploy": "firebase deploy",
+    "auth:diagnose-security": "node scripts/diagnose-security-auth.mjs",
+    "auth:repair-security": "node scripts/repair-security-auth-profile.mjs",
+    "test:first-password": "node scripts/test-first-password-flow.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.0.1",
