@@ -377,7 +377,7 @@ body.perfil-consulta #formCadastro select{
         <div class="field">
           <label for="SenhaTemporaria">Senha temporaria inicial *</label>
           <input id="SenhaTemporaria" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Digite 6 numeros">
-          <small>Novo cadastro ou usuario sem conta Auth: informe 6 digitos. O operador trocar no primeiro acesso.</small>
+          <small id="SenhaTemporariaHelp">Novo cadastro ou usuario sem conta Auth: informe 6 digitos. O operador troca no primeiro acesso.</small>
         </div>
 
         <div class="field">
@@ -681,14 +681,16 @@ function setModoEdicao(ativo,id=null,temAuthUid=false){
       btn.textContent = "Atualizar no Firebase";
       btn.disabled = false;
     }
+    const senhaHelp = document.getElementById("SenhaTemporariaHelp");
     if(senhaTemporaria){
       senhaTemporaria.value = "";
+      senhaTemporaria.disabled = false;
       if(temAuthUid){
-        senhaTemporaria.disabled = true;
-        senhaTemporaria.placeholder = "Conta Auth ja existe. Use Exigir troca de senha.";
+        senhaTemporaria.placeholder = "Nova senha temporaria (6 digitos) — opcional";
+        if(senhaHelp) senhaHelp.textContent = "Conta Auth ja existe. Preencha para sinalizar redefinicao: o sistema marcara MustChangePassword e exibira instrucoes para definir a senha no Firebase Console.";
       }else{
-        senhaTemporaria.disabled = false;
         senhaTemporaria.placeholder = "Digite 6 numeros para criar conta Auth";
+        if(senhaHelp) senhaHelp.textContent = "Novo cadastro ou usuario sem conta Auth: informe 6 digitos. O operador troca no primeiro acesso.";
       }
     }
     if(cancelar) cancelar.style.display = "flex";
@@ -705,6 +707,8 @@ function setModoEdicao(ativo,id=null,temAuthUid=false){
       senhaTemporaria.disabled = false;
       senhaTemporaria.placeholder = "Digite 6 numeros";
     }
+    const senhaHelpReset = document.getElementById("SenhaTemporariaHelp");
+    if(senhaHelpReset) senhaHelpReset.textContent = "Novo cadastro ou usuario sem conta Auth: informe 6 digitos. O operador troca no primeiro acesso.";
     if(cancelar) cancelar.style.display = "none";
     if(banner) banner.style.display = "none";
   }
@@ -836,6 +840,11 @@ async function salvarSeguranca(){
       }
     }
 
+    if(modoEdicao && registroAtual?.AuthUid && senhaTemporaria && !/^\d{6}$/.test(senhaTemporaria)){
+      msg("Senha temporaria deve ter exatamente 6 digitos numericos.","erro");
+      return;
+    }
+
     if(await existeRegistro("segurancas","Email",email,modoEdicao ? editId : null)){
       msg("Duplicidade bloqueada: já existe segurança com este e-mail.","erro");
       return;
@@ -855,6 +864,8 @@ async function salvarSeguranca(){
 
     if(modoEdicao){
       let authUid = registroAtual?.AuthUid || null;
+      let criadoAuth = false;
+      let resetarAuth = false;
 
       if(!authUid){
         authUid = await criarUsuarioAuth(email, senhaTemporaria);
@@ -876,6 +887,10 @@ async function salvarSeguranca(){
         dados.AuthUid = authUid;
         dados.AuthMigrado = true;
         dados.MustChangePassword = true;
+        criadoAuth = true;
+      } else if(senhaTemporaria){
+        resetarAuth = true;
+        dados.MustChangePassword = true;
       }
 
       await updateDoc(doc(db,"segurancas",editId),dados);
@@ -889,7 +904,7 @@ async function salvarSeguranca(){
           Protegido: dados.Protegido === true,
           SuperAdmin: registroAtual?.SuperAdmin === true,
           CredencialPrivada: dados.CredencialPrivada === true,
-          MustChangePassword: registroAtual?.MustChangePassword === true,
+          MustChangePassword: resetarAuth ? true : (registroAtual?.MustChangePassword === true),
           AtualizadoEm: serverTimestamp()
         });
       }
@@ -899,11 +914,21 @@ async function salvarSeguranca(){
         alterouSenha: false,
         protegido: dados.Protegido === true,
         authUid,
-        criadoAuth: !registroAtual?.AuthUid
+        criadoAuth,
+        resetarAuth
       });
-      msg(!registroAtual?.AuthUid
-        ? "Conta Auth criada e cadastro atualizado. Operador deve trocar a senha no primeiro acesso."
-        : "Segurança atualizado com sucesso.");
+      if(criadoAuth){
+        msg("Conta Auth criada e cadastro atualizado. Operador deve trocar a senha no primeiro acesso.");
+      }else if(resetarAuth){
+        msg(
+          `MustChangePassword marcado. Agora va ao Firebase Console e defina a senha do operador manualmente:\n` +
+          `console.firebase.google.com → Authentication → Users → encontre "${email}" → clique nos 3 pontos → Editar usuario → defina a senha como "${senhaTemporaria}"\n` +
+          `Depois informe a senha ao operador. Ele sera obrigado a trocar no primeiro acesso.`,
+          "warn"
+        );
+      }else{
+        msg("Segurança atualizado com sucesso.");
+      }
     }else{
       const uid = await criarUsuarioAuth(email, senhaTemporaria);
       const novo = await addDoc(collection(db,"segurancas"),{
@@ -946,7 +971,7 @@ async function salvarSeguranca(){
     console.error(e);
     const code = e?.message || e?.code || "";
     if(code === "auth/email-already-in-use"){
-      msg("Este e-mail já tem conta no Firebase Auth. Acesse o Firebase Console para redefinir a senha, ou use o botão Exigir troca de senha se o usuário ainda lembra a senha atual.","erro");
+      msg("Este e-mail ja tem conta no Firebase Auth. Para redefinir: Firebase Console → Authentication → Users → encontre o e-mail → 3 pontos → Editar usuario → defina nova senha.","erro");
     }else if(code === "auth/create-failed" || code.includes("ADMIN_ONLY_OPERATION")){
       msg("Criação de conta bloqueada pelo Firebase. Verifique as configurações de autenticação no Console.","erro");
     }else{
