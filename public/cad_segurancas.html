@@ -377,7 +377,7 @@ body.perfil-consulta #formCadastro select{
         <div class="field">
           <label for="SenhaTemporaria">Senha temporaria inicial *</label>
           <input id="SenhaTemporaria" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Digite 6 numeros">
-          <small>O operador usa esta senha somente no primeiro acesso e sera obrigado a trocar.</small>
+          <small>Novo cadastro ou usuario sem conta Auth: informe 6 digitos. O operador trocar no primeiro acesso.</small>
         </div>
 
         <div class="field">
@@ -645,7 +645,7 @@ function mostrarResultado(html){
   }
 }
 
-function setModoEdicao(ativo,id=null){
+function setModoEdicao(ativo,id=null,temAuthUid=false){
   if(isConsulta() || !isSuperAdmin()){
     modoEdicao = false;
     editId = null;
@@ -683,8 +683,13 @@ function setModoEdicao(ativo,id=null){
     }
     if(senhaTemporaria){
       senhaTemporaria.value = "";
-      senhaTemporaria.disabled = true;
-      senhaTemporaria.placeholder = "Use Exigir troca de senha";
+      if(temAuthUid){
+        senhaTemporaria.disabled = true;
+        senhaTemporaria.placeholder = "Conta Auth ja existe. Use Exigir troca de senha.";
+      }else{
+        senhaTemporaria.disabled = false;
+        senhaTemporaria.placeholder = "Digite 6 numeros para criar conta Auth";
+      }
     }
     if(cancelar) cancelar.style.display = "flex";
     if(banner) banner.style.display = "block";
@@ -787,7 +792,7 @@ function editarSeguranca(idx){
   Ativo.checked = !!d.Ativo;
   SenhaTemporaria.value = "";
 
-  setModoEdicao(true,d.id);
+  setModoEdicao(true,d.id,!!d.AuthUid);
   formCadastro.scrollIntoView({behavior:"smooth"});
 }
 
@@ -832,8 +837,10 @@ async function salvarSeguranca(){
     }
 
     if(modoEdicao && !registroAtual?.AuthUid){
-      msg("Usuario sem vinculo Firebase Auth. Regularize pelo script seguro antes de alterar.","erro");
-      return;
+      if(!/^\d{6}$/.test(senhaTemporaria)){
+        msg("Usuario sem conta Firebase Auth. Informe uma senha temporaria de 6 numeros para criar a conta.","erro");
+        return;
+      }
     }
 
     if(await existeRegistro("segurancas","Email",email,modoEdicao ? editId : null)){
@@ -854,27 +861,56 @@ async function salvarSeguranca(){
     };
 
     if(modoEdicao){
+      let authUid = registroAtual?.AuthUid || null;
+
+      if(!authUid){
+        authUid = await criarUsuarioAuth(email, senhaTemporaria);
+        await setDoc(doc(db,"usuarios_auth",authUid),{
+          uid: authUid,
+          segurancaId: editId,
+          Email: email,
+          Nome: upper(nomeOriginal),
+          NomeBusca: nomeBusca,
+          Perfil: perfil,
+          Ativo: ativo,
+          Protegido: dados.Protegido === true,
+          SuperAdmin: registroAtual?.SuperAdmin === true,
+          CredencialPrivada: dados.CredencialPrivada === true,
+          MustChangePassword: true,
+          CriadoPelaTela: true,
+          AtualizadoEm: serverTimestamp()
+        });
+        dados.AuthUid = authUid;
+        dados.AuthMigrado = true;
+        dados.MustChangePassword = true;
+      }
+
       await updateDoc(doc(db,"segurancas",editId),dados);
-      await updateDoc(doc(db,"usuarios_auth",registroAtual.AuthUid),{
-        Email: email,
-        Nome: upper(nomeOriginal),
-        NomeBusca: nomeBusca,
-        Perfil: perfil,
-        Ativo: ativo,
-        Protegido: dados.Protegido === true,
-        SuperAdmin: registroAtual?.SuperAdmin === true,
-        CredencialPrivada: dados.CredencialPrivada === true,
-        MustChangePassword: registroAtual?.MustChangePassword === true,
-        AtualizadoEm: serverTimestamp()
-      });
+      if(authUid && registroAtual?.AuthUid){
+        await updateDoc(doc(db,"usuarios_auth",authUid),{
+          Email: email,
+          Nome: upper(nomeOriginal),
+          NomeBusca: nomeBusca,
+          Perfil: perfil,
+          Ativo: ativo,
+          Protegido: dados.Protegido === true,
+          SuperAdmin: registroAtual?.SuperAdmin === true,
+          CredencialPrivada: dados.CredencialPrivada === true,
+          MustChangePassword: registroAtual?.MustChangePassword === true,
+          AtualizadoEm: serverTimestamp()
+        });
+      }
       await registrarAuditoria("ALTERACAO_SEGURANCA", editId, {
         perfil,
         ativo,
         alterouSenha: false,
         protegido: dados.Protegido === true,
-        authUid: registroAtual.AuthUid
+        authUid,
+        criadoAuth: !registroAtual?.AuthUid
       });
-      msg("Segurança atualizado com sucesso.");
+      msg(!registroAtual?.AuthUid
+        ? "Conta Auth criada e cadastro atualizado. Operador deve trocar a senha no primeiro acesso."
+        : "Segurança atualizado com sucesso.");
     }else{
       const uid = await criarUsuarioAuth(email, senhaTemporaria);
       const novo = await addDoc(collection(db,"segurancas"),{
