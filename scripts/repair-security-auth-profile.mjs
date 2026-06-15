@@ -73,11 +73,28 @@ async function createAuthUser() {
   if (!response.ok) {
     const code = payload?.error?.message || response.status;
     if (code === 'EMAIL_EXISTS') {
-      throw new Error('EMAIL_EXISTS: o usuario existe no Firebase Auth, mas a API client nao permite descobrir o uid. Remova o Auth orfao no Console ou use Admin SDK para vincular o uid correto.');
+      if (!password) {
+        throw new Error('EMAIL_EXISTS: o usuario existe no Firebase Auth. Informe SECURITY_PASSWORD para tentar autenticar e recuperar o uid.');
+      }
+      return resolveExistingAuthUidWithPassword();
     }
     throw new Error(`Erro ao criar usuario Auth: ${code}`);
   }
   return { uid: payload.localId, idToken: payload.idToken };
+}
+
+async function resolveExistingAuthUidWithPassword() {
+  await signOut(auth).catch(() => {});
+  try {
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const uid = credential.user.uid;
+    await signOut(auth).catch(() => {});
+    await signInWithEmailAndPassword(auth, superAdmin.Email, String(superAdmin.Sen_Segura));
+    return { uid, idToken: '', existing: true };
+  } catch (error) {
+    await signInWithEmailAndPassword(auth, superAdmin.Email, String(superAdmin.Sen_Segura)).catch(() => {});
+    throw new Error(`EMAIL_EXISTS: Auth existe, mas SECURITY_PASSWORD nao autentica (${error.code || error.message}). Redefina a senha no Console ou use Admin SDK.`);
+  }
 }
 
 async function deleteAuthUser(idToken) {

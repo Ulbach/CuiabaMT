@@ -44,7 +44,7 @@ npm run auth:repair-security
 
 Para aplicar de fato, trocar `DRY_RUN` para `0`.
 
-Observação importante: se o e-mail já existe no Firebase Auth mas não há documento Firestore com o `uid`, a API client não permite descobrir esse `uid`. Nesse caso, é necessário remover o Auth órfão no Firebase Console ou usar Admin SDK antes de reparar o vínculo.
+Observação importante: se o e-mail já existe no Firebase Auth mas não há documento Firestore com o `uid`, o script tenta autenticar com `SECURITY_PASSWORD` para recuperar o `uid` e refazer o vínculo. Se essa senha não autenticar, será necessário redefinir a senha no Firebase Console ou usar Admin SDK antes de reparar o vínculo.
 
 ## Testes executados
 
