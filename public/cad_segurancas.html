@@ -749,26 +749,19 @@ async function buscarPrefixo(colecao,campoBusca,termo,max=10){
 }
 
 function renderSeguranca(d,idx){
-  const protegido = usuarioProtegido(d);
   const podeEditar = isSuperAdmin() && podeEditarUsuarioProtegido(d);
-  const mustChange = d.MustChangePassword === true ? "Sim" : "Nao";
   const editBtn = !podeEditar
     ? ""
     : `<button class="btn btn-warn" type="button" onclick="editarSeguranca(${idx})">Editar cadastro</button>`;
-  const forcePasswordBtn = !podeEditar
-    ? ""
-    : `<button class="btn btn-light" type="button" onclick="exigirTrocaSenha(${idx})">Exigir troca de senha</button>`;
 
   return `<div class="result-item">
     <div class="result-title">${esc(d.Nome || "-")}</div>
     <div class="result-sub">
       E-mail: ${esc(emailVisivel(d))}<br>
       Perfil: ${esc(d.Perfil || "-")}<br>
-      Ativo: ${d.Ativo ? "Sim" : "Não"}<br>
-      Trocar senha no proximo acesso: ${mustChange}
+      Ativo: ${d.Ativo ? "Sim" : "Não"}
     </div>
     ${editBtn}
-    ${forcePasswordBtn}
   </div>`;
 }
 
@@ -993,54 +986,10 @@ async function consultarSeguranca(){
   }
 }
 
-async function exigirTrocaSenha(idx){
-  limparMsg();
-
-  if(!isSuperAdmin()){
-    msg('Somente SuperAdmin pode exigir troca de senha.','erro');
-    return;
-  }
-
-  const d = resultadosCache[idx];
-  if(!d) return;
-
-  if(!podeEditarUsuarioProtegido(d)){
-    msg('Conta protegida. Somente o proprio usuario pode alterar esse cadastro.','erro');
-    return;
-  }
-
-  if(!d.AuthUid){
-    msg('Usuario sem vinculo Firebase Auth. Regularize pelo script seguro antes de alterar.','erro');
-    return;
-  }
-
-  try{
-    await updateDoc(doc(db,"segurancas",d.id),{
-      MustChangePassword: true,
-      AtualizadoEm: serverTimestamp()
-    });
-    await updateDoc(doc(db,"usuarios_auth",d.AuthUid),{
-      MustChangePassword: true,
-      AtualizadoEm: serverTimestamp()
-    });
-    await registrarAuditoria("EXIGIR_TROCA_SENHA", d.id, {
-      authUid: d.AuthUid,
-      email: d.Email || ''
-    });
-    resultadosCache[idx] = {...d, MustChangePassword: true};
-    mostrarResultado(resultadosCache.map(renderSeguranca).join(""));
-    msg("Troca de senha obrigatoria no proximo acesso.","ok");
-  }catch(e){
-    console.error(e);
-    msg("Erro ao marcar troca obrigatoria de senha.","erro");
-  }
-}
-
 Object.assign(window,{
   salvarSeguranca,
   consultarSeguranca,
   editarSeguranca,
-  exigirTrocaSenha,
   cancelarEdicao
 });
 
