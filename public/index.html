@@ -569,6 +569,7 @@ function montarSessaoLegada(data){
     seguranca: data.seguranca || data.Nome || '',
     nome: data.Nome || data.seguranca || '',
     perfil: data.Perfil || data.perfil || '',
+    MustChangePassword: data.MustChangePassword === true,
     expiraEm: data.expiraEm || (Date.now() + (8 * 60 * 60 * 1000)),
     ultimoCheck: Date.now()
   };
@@ -642,6 +643,7 @@ function montarSessaoAuth(firebaseUser, perfilDoc){
     Protegido: perfilDoc?.Protegido === true,
     SuperAdmin: perfilDoc?.SuperAdmin === true,
     CredencialPrivada: perfilDoc?.CredencialPrivada === true,
+    MustChangePassword: perfilDoc?.MustChangePassword === true,
     expiraEm: Date.now() + (8 * 60 * 60 * 1000),
     ultimoCheck: Date.now()
   };
@@ -745,27 +747,36 @@ function setLoadingSenha(show){
   }
 }
 
-function openAlterarSenha(){
+function openAlterarSenha(obrigatorio=false){
   const btnVoltarSenha = document.getElementById('btnVoltarSenha');
   const btnSairTopo = document.getElementById('btnSairTopo');
+  const btnCancelarSenha = document.getElementById('btnCancelarSenha');
   document.getElementById('loginCard').classList.add('hidden');
   document.getElementById('menuCard').classList.add('hidden');
   document.getElementById('senhaCard').classList.remove('hidden');
-  if(btnVoltarSenha) btnVoltarSenha.classList.remove('hidden');
+  if(btnVoltarSenha) btnVoltarSenha.classList.toggle('hidden', obrigatorio);
   if(btnSairTopo) btnSairTopo.classList.remove('hidden');
+  if(btnCancelarSenha) btnCancelarSenha.classList.toggle('hidden', obrigatorio);
   setMenuTitulo('fa-solid fa-key', 'Alterar Senha');
   document.getElementById('senhaAtual').value = '';
   document.getElementById('senhaNova').value = '';
   document.getElementById('senhaConfirma').value = '';
-  setMsgSenha('A alteração vale para o próximo acesso.');
+  setMsgSenha(obrigatorio
+    ? 'Primeiro acesso: troque a senha temporaria para continuar.'
+    : 'A alteracao vale para o proximo acesso.');
   document.getElementById('senhaAtual').focus();
 }
 
 function closeAlterarSenha(){
+  const auth = getAuth();
+  if(auth?.MustChangePassword === true){
+    setMsgSenha('Troque a senha temporaria para continuar.');
+    return;
+  }
+
   const btnVoltarSenha = document.getElementById('btnVoltarSenha');
   document.getElementById('senhaCard').classList.add('hidden');
   if(btnVoltarSenha) btnVoltarSenha.classList.add('hidden');
-  const auth = getAuth();
   if(sessaoValidaLocal(auth)){
     openMenu(auth);
   }else{
@@ -898,7 +909,11 @@ async function validarSessaoExistente(){
     return false;
   }
 
-  openMenu(auth);
+  if(auth.MustChangePassword === true){
+    openAlterarSenha(true);
+  }else{
+    openMenu(auth);
+  }
   return true;
 }
 
@@ -954,6 +969,17 @@ async function alterarSenhaSeguranca(){
     const credential = EmailAuthProvider.credential(authAtual.Email, atual);
     await reauthenticateWithCredential(user, credential);
     await updatePassword(user, nova);
+    await updateDoc(doc(db, 'usuarios_auth', user.uid), {
+      MustChangePassword: false,
+      SenhaAlteradaEm: serverTimestamp(),
+      AtualizadoEm: serverTimestamp()
+    });
+
+    await updateDoc(doc(db, 'segurancas', authAtual.id), {
+      MustChangePassword: false,
+      SenhaAlteradaEm: serverTimestamp(),
+      AtualizadoEm: serverTimestamp()
+    }).catch(() => {});
 
     await addDoc(collection(db, 'auditoria'), {
       tipo: 'ALTERACAO_SENHA',
@@ -969,6 +995,10 @@ async function alterarSenhaSeguranca(){
     setMsgSenha('Senha alterada com sucesso. Use a nova senha no proximo acesso.', true);
     const senhaLogin = document.getElementById('senhaLogin');
     if(senhaLogin) senhaLogin.value = nova;
+    setAuth({
+      ...authAtual,
+      MustChangePassword: false
+    });
 
     setTimeout(() => {
       setLoadingSenha(false);
@@ -1031,11 +1061,15 @@ async function fazerLogin(){
     await registrarLogin(sessao, 'index.html');
 
     showWelcome('Olá, ' + (sessao.Nome || 'Segurança') + '!');
-    setMsg('Acesso liberado.', true);
+    setMsg(sessao.MustChangePassword ? 'Primeiro acesso: troque a senha temporaria.' : 'Acesso liberado.', true);
 
     setTimeout(() => {
       setLoading(false);
-      openMenu(sessao);
+      if(sessao.MustChangePassword){
+        openAlterarSenha(true);
+      }else{
+        openMenu(sessao);
+      }
     }, 350);
 
   } catch(e) {
@@ -1053,7 +1087,7 @@ async function trocarUsuario(){
 }
 
 document.getElementById('btnEntrar').addEventListener('click', fazerLogin);
-document.getElementById('btnMostrarAlterarSenha').addEventListener('click', openAlterarSenha);
+document.getElementById('btnMostrarAlterarSenha').addEventListener('click', () => openAlterarSenha(false));
 document.getElementById('btnCancelarSenha').addEventListener('click', closeAlterarSenha);
 document.getElementById('btnSalvarSenha').addEventListener('click', alterarSenhaSeguranca);
 document.getElementById('emailLogin').addEventListener('keydown', (e) => {
@@ -1065,7 +1099,7 @@ document.getElementById('senhaLogin').addEventListener('keydown', (e) => {
 ['senhaAtual','senhaNova','senhaConfirma'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', (e) => {
     if (e.key === 'Enter') alterarSenhaSeguranca();
-    if (e.key === 'Escape') closeAlterarSenha();
+    if (e.key === 'Escape' && getAuth()?.MustChangePassword !== true) closeAlterarSenha();
   });
 });
 document.getElementById('btnTrocar').addEventListener('click', trocarUsuario);

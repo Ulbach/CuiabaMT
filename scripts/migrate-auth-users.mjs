@@ -77,6 +77,7 @@ for (const item of snap.docs) {
     Protegido: data.Protegido === true,
     SuperAdmin: data.SuperAdmin === true,
     CredencialPrivada: data.CredencialPrivada === true,
+    MustChangePassword: true,
     CriadoPorMigracao: true,
     AtualizadoEm: serverTimestamp()
   }, { merge: true });
@@ -84,6 +85,7 @@ for (const item of snap.docs) {
   await updateDoc(doc(db, 'segurancas', item.id), {
     AuthUid: uid,
     AuthMigrado: true,
+    MustChangePassword: true,
     AtualizadoEm: serverTimestamp()
   });
 

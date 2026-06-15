@@ -120,6 +120,7 @@ const segurancaRef = await addDoc(collection(db, 'segurancas'), {
   SuperAdmin: false,
   CredencialPrivada: false,
   BloquearAlteracaoPorOutroAdmin: false,
+  MustChangePassword: true,
   CriadoEm: serverTimestamp(),
   AtualizadoEm: serverTimestamp()
 });
@@ -135,6 +136,7 @@ await setDoc(doc(db, 'usuarios_auth', uid), {
   Protegido: false,
   SuperAdmin: false,
   CredencialPrivada: false,
+  MustChangePassword: true,
   CriadoPorScript: true,
   AtualizadoEm: serverTimestamp()
 });
