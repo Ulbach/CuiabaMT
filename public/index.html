@@ -594,6 +594,17 @@ function clearAuth(){
   localStorage.removeItem(LOG_INICIO_KEY);
 }
 
+async function aplicarLogoutForcadoPorUrl(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('logout') !== '1' && params.get('login') !== '1') return false;
+
+  await signOut(firebaseAuth).catch(() => {});
+  clearAuth();
+  const urlLimpa = window.location.pathname || '/index.html';
+  window.history.replaceState({}, document.title, urlLimpa);
+  return true;
+}
+
 function nomeLog(auth){
   return auth?.Nome || auth?.nome || auth?.seguranca || auth?.usuario || '';
 }
@@ -1118,6 +1129,7 @@ document.getElementById('btnSairTopo').addEventListener('click', trocarUsuario);
 document.getElementById('btnVoltarSenha').addEventListener('click', closeAlterarSenha);
 
 window.addEventListener('load', async () => {
+  const logoutForcado = await aplicarLogoutForcadoPorUrl();
   const emailLembrado = localStorage.getItem(EMAIL_LEMBRADO_KEY) || '';
   const emailEl = document.getElementById('emailLogin');
   const senhaEl = document.getElementById('senhaLogin');
@@ -1126,6 +1138,11 @@ window.addEventListener('load', async () => {
   lembrarEl.checked = !!emailLembrado;
   (emailLembrado ? senhaEl : emailEl).focus();
   setChip('● FIREBASE', '#fecaca');
+  if(logoutForcado){
+    openLogin();
+    setMsg('Sessao anterior encerrada. Entre novamente.');
+    return;
+  }
   const logado = await validarSessaoExistente();
   if (!logado) setMsg('Digite seu e-mail e senha para entrar.');
 });
