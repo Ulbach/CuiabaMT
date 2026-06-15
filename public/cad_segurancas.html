@@ -951,7 +951,14 @@ async function salvarSeguranca(){
 
   }catch(e){
     console.error(e);
-    msg("Erro ao salvar segurança no Firebase.","erro");
+    const code = e?.message || e?.code || "";
+    if(code === "auth/email-already-in-use"){
+      msg("Este e-mail já tem conta no Firebase Auth. Acesse o Firebase Console para redefinir a senha, ou use o botão Exigir troca de senha se o usuário ainda lembra a senha atual.","erro");
+    }else if(code === "auth/create-failed" || code.includes("ADMIN_ONLY_OPERATION")){
+      msg("Criação de conta bloqueada pelo Firebase. Verifique as configurações de autenticação no Console.","erro");
+    }else{
+      msg("Erro ao salvar segurança no Firebase.","erro");
+    }
   }
 }
 
