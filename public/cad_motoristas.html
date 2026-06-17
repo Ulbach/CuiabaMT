@@ -144,7 +144,7 @@ import {
   getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit,
   serverTimestamp, Timestamp, doc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth as getFirebaseAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -156,7 +156,7 @@ const firebaseConfig={
 };
 
 const app=initializeApp(firebaseConfig);
-getFirebaseAuth(app);
+const firebaseAuth = getFirebaseAuth(app);
 const db=getFirestore(app);
 
 const STORAGE_KEY='delta_auth_firebase_v1';
@@ -203,6 +203,33 @@ function clearAuth(){
   localStorage.removeItem(STORAGE_KEY_LEGADO);
 }
 
+function localUid(auth){
+  return auth?.uid || auth?.token || auth?.AuthUid || auth?.id || "";
+}
+
+function aguardarFirebaseAuth(){
+  return new Promise(resolve => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, user => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
+async function garantirFirebaseAuth(auth){
+  const user = await aguardarFirebaseAuth();
+  const uidLocal = localUid(auth);
+
+  if(!user || (uidLocal && uidLocal !== user.uid)){
+    clearAuth();
+    location.href = "index.html?login=1";
+    return false;
+  }
+
+  return true;
+}
+
+
 function nomeAuth(auth){
   return auth?.Nome || auth?.seguranca || auth?.nome || auth?.usuario || auth?.email || '';
 }
@@ -221,7 +248,7 @@ function isConsulta(){
   return perfilAuth(AUTH) === 'CONSULTA';
 }
 
-function aplicarPerfilConsulta(){
+async function aplicarPerfilConsulta(){
   AUTH = getAuth();
 
   if(!sessaoValidaLocal(AUTH)){
@@ -229,6 +256,8 @@ function aplicarPerfilConsulta(){
     location.href='index.html';
     return;
   }
+
+  if(!(await garantirFirebaseAuth(AUTH))) return;
 
   if(isConsulta()){
     document.body.classList.add('perfil-consulta');
@@ -526,7 +555,7 @@ async function consultarMotorista(){
 
 Object.assign(window,{salvarMotorista,consultarMotorista,editarMotorista,cancelarEdicao});
 
-window.addEventListener('load', aplicarPerfilConsulta);
+window.addEventListener('load', async () => { await aplicarPerfilConsulta(); });
 </script>
 </body>
 </html>

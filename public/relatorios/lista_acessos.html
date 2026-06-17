@@ -597,6 +597,8 @@ function upper(v){
 }
 
 function senhaTemporaria(s){
+  if(s.MustChangePassword === true || s.mustChangePassword === true) return true;
+  if(s.MustChangePassword === false || s.mustChangePassword === false) return false;
   if(s.SenhaTemporaria === false || s.senhaTemporaria === false) return false;
   return true;
 }

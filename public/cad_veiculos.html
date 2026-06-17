@@ -20,10 +20,10 @@ body.perfil-consulta #formCadastro input:not([id='BuscaPlaca']),body.perfil-cons
 </style></head><body><div class="wrap"><div class="cad-top-actions"><a class="cad-top-btn" href="admin.html" title="Voltar" aria-label="Voltar"><i class="fa-solid fa-chevron-left"></i></a><div class="head"><h1 class="logo">Cadastro de<span>Ve&iacute;culos</span></h1><div class="tagline"># DELTA CUIABA #</div></div><a class="cad-top-btn cad-top-btn-danger" href="index.html" onclick="localStorage.removeItem('delta_auth_firebase_v1');localStorage.removeItem('delta_auth_v1');" title="Sair" aria-label="Sair"><i class="fa-solid fa-right-from-bracket"></i></a></div><div class="card"><h2 class="card-title">Consulta</h2><div class="field"><label for="BuscaPlaca">Consultar ve&iacute;culo</label><input id="BuscaPlaca" placeholder="Digite nome, modelo ou placa. Ex: GOL"></div><button class="btn btn-light" type="button" onclick="consultarVeiculo()">Consultar</button><div id="resultado" class="result"></div></div><div class="consulta-box" id="consultaBox">Perfil CONSULTA: consulta liberada. Inclusão e edição de veículos bloqueadas.</div><div class="card"><h2 class="card-title" id="tituloForm">Novo Cadastro</h2><div class="edit-banner" id="editBanner">Modo edição ativo. Após alterar, clique em Atualizar.</div><form id="formCadastro" onsubmit="event.preventDefault(); salvarVeiculo();"><div class="row"><div class="field"><label for="Nome">Nome *</label><input id="Nome" required placeholder="Ex: GOL"></div><div class="field"><label for="Placa">Placa *</label><input id="Placa" required placeholder="Ex: QCH7171"></div></div><div class="row"><div class="field"><label for="Cor">Cor *</label><input id="Cor" required placeholder="Ex: Prata"></div><div class="field"><label for="CategoriaUso">Categoria de uso *</label><select id="CategoriaUso" required><option value="">Selecione</option><option value="Normal">Normal</option><option value="Especial">Especial</option></select></div></div><div class="row"><div class="field"><label for="KmAtualCadastro">KM atual *</label><input id="KmAtualCadastro" type="number" min="0" required placeholder="Ex: 1010"></div><div class="field"><label for="KmTrocaOleo">KM da Próxima Troca *</label><input id="KmTrocaOleo" type="number" min="0" required placeholder="Ex: 6000"><small>KM previsto para a próxima troca de óleo. Apenas observação, não bloqueia a gravação.</small></div></div><div class="field"><label for="DataTrocaOleo">Data troca óleo *</label><input id="DataTrocaOleo" type="date" required></div><div class="row"><div class="checkline"><input id="Ativo" type="checkbox" checked required><label for="Ativo">Ativo *</label></div><div class="checkline"><input id="Restrito" type="checkbox"><label for="Restrito">Restrito</label></div></div><button class="btn btn-primary" id="btnSalvar" type="submit">Salvar</button><button class="btn btn-warn" id="btnCancelarEdicao" type="button" onclick="cancelarEdicao()" style="display:none">Cancelar edição</button><a class="btn btn-light" href="admin.html">Voltar</a><div id="msg" class="msg"></div></form></div></div><script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore,collection,addDoc,getDocs,query,where,orderBy,limit,serverTimestamp,Timestamp,doc,updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth as getFirebaseAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const firebaseConfig={apiKey:"AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",authDomain:"cuiaba-01617931-f126e.firebaseapp.com",projectId:"cuiaba-01617931-f126e",storageBucket:"cuiaba-01617931-f126e.firebasestorage.app",messagingSenderId:"797115279316",appId:"1:797115279316:web:f229366de16d4e066e1841"};
 const app=initializeApp(firebaseConfig);
-getFirebaseAuth(app); const db=getFirestore(app);
+const firebaseAuth = getFirebaseAuth(app); const db=getFirestore(app);
 
 const STORAGE_KEY='delta_auth_firebase_v1';
 const STORAGE_KEY_LEGADO='delta_auth_v1';
@@ -33,14 +33,42 @@ let modoEdicao=false, editId=null, editColecao=null, resultadosCache=[];
 
 function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||localStorage.getItem(STORAGE_KEY_LEGADO)||'null')}catch(_){return null}}
 function clearAuth(){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(STORAGE_KEY_LEGADO)}
+
+function localUid(auth){
+  return auth?.uid || auth?.token || auth?.AuthUid || auth?.id || "";
+}
+
+function aguardarFirebaseAuth(){
+  return new Promise(resolve => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, user => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
+async function garantirFirebaseAuth(auth){
+  const user = await aguardarFirebaseAuth();
+  const uidLocal = localUid(auth);
+
+  if(!user || (uidLocal && uidLocal !== user.uid)){
+    clearAuth();
+    location.href = "index.html?login=1";
+    return false;
+  }
+
+  return true;
+}
+
 function nomeAuth(auth){return auth?.Nome||auth?.seguranca||auth?.nome||auth?.usuario||auth?.email||''}
 function perfilAuth(auth){return String(auth?.Perfil||auth?.perfil||auth?.tipo||auth?.Tipo||'OPERADOR').trim().toUpperCase()}
 function sessaoValidaLocal(auth){if(!auth)return false;if(auth.expiraEm&&Number(auth.expiraEm)<=Date.now())return false;return !!nomeAuth(auth)}
 function isConsulta(){return perfilAuth(AUTH)==='CONSULTA'}
 async function registrarAuditoria(tipo,alvoColecao,alvoId,detalhes={}){try{await addDoc(collection(db,"auditoria"),{tipo,alvoColecao,alvoId,usuarioUid:AUTH?.uid||"",usuarioNome:AUTH?.Nome||AUTH?.seguranca||AUTH?.nome||"",usuarioEmail:AUTH?.Email||AUTH?.email||"",usuarioPerfil:AUTH?.Perfil||AUTH?.perfil||"",origem:"cad_veiculos.html",detalhes,criadoEm:serverTimestamp()})}catch(e){console.warn("Falha ao registrar auditoria:",e)}}
-function aplicarPerfilConsulta(){
+async function aplicarPerfilConsulta(){
   AUTH=getAuth();
   if(!sessaoValidaLocal(AUTH)){clearAuth();location.href='index.html';return}
+  if(!(await garantirFirebaseAuth(AUTH))) return;
   if(isConsulta()){
     document.body.classList.add('perfil-consulta');
     const box=document.getElementById('consultaBox');
@@ -85,6 +113,6 @@ async function consultarMotorista(){limparMsg();limparResultado();setModoEdicao(
 async function consultarSeguranca(){limparMsg();limparResultado();setModoEdicao(false);const termo=texto("BuscaSeguranca"),tipo=texto("TipoBuscaSeguranca");if(!termo){msg("Informe Nome ou E-mail para consultar.","warn");return}try{resultadosCache=tipo==="Email"?await buscarExato("segurancas","Email",lower(termo),10):await buscarPrefixo("segurancas","NomeBusca",termo,10);if(!resultadosCache.length){msg("Nenhum segurança encontrado.","warn");return}mostrarResultado(resultadosCache.map(renderSeguranca).join(""))}catch(e){console.error(e);msg("Erro ao consultar segurança. Talvez falte NomeBusca em cadastros antigos.","erro")}}
 async function consultarVeiculo(){limparMsg();limparResultado();setModoEdicao(false);const termo=upper(texto("BuscaPlaca"));if(!termo){msg("Informe nome, modelo ou placa para consultar.","warn");return}try{const porNome=await buscarPrefixo("veiculos","NomeBusca",termo,10);const porPlaca=await buscarExato("veiculos","Placa",termo,10);const mapa=new Map();[...porNome,...porPlaca].forEach(item=>mapa.set(item.id,item));resultadosCache=[...mapa.values()].slice(0,10);if(!resultadosCache.length){msg("Nenhum veiculo encontrado.","warn");return}mostrarResultado(resultadosCache.map(renderVeiculo).join(""))}catch(e){console.error(e);msg("Erro ao consultar veiculo no Firebase.","erro")}}
 Object.assign(window,{salvarMotorista,salvarSeguranca,salvarVeiculo,consultarMotorista,consultarSeguranca,consultarVeiculo,editarMotorista,editarSeguranca,editarVeiculo,cancelarEdicao});
-window.addEventListener('load', aplicarPerfilConsulta);
+window.addEventListener('load', async () => { await aplicarPerfilConsulta(); });
 </script></body></html>
 
