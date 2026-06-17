@@ -90,7 +90,7 @@ tbody tr:hover{background:rgba(255,255,255,.04)}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth as getFirebaseAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -102,7 +102,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-getFirebaseAuth(app);
+const firebaseAuth = getFirebaseAuth(app);
 const db = getFirestore(app);
 const STORAGE_KEY = "delta_auth_firebase_v1";
 const STORAGE_KEY_LEGADO = "delta_auth_v1";
@@ -111,6 +111,19 @@ const LOG_INICIO_KEY = "delta_log_acesso_inicio_v1";
 
 function getAuth(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||localStorage.getItem(STORAGE_KEY_LEGADO)||"null");}catch(_){return null;}}
 function clearAuth(){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(STORAGE_KEY_LEGADO);localStorage.removeItem(LOG_ID_KEY);localStorage.removeItem(LOG_INICIO_KEY);}
+
+function localUid(auth){return auth?.uid || auth?.token || auth?.AuthUid || "";}
+function aguardarFirebaseAuth(){return new Promise(resolve=>{const unsubscribe=onAuthStateChanged(firebaseAuth,user=>{unsubscribe();resolve(user);});});}
+async function garantirFirebaseAuth(auth){
+  const user=await aguardarFirebaseAuth();
+  const uidLocal=localUid(auth);
+  if(!user || (uidLocal && uidLocal!==user.uid)){
+    clearAuth();
+    location.href="../index.html?login=1";
+    return false;
+  }
+  return true;
+}
 function sessaoValidaLocal(auth){return !!(auth && auth.Nome && auth.Perfil && auth.expiraEm && Number(auth.expiraEm)>Date.now());}
 function validarSessaoOuRedirecionar(){
   const auth=getAuth();
@@ -294,7 +307,7 @@ function exportCSV(filename, headers, rows){
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
-window.DeltaReport={db,esc,norm,upper,getField,toDate,fmtDate,fmtDateTime,inputToDate,setDefaultPeriod,inPeriod,durationText,fmtKm,kmRodadosText,pillClass,segurancaMovimentacao,segurancaMovimentacaoHtml,showLoading,setStatus,getMovimentacoes,getMotoristas,exportCSV,validarSessaoOuRedirecionar};
+window.DeltaReport={db,esc,norm,upper,getField,toDate,fmtDate,fmtDateTime,inputToDate,setDefaultPeriod,inPeriod,durationText,fmtKm,kmRodadosText,pillClass,segurancaMovimentacao,segurancaMovimentacaoHtml,showLoading,setStatus,getMovimentacoes,getMotoristas,exportCSV,validarSessaoOuRedirecionar,garantirFirebaseAuth};
 </script>
 
 
@@ -308,7 +321,7 @@ function render(rows){
   tbodyRelatorio.innerHTML=rows.length?rows.map(r=>`<tr><td>${R.esc(r.veiculo)}</td><td>${R.esc(r.motorista)}</td><td>${R.esc(R.fmtDateTime(r.dataSaida))}</td><td>${R.esc(R.fmtDateTime(r.dataRetorno))}</td><td>${R.esc(R.durationText(r.dataSaida,r.dataRetorno,r.status))}</td><td>${R.esc(R.fmtKm(r.kmSaida))}</td><td>${R.esc(R.fmtKm(r.kmRetorno))}</td><td>${R.esc(R.kmRodadosText(r))}</td><td class="wrap-text">${R.esc(r.destino)}</td><td><span class="pill ${R.pillClass(r.status)}">${R.esc(r.status)}</span></td></tr><tr class="security-row"><td colspan="10"><span class="security-tag"><i class="fa-solid fa-shield-halved"></i> Seguranca: ${R.segurancaMovimentacaoHtml(r)}</span></td></tr>`).join(""):'<tr><td colspan="10" class="empty">Nenhuma movimentação encontrada no período.</td></tr>';
 }
 async function carregar(){
-  if(!R.validarSessaoOuRedirecionar())return;
+  const AUTH = R.validarSessaoOuRedirecionar(); if(!AUTH || !(await R.garantirFirebaseAuth(AUTH)))return;
   R.showLoading(true); R.setStatus("Buscando dados operacionais no Firebase.");
   try{
     const movs=await R.getMovimentacoes(1000);

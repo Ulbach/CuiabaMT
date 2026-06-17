@@ -46,9 +46,9 @@ body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;pointe
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth as getFirebaseAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 const firebaseConfig={apiKey:"AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",authDomain:"cuiaba-01617931-f126e.firebaseapp.com",projectId:"cuiaba-01617931-f126e",storageBucket:"cuiaba-01617931-f126e.firebasestorage.app",messagingSenderId:"797115279316",appId:"1:797115279316:web:f229366de16d4e066e1841"};
-const app=initializeApp(firebaseConfig),db=getFirestore(app),STORAGE_KEY="delta_auth_firebase_v1",STORAGE_KEY_LEGADO="delta_auth_v1";
+const app=initializeApp(firebaseConfig),firebaseAuth=getFirebaseAuth(app),db=getFirestore(app),STORAGE_KEY="delta_auth_firebase_v1",STORAGE_KEY_LEGADO="delta_auth_v1";
 const LOG_ID_KEY="delta_log_acesso_id_v1";
 const LOG_INICIO_KEY="delta_log_acesso_inicio_v1";
 let LOGS=[],FILTRADOS=[];
@@ -58,6 +58,32 @@ function clearAuth(){
   localStorage.removeItem(STORAGE_KEY_LEGADO);
   localStorage.removeItem(LOG_ID_KEY);
   localStorage.removeItem(LOG_INICIO_KEY);
+}
+
+function localUid(auth){
+  return auth?.uid || auth?.token || auth?.AuthUid || "";
+}
+
+function aguardarFirebaseAuth(){
+  return new Promise(resolve => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, user => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
+async function garantirFirebaseAuth(auth){
+  const user = await aguardarFirebaseAuth();
+  const uidLocal = localUid(auth);
+
+  if(!user || (uidLocal && uidLocal !== user.uid)){
+    clearAuth();
+    location.href = "../index.html?login=1";
+    return false;
+  }
+
+  return true;
 }
 function nomeAuth(a){return a?.Nome||a?.nome||a?.seguranca||a?.usuario||""}
 function perfilAuth(a){return String(a?.Perfil||a?.perfil||"").trim().toUpperCase()}
@@ -109,7 +135,8 @@ function render(lista){tbodyLogs.innerHTML=lista.length?lista.map(l=>{const nome
 function csvEsc(v){const s=String(v??"");return /[;"\n\r]/.test(s)?'"'+s.replaceAll('"','""')+'"':s}
 function exportar(){const linhas=[["Usuario","Email","Perfil","Login","Logout","Tempo Min","Status","Origem"].join(";")];FILTRADOS.forEach(l=>linhas.push([l.nome||l.Nome||"",l.email||l.Email||"",upper(l.perfil||l.Perfil),fmt(l.loginEm),fmt(l.logoutEm),tempoMin(l)??"",upper(l.status||"ABERTA"),l.origem||""].map(csvEsc).join(";")));const blob=new Blob(["\uFEFF"+linhas.join("\n")],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="log_acessos.csv";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
 async function carregar(){statusLinha.textContent="Buscando logs no Firebase...";tbodyLogs.innerHTML='<tr><td colspan="8" class="empty">Carregando...</td></tr>';try{let snap;try{snap=await getDocs(query(collection(db,"logs_acesso"),orderBy("loginEm","desc"),limit(2000)))}catch(_){snap=await getDocs(query(collection(db,"logs_acesso"),limit(2000)))}LOGS=snap.docs.map(d=>({id:d.id,...d.data()}));aplicarFiltros();statusLinha.textContent="Dados carregados com sucesso. Logs encontrados: "+LOGS.length+"."}catch(e){console.error(e);statusLinha.textContent="Erro ao carregar logs: "+(e?.message||"erro desconhecido");tbodyLogs.innerHTML='<tr><td colspan="8" class="empty">Erro ao carregar dados do Firebase.</td></tr>'}}
-const buscaEl=document.getElementById("busca");["dataIni","dataFim","busca","perfilFiltro","statusFiltro"].forEach(id=>document.getElementById(id).addEventListener("input",aplicarFiltros));btnAtualizar.addEventListener("click",carregar);btnExportar.addEventListener("click",exportar);setDefaultDates();if(validar())carregar();
+const buscaEl=document.getElementById("busca");["dataIni","dataFim","busca","perfilFiltro","statusFiltro"].forEach(id=>document.getElementById(id).addEventListener("input",aplicarFiltros));btnAtualizar.addEventListener("click",carregar);btnExportar.addEventListener("click",exportar);setDefaultDates();const AUTH = validar();
+if(AUTH && await garantirFirebaseAuth(AUTH)) carregar();
 </script>
 </body>
 </html>

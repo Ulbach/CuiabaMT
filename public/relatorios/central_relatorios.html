@@ -8,7 +8,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth as getFirebaseAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth as getFirebaseAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyBeG7uirpSS3N0I48fy7WqJa_SSrb8A-48",
@@ -20,7 +20,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-getFirebaseAuth(app);
+const firebaseAuth = getFirebaseAuth(app);
 const db = getFirestore(app);
 
 window.db = db;
@@ -411,6 +411,32 @@ function clearAuth(){
   localStorage.removeItem(LOG_INICIO_KEY);
 }
 
+
+function localUid(auth){
+  return auth?.uid || auth?.token || auth?.AuthUid || "";
+}
+
+function aguardarFirebaseAuth(){
+  return new Promise(resolve => {
+    const unsubscribe = onAuthStateChanged(firebaseAuth, user => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+}
+
+async function garantirFirebaseAuth(auth){
+  const user = await aguardarFirebaseAuth();
+  const uidLocal = localUid(auth);
+
+  if(!user || (uidLocal && uidLocal !== user.uid)){
+    clearAuth();
+    location.href = "../index.html?login=1";
+    return false;
+  }
+
+  return true;
+}
 function nomeAuth(auth){
   return auth?.Nome || auth?.nome || auth?.seguranca || auth?.usuario || auth?.email || "";
 }
@@ -475,9 +501,10 @@ window.logoutSistema = async function(){
   location.href = "../index.html";
 };
 
-function iniciarCentral(){
+async function iniciarCentral(){
   const auth = validarSessaoOuRedirecionar();
   if(!auth) return;
+  if(!(await garantirFirebaseAuth(auth))) return;
 
   const perfil = perfilAuth(auth);
   const nome = nomeAuth(auth) || "---";
