@@ -19,8 +19,13 @@ Sistema web de controle operacional da unidade Delta Cuiaba, com foco em frota, 
 - `public/js/`: modulos JavaScript auxiliares.
 - `scripts/`: scripts locais de diagnostico, reparo, backup e validacao.
 - `docs/`: documentacao permanente e historica.
+- `decisions/`: ADRs com decisoes arquiteturais e operacionais.
+- `prompts/`: modelos de prompts para tarefas recorrentes.
 - `firestore.rules`: regras de seguranca do Firestore.
 - `firebase.json`: configuracao do Hosting e Firestore Rules.
+- `CONTRIBUTING.md`: guia de contribuicao.
+- `TESTING.md`: guia de testes.
+- `RELEASE.md`: guia de publicacao.
 
 ## Funcionalidades
 

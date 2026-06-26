@@ -6,14 +6,17 @@ Este arquivo e obrigatorio para qualquer sessao de IA que assumir o projeto CUIA
 
 1. Leia este arquivo.
 2. Leia `README.md`.
-3. Leia toda a pasta `docs/`.
-4. Confirme que o projeto correto e:
+3. Leia `CONTRIBUTING.md`, `TESTING.md` e `RELEASE.md` quando a tarefa envolver mudanca, teste ou publicacao.
+4. Leia toda a pasta `docs/`.
+5. Leia a pasta `decisions/` para entender decisoes permanentes.
+6. Use os modelos em `prompts/` quando iniciar tarefas recorrentes.
+7. Confirme que o projeto correto e:
 
 ```text
 C:\Users\fabricio.ulbach\OneDrive - DELTA ENERGIA\Documentos\GitHub\CuiabaMT
 ```
 
-5. Considere a documentacao permanente como fonte oficial, mas valide no codigo quando houver duvida.
+8. Considere a documentacao permanente como fonte oficial, mas valide no codigo quando houver duvida.
 
 ## Regras de Trabalho
 
@@ -30,6 +33,8 @@ C:\Users\fabricio.ulbach\OneDrive - DELTA ENERGIA\Documentos\GitHub\CuiabaMT
 - Nao usar Cloud Functions neste projeto sem nova autorizacao explicita.
 - Nao gravar senhas em texto legivel no Firestore.
 - Nao executar reparos em usuarios reais sem confirmacao explicita do responsavel.
+- Ao tomar uma decisao duradoura, criar ou atualizar um ADR em `decisions/`.
+- Ao criar processo reutilizavel, criar ou atualizar um prompt em `prompts/`.
 
 ## Publicacao
 
